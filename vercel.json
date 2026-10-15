@@ -10,7 +10,6 @@
       "framework": "express"
     }
   },
-  "installCommand": "npm install --include=optional",
   "rewrites": [
     {
       "source": "/api/(.*)",
