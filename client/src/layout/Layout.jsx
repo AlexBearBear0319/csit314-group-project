@@ -1,7 +1,9 @@
 // Layout.jsx — the shared frame around EVERY page:
 // header, role-based menu, logout button, and the page content in the middle.
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { getUser, killSession } from '../session';
+import Button from '../components/Button';
 
 // Menu links per role. Add a link here when you build a new page.
 const MENUS = {
@@ -31,7 +33,32 @@ const MENUS = {
 export default function Layout() {
   const user = getUser();
   const navigate = useNavigate();
+  const menuButtonRef = useRef(null);
+  const [menuOpen, setMenuOpen] = useState(false);
   const links = user ? MENUS[user.role] || [] : [];
+
+  useEffect(() => {
+    function closeOnHistoryNavigation() {
+      setMenuOpen(false);
+    }
+
+    window.addEventListener('popstate', closeOnHistoryNavigation);
+    return () => window.removeEventListener('popstate', closeOnHistoryNavigation);
+  }, []);
+
+  useEffect(() => {
+    if (!menuOpen) return undefined;
+
+    function closeOnEscape(event) {
+      if (event.key === 'Escape') {
+        setMenuOpen(false);
+        menuButtonRef.current?.focus();
+      }
+    }
+
+    window.addEventListener('keydown', closeOnEscape);
+    return () => window.removeEventListener('keydown', closeOnEscape);
+  }, [menuOpen]);
 
   // LogoutPg behaviour: logout() -> killSession() -> back to login page
   function logout() {
@@ -40,26 +67,83 @@ export default function Layout() {
   }
 
   return (
-    <>
-      <nav className="navbar navbar-expand navbar-dark bg-dark px-3">
-        <span className="navbar-brand">Interior Design Platform</span>
-        <ul className="navbar-nav me-auto">
-          {links.map((l) => (
-            <li className="nav-item" key={l.to}>
-              <Link className="nav-link" to={l.to}>{l.label}</Link>
-            </li>
-          ))}
-        </ul>
-        {user && (
-          <div className="d-flex align-items-center gap-3">
-            <span className="text-light small">{user.name} ({user.role})</span>
-            <button className="btn btn-outline-light btn-sm" onClick={logout}>Logout</button>
+    <div className="flex min-h-screen flex-col bg-canvas text-ink">
+      <a
+        className="sr-only fixed left-3 top-3 z-50 rounded-control bg-surface px-4 py-3 text-sm font-medium text-ink focus:not-sr-only focus:outline-action"
+        href="#main-content"
+      >
+        Skip to content
+      </a>
+      <header className="border-b border-border bg-surface">
+        <div className="relative mx-auto grid w-full max-w-[1200px] grid-cols-[1fr_auto] items-center gap-x-4 gap-y-3 px-4 py-4 sm:px-6 lg:grid-cols-[auto_minmax(0,1fr)_auto] lg:px-8">
+          <div className="flex min-w-0 items-center gap-3">
+            <svg className="size-8 text-action" viewBox="0 0 36 44" fill="none" aria-hidden="true">
+              <path d="M4 41V18a14 14 0 0 1 28 0v23ZM18 4v37M4 25h28M4 41h28" stroke="currentColor" strokeWidth="1.4" />
+            </svg>
+            <span className="truncate font-display text-lg leading-tight sm:text-xl">Interior Design Platform</span>
           </div>
-        )}
-      </nav>
-      <main className="container py-4">
+
+          {links.length > 0 && (
+            <button
+              ref={menuButtonRef}
+              className="inline-flex size-11 items-center justify-center rounded-control border border-border bg-surface text-ink hover:bg-surface-hover focus-visible:outline-action lg:hidden"
+              type="button"
+              aria-label={menuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={menuOpen}
+              aria-controls="primary-navigation"
+              onClick={() => setMenuOpen((open) => !open)}
+            >
+              {menuOpen ? (
+                <svg className="size-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="m6 6 12 12M18 6 6 18" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                </svg>
+              ) : (
+                <svg className="size-5" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <path d="M4 7h16M4 12h16M4 17h16" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" />
+                </svg>
+              )}
+            </button>
+          )}
+
+          <nav
+            id="primary-navigation"
+            aria-label="Main navigation"
+            className={`${menuOpen ? 'flex' : 'hidden'} absolute left-4 right-4 top-full z-20 flex-col gap-1 rounded-card border border-border bg-surface p-2 shadow-menu lg:static lg:col-start-2 lg:row-start-1 lg:flex lg:flex-row lg:items-center lg:justify-center lg:gap-1 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none`}
+          >
+            {links.map((link) => (
+              <NavLink
+                key={link.to}
+                to={link.to}
+                end={link.label === 'Dashboard'}
+                className={({ isActive }) => `block rounded-control px-3 py-2.5 text-sm font-medium transition-colors motion-reduce:transition-none lg:whitespace-nowrap ${
+                  isActive
+                    ? 'bg-action-soft text-action-ink lg:bg-transparent lg:text-ink'
+                    : 'text-muted hover:bg-surface-hover hover:text-ink lg:hover:bg-transparent lg:hover:text-action'
+                }`}
+                onClick={() => setMenuOpen(false)}
+              >
+                {link.label}
+              </NavLink>
+            ))}
+          </nav>
+
+          {user && (
+            <div className="col-span-2 flex min-w-0 items-center justify-end gap-3 lg:col-span-1 lg:col-start-3 lg:row-start-1">
+              <span className="min-w-0 truncate text-right text-xs text-muted sm:text-sm">
+                {user.name} <span className="hidden sm:inline">({user.role})</span>
+              </span>
+              <Button variant="secondary" size="sm" onClick={logout}>Logout</Button>
+            </div>
+          )}
+        </div>
+      </header>
+      <main
+        id="main-content"
+        tabIndex={-1}
+        className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-8 focus:outline-none sm:px-6 lg:px-8 lg:py-12"
+      >
         <Outlet />
       </main>
-    </>
+    </div>
   );
 }

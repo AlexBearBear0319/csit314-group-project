@@ -5,36 +5,69 @@
 //   rows={accounts}
 //   actions={[{ label: 'View', onClick: (row) => ... }, { label: 'Suspend', variant: 'danger', onClick: ... }]}
 // />
-export default function ResultsTable({ columns, rows, actions = [] }) {
-  if (!rows || rows.length === 0) return <p className="text-muted">No results found.</p>;
+import Button from './Button';
+
+export default function ResultsTable({ columns, rows, actions = [], ariaLabel = 'Results' }) {
+  if (!rows || rows.length === 0) {
+    return (
+      <p
+        role="status"
+        className="rounded-card border border-dashed border-border bg-surface px-5 py-12 text-center text-muted"
+      >
+        No results found.
+      </p>
+    );
+  }
+
   return (
-    <table className="table table-striped align-middle">
-      <thead>
-        <tr>
-          {columns.map((c) => <th key={c.key}>{c.label}</th>)}
-          {actions.length > 0 && <th>Actions</th>}
-        </tr>
-      </thead>
-      <tbody>
-        {rows.map((row) => (
-          <tr key={row.id}>
-            {columns.map((c) => <td key={c.key}>{row[c.key]}</td>)}
+    <div className="overflow-x-auto rounded-card border border-border bg-surface">
+      <table aria-label={ariaLabel} className="w-full min-w-max border-collapse text-left text-sm">
+        <thead>
+          <tr>
+            {columns.map((column) => (
+              <th
+                key={column.key}
+                scope="col"
+                className="border-b border-border bg-canvas px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted"
+              >
+                {column.label}
+              </th>
+            ))}
             {actions.length > 0 && (
-              <td className="d-flex gap-2">
-                {actions.map((a) => (
-                  <button
-                    key={a.label}
-                    className={`btn btn-sm btn-${a.variant || 'secondary'}`}
-                    onClick={() => a.onClick(row)}
-                  >
-                    {a.label}
-                  </button>
-                ))}
-              </td>
+              <th scope="col" className="border-b border-border bg-canvas px-4 py-3 text-xs font-medium uppercase tracking-wide text-muted">
+                Actions
+              </th>
             )}
           </tr>
-        ))}
-      </tbody>
-    </table>
+        </thead>
+        <tbody>
+          {rows.map((row) => (
+            <tr key={row.id}>
+              {columns.map((column) => (
+                <td key={column.key} className="border-b border-border px-4 py-3 text-ink">
+                  {row[column.key]}
+                </td>
+              ))}
+              {actions.length > 0 && (
+                <td className="border-b border-border px-4 py-3">
+                  <div className="flex items-center gap-2">
+                    {actions.map((action) => (
+                      <Button
+                        key={action.label}
+                        size="sm"
+                        variant={action.variant || 'secondary'}
+                        onClick={() => action.onClick(row)}
+                      >
+                        {action.label}
+                      </Button>
+                    ))}
+                  </div>
+                </td>
+              )}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

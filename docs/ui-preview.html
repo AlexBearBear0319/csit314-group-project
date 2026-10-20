@@ -1,0 +1,405 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="color-scheme" content="light">
+  <title>Interior Design Platform — UI preview</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Lora:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    /* Approved proposal. These values map to the future Tailwind theme. */
+    :root {
+      --canvas: #f7f5f0; --surface: #fff; --ink: #262522; --muted: #6d6a63;
+      --accent: #4f5a45; --accent-hover: #3d4735; --accent-soft: #e9ecdf;
+      --line: #dedad2; --danger: #a6362b; --danger-soft: #f9e9e5;
+      --body: 'DM Sans', sans-serif; --heading: 'Lora', Georgia, serif;
+      --radius: 10px; --content: 1200px; --shadow: 0 12px 40px #2625220a;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--canvas); color: var(--ink); font: 400 16px/1.6 var(--body); }
+    button, input, select, textarea { font: inherit; }
+    button, a, input, select, textarea { -webkit-tap-highlight-color: transparent; }
+    button { cursor: pointer; }
+    button:disabled { cursor: default; opacity: .55; }
+    button, a { touch-action: manipulation; }
+    a { color: inherit; text-underline-offset: 4px; }
+    button { color: inherit; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 4px; }
+    [hidden] { display: none !important; }
+    h1, h2, h3, p { margin: 0; }
+    h1, h2, h3 { font-family: var(--heading); font-weight: 400; line-height: 1.18; }
+    h1 { font-size: clamp(38px, 5.2vw, 66px); letter-spacing: -.045em; }
+    h2 { font-size: clamp(28px, 3.5vw, 38px); letter-spacing: -.03em; }
+    h3 { font-size: 24px; letter-spacing: -.02em; }
+    img { display: block; width: 100%; object-fit: cover; }
+    svg { width: 20px; height: 20px; flex: none; }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .skip { position: absolute; left: 12px; top: -100px; z-index: 10; padding: 10px 18px; background: white; }
+    .skip:focus { top: 12px; }
+    .wrap { width: min(var(--content), calc(100% - 96px)); margin-inline: auto; }
+    .preview-bar { background: #eae7df; border-bottom: 1px solid var(--line); font-size: 12px; }
+    .preview-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; min-height: 44px; }
+    .preview-tag { display: flex; align-items: center; gap: 10px; letter-spacing: .02em; }
+    .preview-tag span:first-child { font-weight: 700; }
+    .preview-dot { width: 4px; height: 4px; border-radius: 50%; background: var(--muted); }
+    .view-control { display: flex; align-items: center; gap: 10px; }
+    .view-control select { width: auto; min-height: 32px; padding: 2px 30px 2px 10px; background: transparent; border-color: #c9c4b8; font-size: 12px; }
+    .header { border-bottom: 1px solid var(--line); }
+    .header-inner { min-height: 98px; display: flex; align-items: center; gap: 40px; }
+    .brand { display: inline-flex; align-items: center; gap: 12px; background: none; padding: 0; border: 0; text-align: left; }
+    .brand svg { width: 33px; height: 41px; color: var(--accent); }
+    .brand-name { display: block; font: 400 27px/1.1 var(--heading); letter-spacing: -.04em; }
+    .brand-label { display: block; margin-top: 4px; font-size: 9px; text-transform: uppercase; letter-spacing: .19em; }
+    .nav { display: flex; align-items: center; gap: 30px; margin-inline: auto; }
+    .nav button { position: relative; border: 0; background: none; padding: 12px 0; color: var(--muted); font-size: 14px; white-space: nowrap; }
+    .nav button.active { color: var(--ink); }
+    .nav button.active::after { content: ''; position: absolute; height: 2px; background: var(--accent); bottom: 0; left: 0; right: 0; }
+    .header-end { display: flex; align-items: center; gap: 12px; font-size: 13px; }
+    .avatar { display: grid; place-items: center; width: 38px; height: 38px; border-radius: 50%; background: #e7e1d4; font-size: 12px; color: #514d43; }
+    .eyebrow { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .2em; color: var(--muted); }
+    .hero { display: grid; grid-template-columns: .9fr 1.1fr; align-items: center; gap: 64px; padding-block: 56px 54px; }
+    .hero h1 { margin-top: 20px; }
+    .hero h1 em { color: var(--accent); font-weight: 400; }
+    .hero-bottom { display: flex; align-items: center; gap: 20px; margin-top: 32px; }
+    .hero-rule { width: 42px; height: 1px; background: #aaa391; }
+    .hero-note { font-size: 13px; color: var(--muted); }
+    .hero-figure { margin: 0; position: relative; }
+    .hero-figure img { height: 330px; border-radius: 2px 2px 64px 2px; background: #d8d0c1; }
+    .hero-caption { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; font-size: 12px; }
+    .hero-caption span { color: var(--muted); }
+    .text-button { display: inline-flex; align-items: center; gap: 10px; padding: 0; border: 0; background: none; font-size: 13px; }
+    .text-button:hover { color: var(--accent); text-decoration: underline; text-underline-offset: 4px; }
+    .section { padding-block: 34px 72px; border-top: 1px solid var(--line); }
+    .section-head h1 { font-size: clamp(28px, 3.5vw, 38px); }
+    .section-head { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 28px; }
+    .count { font-size: 13px; color: var(--muted); }
+    .toolbar { display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-bottom: 30px; }
+    .chips { display: flex; flex-wrap: wrap; gap: 8px; }
+    .chip { border: 1px solid var(--line); border-radius: 999px; background: transparent; padding: 9px 17px; min-height: 44px; font-size: 13px; }
+    .chip[aria-pressed="true"] { color: white; border-color: var(--accent); background: var(--accent); }
+    .chip:hover { border-color: var(--accent); }
+    .search { display: flex; align-items: center; gap: 10px; width: 270px; border-bottom: 1px solid #b4afa3; }
+    .search input { min-width: 0; width: 100%; border: 0; background: transparent; padding: 12px 0; font-size: 14px; }
+    .search svg { color: var(--muted); width: 18px; }
+    .grid { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 28px; }
+    .project { position: relative; min-width: 0; }
+    .project-image { display: block; width: 100%; padding: 0; border: 0; border-radius: var(--radius); overflow: hidden; background: #ded8cb; }
+    .project-image img { aspect-ratio: 1.35; transition: transform .35s ease; }
+    .project-image:hover img { transform: scale(1.035); }
+    .save { position: absolute; top: 14px; right: 14px; width: 44px; height: 44px; display: grid; place-items: center; border: 1px solid #ffffff80; border-radius: 50%; background: #fffffff0; box-shadow: 0 2px 10px #00000008; }
+    .save[aria-pressed="true"] { background: var(--accent); border-color: var(--accent); color: white; }
+    .save[aria-pressed="true"] svg { fill: currentColor; }
+    .project-meta { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-block: 17px 7px; }
+    .project-meta span { font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+    .project h3 button { font: inherit; letter-spacing: inherit; padding: 0; background: none; border: 0; text-align: left; }
+    .project h3 button:hover { color: var(--accent); }
+    .project-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 8px; color: var(--muted); font-size: 12px; }
+    .project-foot svg { width: 17px; height: 17px; }
+    .empty { padding: 56px 24px; border: 1px dashed #b8b2a5; border-radius: var(--radius); color: var(--muted); text-align: center; }
+    .page { padding-block: 48px 72px; min-height: 65vh; }
+    .page-title { display: flex; align-items: center; justify-content: space-between; gap: 20px; margin-bottom: 32px; }
+    .page-title h1 { font-size: clamp(34px, 4vw, 46px); }
+    .page-title .eyebrow { margin-bottom: 10px; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; min-height: 46px; border: 1px solid var(--accent); border-radius: 8px; background: var(--accent); color: white; padding: 10px 20px; font-size: 14px; font-weight: 500; }
+    .btn:hover { background: var(--accent-hover); }
+    .btn.secondary { background: transparent; color: var(--ink); border-color: #bcb6a8; }
+    .btn.secondary:hover { background: #eae6dd; }
+    .btn.danger { background: var(--danger); border-color: var(--danger); }
+    .btn.small { min-height: 40px; font-size: 12px; padding: 7px 14px; }
+    .stats { display: grid; grid-template-columns: repeat(3,minmax(0,1fr)); gap: 24px; margin-bottom: 36px; }
+    .stat { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 26px 28px; }
+    .stat span { display: block; color: var(--muted); font-size: 13px; }
+    .stat strong { display: block; margin-top: 8px; font-size: 34px; line-height: 1.3; font-weight: 500; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+    .panel { padding: 28px; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); }
+    .panel-title { display: flex; align-items: center; justify-content: space-between; gap: 16px; margin-bottom: 24px; }
+    .panel-title h2 { font-size: 27px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    th { color: var(--muted); font-size: 11px; font-weight: 500; letter-spacing: .08em; text-transform: uppercase; text-align: left; background: #f8f7f3; }
+    td, th { padding: 16px 14px; border-bottom: 1px solid var(--line); white-space: nowrap; }
+    tbody tr:last-child td { border-bottom: 0; }
+    .table-name { font-weight: 500; }
+    .badge { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; background: var(--accent-soft); color: #3e4a32; border-radius: 999px; font-size: 11px; }
+    .badge.suspended { background: var(--danger-soft); color: var(--danger); }
+    .table-actions { display: flex; gap: 12px; align-items: center; }
+    .table-actions button { background: none; border: 0; min-height: 40px; font-size: 12px; text-decoration: underline; text-underline-offset: 4px; padding: 4px; }
+    .danger-text { color: var(--danger); }
+    .field { display: grid; gap: 8px; margin-bottom: 20px; }
+    .field label { font-size: 13px; font-weight: 500; }
+    input, select, textarea { width: 100%; min-height: 46px; padding: 10px 13px; border: 1px solid #bcb6a8; border-radius: 8px; background: var(--surface); color: var(--ink); }
+    textarea { resize: vertical; min-height: 100px; }
+    input::placeholder { color: var(--muted); opacity: 1; }
+    .fields { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 12px; margin-top: 28px; }
+    .login { display: grid; grid-template-columns: 1fr 1fr; background: var(--surface); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin: 20px auto; max-width: 940px; }
+    .login-photo { position: relative; min-height: 560px; }
+    .login-photo img { height: 100%; position: absolute; }
+    .login-photo::after { content: ''; position: absolute; inset: 0; background: linear-gradient(transparent 50%, #23291de0); }
+    .login-photo h2 { position: absolute; bottom: 34px; left: 32px; right: 32px; color: white; font-size: 38px; z-index: 1; }
+    .login-form { padding: 44px; }
+    .login-form h1 { font-size: 38px; margin-block: 14px 34px; }
+    .login-form .btn { width: 100%; margin-top: 10px; }
+    .chart { display: flex; align-items: flex-end; gap: 18px; height: 230px; padding-top: 20px; border-bottom: 1px solid var(--line); }
+    .chart-column { display: flex; flex: 1; align-items: center; justify-content: flex-end; flex-direction: column; height: 100%; min-width: 0; }
+    .chart-column .bar { width: min(64px, 100%); min-height: 2px; background: #b7bea8; border-radius: 5px 5px 0 0; }
+    .chart-column:last-child .bar { background: var(--accent); }
+    .chart-column span { display: block; font-size: 11px; color: var(--muted); margin-top: 10px; height: 26px; }
+    dialog { border: 1px solid var(--line); border-radius: 14px; padding: 0; width: min(650px, calc(100% - 32px)); max-height: calc(100dvh - 48px); background: var(--surface); color: var(--ink); box-shadow: 0 30px 100px #15151030; }
+    dialog::backdrop { background: #22231c80; backdrop-filter: blur(4px); }
+    .dialog-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 24px 28px; border-bottom: 1px solid var(--line); }
+    .dialog-head h2 { font-size: 28px; }
+    .icon-btn { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; background: transparent; border: 1px solid var(--line); border-radius: 50%; }
+    .dialog-body { padding: 28px; }
+    .detail-photo { height: 280px; border-radius: 8px; margin-bottom: 26px; background: #d8d0c1; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .detail-grid dt { font-size: 12px; color: var(--muted); }
+    .detail-grid dd { margin: 4px 0 0; font-size: 14px; }
+    .notice { padding: 12px 16px; background: var(--accent-soft); color: #3e4a32; border-radius: 8px; margin-bottom: 20px; font-size: 13px; }
+    .toast { position: fixed; right: 24px; bottom: 24px; max-width: calc(100% - 48px); padding: 14px 22px; border-radius: 10px; background: #2e3726; color: white; font-size: 14px; box-shadow: var(--shadow); z-index: 5; }
+    footer { border-top: 1px solid var(--line); }
+    .footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-block: 24px; color: var(--muted); font-size: 11px; }
+    .footer-inner details { text-align: right; max-width: 600px; }
+    .footer-inner summary { cursor: pointer; }
+    .footer-inner details p { margin-top: 10px; }
+    @media (max-width: 1000px) {
+      .wrap { width: calc(100% - 48px); }
+      .hero { gap: 32px; }
+      .header-inner { gap: 20px; }
+      .header-end .user-label { display: none; }
+      .nav { gap: 20px; }
+      .grid { gap: 20px; }
+      .project h3 { font-size: 22px; }
+      .login-form { padding: 32px; }
+    }
+    @media (max-width: 700px) {
+      .wrap { width: calc(100% - 40px); }
+      .preview-tag { gap: 7px; font-size: 10px; }
+      .view-control label { display: none; }
+      .view-control select { max-width: 155px; font-size: 11px; }
+      .header-inner { min-height: 114px; flex-wrap: wrap; gap: 0; padding-top: 16px; justify-content: space-between; }
+      .brand-name { font-size: 23px; }
+      .brand svg { width: 28px; height: 34px; }
+      .nav { order: 3; width: 100%; overflow-x: auto; margin: 10px 0 0; gap: 24px; }
+      .nav button { font-size: 12px; padding: 10px 0; }
+      .hero { grid-template-columns: 1fr; padding-block: 36px; gap: 30px; }
+      .hero h1 { font-size: 46px; }
+      .hero-figure img { height: 260px; border-bottom-right-radius: 48px; }
+      .hero-bottom { margin-top: 22px; }
+      .hero-caption { font-size: 11px; }
+      .toolbar { flex-direction: column; align-items: stretch; gap: 14px; }
+      .search { width: 100%; }
+      .chip { padding: 8px 14px; font-size: 12px; }
+      .grid { grid-template-columns: 1fr 1fr; gap: 26px 16px; }
+      .project-meta { align-items: flex-start; gap: 4px; flex-direction: column; }
+      .project-meta span { font-size: 9px; }
+      .project h3 { font-size: 21px; }
+      .project-foot { font-size: 11px; }
+      .save { width: 40px; height: 40px; top: 8px; right: 8px; }
+      .section { padding-block: 28px 44px; }
+      .page { padding-block: 32px 48px; }
+      .page-title { flex-wrap: wrap; }
+      .stats { grid-template-columns: 1fr; gap: 12px; margin-bottom: 24px; }
+      .stat { display: flex; justify-content: space-between; align-items: center; padding: 16px 20px; }
+      .stat strong { margin: 0; font-size: 27px; }
+      .panel { padding: 18px; }
+      .panel-title { flex-wrap: wrap; }
+      .login { grid-template-columns: 1fr; margin: 0; }
+      .login-photo { min-height: 220px; }
+      .login-photo h2 { font-size: 30px; bottom: 24px; left: 24px; }
+      .login-form { padding: 28px 24px; }
+      .fields { grid-template-columns: 1fr; gap: 0; }
+      .dialog-head, .dialog-body { padding: 20px; }
+      .dialog-head h2 { font-size: 25px; }
+      .detail-photo { height: 210px; }
+      .footer-inner { align-items: flex-start; font-size: 10px; }
+      .chart { gap: 10px; }
+    }
+    @media (max-width: 400px) { .grid { grid-template-columns: 1fr; } .hero h1 { font-size: 41px; } }
+    @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+    @media print { .preview-bar, .save, .nav, .header-end, .toast { display: none; } .wrap { width: 100%; } .project { break-inside: avoid; } }
+  </style>
+</head>
+<body>
+  <svg aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden" xmlns="http://www.w3.org/2000/svg">
+    <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14m-6-6 6 6-6 6" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></symbol>
+    <symbol id="i-save" viewBox="0 0 24 24"><path d="M6 4h12v17l-6-4-6 4Z" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/></symbol>
+    <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m16 16 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-close" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></symbol>
+    <symbol id="i-mark" viewBox="0 0 36 44"><path d="M4 41V18a14 14 0 0 1 28 0v23ZM18 4v37M4 25h28M4 41h28" fill="none" stroke="currentColor" stroke-width="1.4"/></symbol>
+  </svg>
+  <a class="skip" href="#main">Skip to content</a>
+  <div class="preview-bar">
+    <div class="wrap preview-inner">
+      <div class="preview-tag"><span>UI preview</span><span class="preview-dot"></span><span>Sample content</span></div>
+      <div class="view-control"><label for="view-select">View</label><select id="view-select"><option value="customer">Customer</option><option value="designer">Interior Designer</option><option value="admin">User Admin</option><option value="manager">Platform Manager</option><option value="login">Sign in</option></select></div>
+    </div>
+  </div>
+  <header class="header"><div class="wrap header-inner">
+    <button class="brand" type="button" data-view="customer" aria-label="Interior Design Platform home"><svg aria-hidden="true"><use href="#i-mark"/></svg><span><span class="brand-name">Interior</span><span class="brand-label">Design platform</span></span></button>
+    <nav class="nav" id="nav" aria-label="Main navigation"></nav>
+    <div class="header-end"><span class="user-label" id="user-label">Customer</span><span class="avatar" aria-hidden="true" id="avatar">CU</span><button class="text-button" data-view="login" type="button" id="sign-out">Sign out</button></div>
+  </div></header>
+  <main id="main" class="wrap" tabindex="-1"></main>
+  <footer><div class="wrap footer-inner"><span>Interior Design Platform</span><details><summary>Preview details</summary><p>Sample records and interactions. Fonts: Lora and DM Sans. Photos: <a href="https://woodendot.com/" target="_blank" rel="noreferrer">Woodendot</a>, <a href="https://www.fantasticfrank.com/es/blog/a-frank-chat-with-daure-design/" target="_blank" rel="noreferrer">Fantastic Frank</a>, <a href="https://ownit.ca/" target="_blank" rel="noreferrer">Ownit</a>. Fonts and photos need an internet connection.</p></details></div></footer>
+  <dialog id="modal" aria-labelledby="dialog-title"><div class="dialog-head"><h2 id="dialog-title"></h2><button class="icon-btn" id="close-modal" type="button" aria-label="Close dialog"><svg aria-hidden="true"><use href="#i-close"/></svg></button></div><div class="dialog-body" id="dialog-body"></div></dialog>
+  <div class="toast" id="toast" role="status" hidden></div>
+  <script>
+    'use strict';
+    // Standalone presentation only. It does not connect to the application or database.
+    const icon = name => `<svg aria-hidden="true"><use href="#i-${name}"/></svg>`;
+    const escapeHTML = value => String(value).replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+    const photos = [
+      'https://woodendot.com/cdn/shop/files/ibon_web_home_horizontal_tables3.jpg?v=1772356516&width=1400',
+      'https://images.ctfassets.net/pcyv87o33kml/7GQOYFsMjZ3rwkmtVrxWdB/f6305ff843abd6f066096d582fed6c84/Daure-Design-1.jpg?q=85&w=1200',
+      'https://www.ownit.ca/files/u424727/buy_img.jpg'
+    ];
+    const projects = [
+      {id:1,name:'A quieter kind of home',style:'Minimalist',type:'Apartment',location:'East district',area:'96 m²',budget:'S$58,000',company:'Sample Studio A',photo:photos[0],alt:'Soft cream seating and pale wood tables in a bright living room',status:'Completed',views:624,saves:32},
+      {id:2,name:'Warmth in every detail',style:'Scandinavian',type:'Apartment',location:'Central district',area:'82 m²',budget:'S$46,000',company:'Sample Studio B',photo:photos[1],alt:'A neutral sofa, marble table, and woven chair beside a window',status:'Completed',views:378,saves:18},
+      {id:3,name:'Room for the everyday',style:'Modern',type:'Condominium',location:'North district',area:'112 m²',budget:'S$72,000',company:'Sample Studio C',photo:photos[2],alt:'A light living room with a large cream sofa and round wooden table',status:'Current',views:238,saves:14}
+    ];
+    const accounts = [
+      {id:1,name:'Sample Designer',email:'designer@example.test',role:'Interior Designer',status:'Active'},
+      {id:2,name:'Sample Customer',email:'customer@example.test',role:'Customer',status:'Active'},
+      {id:3,name:'Sample Manager',email:'manager@example.test',role:'Platform Manager',status:'Suspended'}
+    ];
+    const state = {view:'customer',tab:'explore',filter:'All spaces',query:'',saved:new Set([2]),period:'Weekly',accountQuery:'',company:{name:'Sample Studio A',email:'studio@example.test',location:'East district',description:'Simple spaces with warm materials and natural light.'}};
+    const main = document.querySelector('#main');
+    const modal = document.querySelector('#modal');
+    let toastTimer;
+    let dialogReturnFocus;
+    function toast(text) {
+      const box = document.querySelector('#toast');
+      box.textContent = text; box.hidden = false;
+      clearTimeout(toastTimer); toastTimer = setTimeout(() => { box.hidden = true; }, 3200);
+    }
+    function openDialog(title, html) {
+      dialogReturnFocus = document.activeElement;
+      document.querySelector('#dialog-title').textContent = title;
+      document.querySelector('#dialog-body').innerHTML = html;
+      modal.showModal();
+    }
+    function closeDialog() { modal.close(); }
+    document.querySelector('#close-modal').addEventListener('click', closeDialog);
+    modal.addEventListener('close', () => { if (dialogReturnFocus?.isConnected) dialogReturnFocus.focus(); });
+    function setView(view) {
+      state.view = view; state.tab = view === 'customer' ? 'explore' : 'overview'; state.query = ''; state.accountQuery = '';
+      document.querySelector('#view-select').value = view;
+      render();
+    }
+    function nav() {
+      const items = state.view === 'customer' ? [['explore','Explore projects'],['saved',`Saved projects (${state.saved.size})`]]
+        : state.view === 'designer' ? [['overview','My projects'],['company','Company information']]
+        : state.view === 'admin' ? [['overview','User accounts'],['profiles','User profiles']]
+        : state.view === 'manager' ? [['overview','Reports'],['categories','IDP categories']] : [];
+      document.querySelector('#nav').innerHTML = items.map(([key,label]) => `<button type="button" data-tab="${key}" class="${state.tab===key?'active':''}" ${state.tab===key?'aria-current="page"':''}>${label}</button>`).join('');
+      const labels = {customer:'Customer',designer:'Interior Designer',admin:'User Admin',manager:'Platform Manager',login:''};
+      document.querySelector('#user-label').textContent = labels[state.view];
+      document.querySelector('#avatar').textContent = {customer:'CU',designer:'ID',admin:'UA',manager:'PM',login:''}[state.view];
+      document.querySelector('.header-end').hidden = state.view === 'login';
+    }
+    function card(p) {
+      const saved = state.saved.has(p.id);
+      return `<article class="project"><button class="project-image" type="button" data-detail="${p.id}" aria-label="View ${escapeHTML(p.name)}"><img src="${p.photo}" alt="${escapeHTML(p.alt)}" loading="lazy"></button><button class="save" type="button" data-save="${p.id}" aria-pressed="${saved}" aria-label="${saved?'Remove':'Save'} ${escapeHTML(p.name)}${saved?' from saved projects':''}" title="${saved?'Remove from saved projects':'Save project'}">${icon('save')}</button><div class="project-meta"><span>${p.style}</span><span>${p.type} · ${p.area}</span></div><h3><button type="button" data-detail="${p.id}">${escapeHTML(p.name)}</button></h3><div class="project-foot"><span>${p.company}</span><span>${icon('arrow')}</span></div></article>`;
+    }
+    function renderCards() {
+      const list = projects.filter(p => (state.tab!=='saved'||state.saved.has(p.id)) && (state.filter==='All spaces'||p.style===state.filter) && `${p.name} ${p.style} ${p.type} ${p.company}`.toLowerCase().includes(state.query.toLowerCase()));
+      document.querySelector('#project-grid').innerHTML = list.map(card).join('');
+      document.querySelector('#empty-projects').hidden = !!list.length;
+      document.querySelector('#empty-projects').textContent = state.tab==='saved' && !state.saved.size ? 'No saved projects yet.' : 'No projects match your search.';
+      document.querySelector('#result-count').textContent = `${list.length} project${list.length===1?'':'s'}`;
+    }
+    function customer() {
+      main.innerHTML = `${state.tab==='explore'?`<section class="hero" aria-labelledby="hero-title"><div><div class="eyebrow">Spaces, thoughtfully designed</div><h1 id="hero-title">Find your kind<br>of <em>space.</em></h1><div class="hero-bottom"><span class="hero-rule"></span><span class="hero-note">Current and completed projects</span></div></div><figure class="hero-figure"><img src="${photos[0]}" alt="A calm living room with cream seating, warm wood, and soft daylight" fetchpriority="high"><figcaption class="hero-caption"><span>Featured · Minimalist apartment</span><button class="text-button" data-detail="1" type="button">View project ${icon('arrow')}</button></figcaption></figure></section>`:''}<section class="${state.tab==='saved'?'page':'section'}" aria-labelledby="projects-title"><div class="section-head"><${state.tab==='saved'?'h1':'h2'} id="projects-title">${state.tab==='saved'?'Saved projects':'Selected spaces'}</${state.tab==='saved'?'h1':'h2'}><span class="count" id="result-count"></span></div><div class="toolbar"><div class="chips" role="group" aria-label="Filter by design style">${['All spaces','Minimalist','Scandinavian','Modern'].map(label=>`<button class="chip" type="button" data-filter="${label}" aria-pressed="${state.filter===label}">${label}</button>`).join('')}</div><label class="search">${icon('search')}<span class="sr-only">Search projects</span><input id="project-search" type="search" placeholder="Search projects" value="${escapeHTML(state.query)}"></label></div><div class="grid" id="project-grid"></div><div class="empty" id="empty-projects" hidden></div></section>`;
+      renderCards();
+    }
+    function stat(label,value) { return `<div class="stat"><span>${label}</span><strong>${value}</strong></div>`; }
+    function heading(eyebrow,title,action='') { return `<div class="page-title"><div><div class="eyebrow">${eyebrow}</div><h1>${title}</h1></div>${action}</div>`; }
+    function designer() {
+      if (state.tab==='company') {
+        main.innerHTML = `<section class="page">${heading('Interior Designer','Company information')}<div class="panel" style="max-width:760px"><form id="company-form"><div class="field"><label for="company-name">Company name</label><input id="company-name" required value="${escapeHTML(state.company.name)}"></div><div class="fields"><div class="field"><label for="company-email">Contact email</label><input id="company-email" type="email" required value="${escapeHTML(state.company.email)}"></div><div class="field"><label for="company-location">Location</label><input id="company-location" required value="${escapeHTML(state.company.location)}"></div></div><div class="field"><label for="company-description">Description</label><textarea id="company-description" required>${escapeHTML(state.company.description)}</textarea></div><div class="actions"><button class="btn" type="submit">Save changes ${icon('arrow')}</button></div></form></div></section>`; return;
+      }
+      main.innerHTML = `<section class="page">${heading('Interior Designer','My projects',`<button class="btn" type="button" data-add-project>${icon('plus')} Add project</button>`)}<div class="stats">${stat('Projects',projects.length)}${stat('Project views',projects.reduce((n,p)=>n+p.views,0).toLocaleString())}${stat('Project shortlists',projects.reduce((n,p)=>n+p.saves,0))}</div><div class="panel"><div class="panel-title"><h2>Project portfolio</h2><span class="count">Current and completed</span></div><div class="table-wrap"><table><caption class="sr-only">Sample project portfolio</caption><thead><tr><th scope="col">Project</th><th scope="col">Status</th><th scope="col">Views</th><th scope="col">Shortlists</th><th scope="col">Actions</th></tr></thead><tbody>${projects.map(p=>`<tr><td class="table-name">${escapeHTML(p.name)}</td><td><span class="badge">${p.status}</span></td><td>${p.views}</td><td>${p.saves}</td><td><div class="table-actions"><button type="button" data-detail="${p.id}" aria-label="View ${escapeHTML(p.name)}">View</button><button type="button" data-edit-project="${p.id}" aria-label="Edit ${escapeHTML(p.name)}">Edit</button></div></td></tr>`).join('')}</tbody></table></div></div></section>`;
+    }
+    function renderAccountRows() {
+      const list=accounts.filter(a=>`${a.name} ${a.email} ${a.role}`.toLowerCase().includes(state.accountQuery.toLowerCase()));
+      document.querySelector('#account-rows').innerHTML=list.map(a=>`<tr><td class="table-name">${a.name}</td><td>${a.email}</td><td>${a.role}</td><td><span class="badge ${a.status==='Suspended'?'suspended':''}">${a.status}</span></td><td><div class="table-actions"><button type="button" data-account="${a.id}">View</button><button type="button" class="${a.status==='Active'?'danger-text':''}" data-account-status="${a.id}">${a.status==='Active'?'Suspend':'Activate'}</button></div></td></tr>`).join('') || '<tr><td colspan="5">No matching accounts.</td></tr>';
+    }
+    function admin() {
+      const profiles=state.tab==='profiles';
+      main.innerHTML=`<section class="page">${heading('User Admin',profiles?'User profiles':'User accounts')}<div class="panel"><div class="panel-title"><h2>${profiles?'Profiles':'Accounts'}</h2><label class="search">${icon('search')}<span class="sr-only">Search ${profiles?'profiles':'accounts'}</span><input id="account-search" type="search" placeholder="Search ${profiles?'profiles':'accounts'}" value="${escapeHTML(state.accountQuery)}"></label></div><div class="table-wrap"><table><caption class="sr-only">Sample ${profiles?'profiles':'accounts'}</caption><thead><tr><th scope="col">Name</th><th scope="col">Email</th><th scope="col">Role</th><th scope="col">Status</th><th scope="col">Actions</th></tr></thead><tbody id="account-rows"></tbody></table></div></div></section>`;
+      renderAccountRows();
+    }
+    const reportData={Daily:{views:186,saves:12,projects:2,values:[34,58,42,87,100,64,78],labels:['08:00','10:00','12:00','14:00','16:00','18:00','20:00']},Weekly:{views:1240,saves:64,projects:3,values:[35,62,48,80,58,100,77],labels:['Mon','Tue','Wed','Thu','Fri','Sat','Sun']},Monthly:{views:4820,saves:218,projects:12,values:[48,71,62,100],labels:['Week 1','Week 2','Week 3','Week 4']}};
+    function manager() {
+      if(state.tab==='categories') {
+        main.innerHTML=`<section class="page">${heading('Platform Manager','IDP categories')}<div class="panel"><div class="table-wrap"><table><caption class="sr-only">Sample design categories</caption><thead><tr><th scope="col">Category</th><th scope="col">Description</th><th scope="col">Projects</th></tr></thead><tbody>${[['Minimalist','Simple forms and clear spaces'],['Scandinavian','Light wood and soft textures'],['Modern','Clean lines and balanced shapes']].map(([name,desc])=>`<tr><td class="table-name">${name}</td><td>${desc}</td><td>${projects.filter(p=>p.style===name).length}</td></tr>`).join('')}</tbody></table></div></div></section>`;return;
+      }
+      const r=reportData[state.period];
+      main.innerHTML=`<section class="page">${heading('Platform Manager','Platform reports',`<div class="chips" role="group" aria-label="Report period">${Object.keys(reportData).map(p=>`<button class="chip" type="button" data-period="${p}" aria-pressed="${p===state.period}">${p}</button>`).join('')}</div>`)}<div class="stats">${stat('Project views',r.views.toLocaleString())}${stat('Project shortlists',r.saves)}${stat('New projects',r.projects)}</div><div class="panel"><div class="panel-title"><h2>Project interest</h2><span class="count">${state.period} sample</span></div><div class="chart" role="img" aria-label="Illustrative project interest chart: ${r.labels.map((l,i)=>`${l}: ${r.values[i]}`).join(', ')}">${r.values.map((v,i)=>`<div class="chart-column" aria-hidden="true"><div class="bar" style="height:${v*1.65}px"></div><span>${r.labels[i]}</span></div>`).join('')}</div></div></section>`;
+    }
+    function login() {
+      main.innerHTML=`<section class="page"><div class="login"><div class="login-photo"><img src="${photos[1]}" alt="A calm, sunlit living room"><h2>A place to<br>begin again.</h2></div><div class="login-form"><div class="eyebrow">Interior Design Platform</div><h1>Sign in</h1><form id="login-form"><div class="field"><label for="login-id">User ID</label><input id="login-id" autocomplete="username" required placeholder="Your user ID"></div><div class="field"><label for="login-password">Password</label><input id="login-password" type="password" autocomplete="current-password" required placeholder="Your password"></div><div class="field"><label for="login-role">User profile</label><select id="login-role"><option value="customer">Customer</option><option value="designer">Interior Designer</option><option value="admin">User Admin</option><option value="manager">Platform Manager</option></select></div><button class="btn" type="submit">Sign in ${icon('arrow')}</button></form></div></div></section>`;
+    }
+    function render() { nav(); ({customer,designer,admin,manager,login}[state.view])(); }
+    function detail(id) {
+      const p=projects.find(p=>p.id===id);
+      openDialog(p.name,`<img class="detail-photo" src="${p.photo}" alt="${escapeHTML(p.alt)}"><dl class="detail-grid">${[['Design style',p.style],['Property type',p.type],['Floor area',p.area],['Project budget',p.budget],['Location',p.location],['Design company',p.company]].map(([k,v])=>`<div><dt>${k}</dt><dd>${v}</dd></div>`).join('')}</dl><div class="actions"><button class="btn secondary" type="button" data-close>Close</button><button class="btn" type="button" data-dialog-save="${id}">${icon('save')} ${state.saved.has(id)?'Remove from saved projects':'Save project'}</button></div>`);
+    }
+    function projectForm(id) {
+      const p=projects.find(p=>p.id===id);
+      openDialog(p?'Edit project':'Add project',`<form id="project-form" data-id="${p?.id||''}"><div class="field"><label for="project-name">Project name</label><input id="project-name" name="name" maxlength="80" required value="${escapeHTML(p?.name||'')}"></div><div class="fields"><div class="field"><label for="project-style">Design style</label><select id="project-style" name="style">${['Minimalist','Scandinavian','Modern'].map(s=>`<option ${p?.style===s?'selected':''}>${s}</option>`).join('')}</select></div><div class="field"><label for="project-status">Project status</label><select id="project-status" name="status">${['Current','Completed'].map(s=>`<option ${p?.status===s?'selected':''}>${s}</option>`).join('')}</select></div></div><div class="actions"><button class="btn secondary" type="button" data-close>Cancel</button><button class="btn" type="submit">Save project</button></div></form>`);
+    }
+    document.querySelector('#view-select').addEventListener('change', e => setView(e.target.value));
+    document.addEventListener('input',e=>{
+      if(e.target.id==='project-search'){state.query=e.target.value;renderCards();}
+      if(e.target.id==='account-search'){state.accountQuery=e.target.value;renderAccountRows();}
+    });
+    document.addEventListener('click',e=>{
+      const button=e.target.closest('button');if(!button)return;
+      const d=button.dataset;
+      if(d.view){setView(d.view);return;}
+      if(d.tab){state.tab=d.tab;state.query='';state.filter='All spaces';render();return;}
+      if(d.filter){state.filter=d.filter;document.querySelectorAll('[data-filter]').forEach(b=>b.setAttribute('aria-pressed',b.dataset.filter===d.filter));renderCards();return;}
+      if(d.detail){detail(Number(d.detail));return;}
+      if(d.save||d.dialogSave){
+        const id=Number(d.save||d.dialogSave);const had=state.saved.has(id);had?state.saved.delete(id):state.saved.add(id);
+        if(d.dialogSave)closeDialog();render();
+        if(d.save)document.querySelector(`[data-save="${id}"]`)?.focus();
+        toast(had?'Project removed from saved projects.':'Project saved.');return;
+      }
+      if('close'in d){closeDialog();return;}
+      if('addProject'in d){projectForm();return;}
+      if(d.editProject){projectForm(Number(d.editProject));return;}
+      if(d.account){const a=accounts.find(a=>a.id===Number(d.account));openDialog(a.name,`<dl class="detail-grid"><div><dt>Email</dt><dd>${a.email}</dd></div><div><dt>Role</dt><dd>${a.role}</dd></div><div><dt>Status</dt><dd>${a.status}</dd></div></dl><div class="actions"><button class="btn secondary" type="button" data-close>Close</button></div>`);return;}
+      if(d.accountStatus){const a=accounts.find(a=>a.id===Number(d.accountStatus));const action=a.status==='Active'?'Suspend':'Activate';openDialog(`${action} account?`,`<p>${action} the sample account for ${a.name}?</p><div class="actions"><button class="btn secondary" type="button" data-close>Cancel</button><button class="btn ${action==='Suspend'?'danger':''}" type="button" data-confirm-status="${a.id}">${action} account</button></div>`);return;}
+      if(d.confirmStatus){const a=accounts.find(a=>a.id===Number(d.confirmStatus));a.status=a.status==='Active'?'Suspended':'Active';closeDialog();renderAccountRows();toast(`Sample account ${a.status.toLowerCase()}.`);return;}
+      if(d.period){state.period=d.period;render();document.querySelector(`[data-period="${d.period}"]`)?.focus();}
+    });
+    document.addEventListener('submit',e=>{
+      if(e.target.id==='login-form'){e.preventDefault();setView(document.querySelector('#login-role').value);toast('Sample view opened.');}
+      if(e.target.id==='company-form'){e.preventDefault();state.company={name:document.querySelector('#company-name').value,email:document.querySelector('#company-email').value,location:document.querySelector('#company-location').value,description:document.querySelector('#company-description').value};toast('Sample company changes saved.');}
+      if(e.target.id==='project-form'){
+        e.preventDefault();const form=e.target;const data=new FormData(form);const id=Number(form.dataset.id);
+        const values={name:data.get('name').trim(),style:data.get('style'),status:data.get('status')};
+        if(!values.name){document.querySelector('#project-name').setCustomValidity('Enter a project name.');form.reportValidity();document.querySelector('#project-name').setCustomValidity('');return;}
+        if(id)Object.assign(projects.find(p=>p.id===id),values);
+        else projects.push({...projects[0],...values,id:Math.max(...projects.map(p=>p.id))+1,views:0,saves:0});
+        closeDialog();render();toast('Sample project saved.');
+      }
+    });
+    // Keep a complete, legible layout if a remote photograph cannot load.
+    document.addEventListener('error',e=>{
+      if(e.target.tagName==='IMG'&&!e.target.dataset.fallback){
+        e.target.dataset.fallback='true';
+        const svg='<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600"><rect width="800" height="600" fill="#ddd5c7"/><path d="M0 430h800v170H0" fill="#c4b39b"/><rect x="85" y="70" width="200" height="300" rx="95" fill="#eeeae0"/><path d="M185 70v300M85 220h200" stroke="#c4b39b" stroke-width="8"/><rect x="230" y="305" width="430" height="145" rx="38" fill="#eee7d9"/><rect x="210" y="370" width="470" height="105" rx="24" fill="#e7dfce"/><ellipse cx="420" cy="485" rx="120" ry="25" fill="#a18d70"/><path d="M340 485v60m160-60v60" stroke="#8b795e" stroke-width="12"/><rect x="675" y="310" width="40" height="120" rx="8" fill="#938269"/><ellipse cx="695" cy="265" rx="40" ry="75" fill="#70785b"/></svg>';
+        e.target.src='data:image/svg+xml,'+encodeURIComponent(svg);
+      }
+    },true);
+    render();
+  </script>
+</body>
+</html>

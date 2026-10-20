@@ -7,29 +7,56 @@
 //   onSubmit={(values) => ...}
 // />
 import { useState } from 'react';
+import Button from './Button';
+import FormField from './FormField';
 
-export default function FormFields({ fields, initial = {}, submitLabel = 'Save', onSubmit }) {
+export default function FormFields({
+  fields,
+  initial = {},
+  submitLabel = 'Save',
+  onSubmit,
+  errors = {},
+  disabled = false,
+  isSubmitting = false,
+}) {
   const [values, setValues] = useState(initial);
-  const change = (e) => setValues({ ...values, [e.target.name]: e.target.value });
+  const change = (event) => {
+    const { name, type, value, files } = event.target;
+    setValues((current) => ({ ...current, [name]: type === 'file' ? files : value }));
+  };
 
   return (
-    <form onSubmit={(e) => { e.preventDefault(); onSubmit(values); }}>
-      {fields.map((f) => (
-        <div className="mb-3" key={f.name}>
-          <label className="form-label" htmlFor={f.name}>{f.label}</label>
-          {f.options ? (
-            <select id={f.name} name={f.name} className="form-select"
-              value={values[f.name] ?? ''} onChange={change} required={f.required}>
-              <option value="">Select...</option>
-              {f.options.map((o) => <option key={o.value} value={o.value}>{o.label}</option>)}
-            </select>
-          ) : (
-            <input id={f.name} name={f.name} type={f.type || 'text'} className="form-control"
-              value={values[f.name] ?? ''} onChange={change} required={f.required} />
-          )}
-        </div>
+    <form
+      className="grid max-w-2xl gap-5"
+      aria-busy={isSubmitting || undefined}
+      onSubmit={(event) => {
+        event.preventDefault();
+        onSubmit(values);
+      }}
+    >
+      {fields.map((field) => (
+        <FormField
+          key={field.name}
+          id={field.name}
+          name={field.name}
+          label={field.label}
+          type={field.type || 'text'}
+          options={field.options}
+          value={values[field.name]}
+          onChange={change}
+          required={field.required}
+          disabled={disabled || isSubmitting || field.disabled}
+          hint={field.hint}
+          error={errors[field.name]}
+          accept={field.accept}
+          multiple={field.multiple}
+        />
       ))}
-      <button className="btn btn-primary" type="submit">{submitLabel}</button>
+      <div className="flex flex-wrap justify-end gap-3 pt-2">
+        <Button type="submit" variant="primary" disabled={disabled} loading={isSubmitting}>
+          {submitLabel}
+        </Button>
+      </div>
     </form>
   );
 }

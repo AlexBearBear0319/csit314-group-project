@@ -7,6 +7,8 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ROLES, setUser } from '../session';
+import Button from '../components/Button';
+import FormField from '../components/FormField';
 import Message from '../components/Message';
 
 const HOME = {
@@ -41,31 +43,41 @@ export default function UserLoginPg() {
   }
 
   return (
-    <div className="row justify-content-center">
-      <div className="col-md-5">
-        <h2 className="mb-4">Login</h2>
-        <Message type="error" text={error} />
-        <form onSubmit={handleSubmit}>
-          <div className="mb-3">
-            <label className="form-label" htmlFor="username">User ID</label>
-            <input id="username" className="form-control" value={username}
-              onChange={(e) => setUsername(e.target.value)} />
-          </div>
-          <div className="mb-3">
-            <label className="form-label" htmlFor="password">Password</label>
-            <input id="password" type="password" className="form-control" value={password}
-              onChange={(e) => setPassword(e.target.value)} />
-          </div>
-          <div className="mb-3">
-            <label className="form-label" htmlFor="profile">User profile</label>
-            <select id="profile" className="form-select" value={profile}
-              onChange={(e) => setProfile(e.target.value)}>
-              {ROLES.map((r) => <option key={r}>{r}</option>)}
-            </select>
-          </div>
-          <button className="btn btn-primary w-100" type="submit">Login</button>
+    <div className="mx-auto w-full max-w-[480px]">
+      <section className="rounded-panel border border-border bg-surface p-6 shadow-card sm:p-9">
+        <h1 className="text-3xl tracking-tight text-ink">Login</h1>
+        <div className="mt-6">
+          <Message type="error" text={error} />
+        </div>
+        <form className="grid gap-5" onSubmit={handleSubmit}>
+          <FormField
+            id="username"
+            name="username"
+            label="User ID"
+            autoComplete="username"
+            value={username}
+            onChange={(event) => setUsername(event.target.value)}
+          />
+          <FormField
+            id="password"
+            name="password"
+            label="Password"
+            type="password"
+            autoComplete="current-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+          />
+          <FormField
+            id="profile"
+            name="profile"
+            label="User profile"
+            options={ROLES.map((role) => ({ value: role, label: role }))}
+            value={profile}
+            onChange={(event) => setProfile(event.target.value)}
+          />
+          <Button type="submit" variant="primary" className="mt-1 w-full">Login</Button>
         </form>
-      </div>
+      </section>
     </div>
   );
 }

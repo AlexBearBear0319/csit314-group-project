@@ -10,6 +10,17 @@ Built with the **BCE** pattern:
 
 Class and method names in the code must match the diagrams exactly.
 
+## UI references
+
+- Read [UI_GUIDELINES.md](UI_GUIDELINES.md) before a UI change.
+- See the [standalone UI preview](docs/ui-preview.html) for the approved visual example. Its sample records do not belong to the app.
+
+For another coding tool, use this prompt:
+
+> Read `AGENTS.md` and `UI_GUIDELINES.md`. Use the shared theme and components. Keep the routes, props, and behaviour that this task does not ask you to change. Implement only this story and its acceptance criteria: `[story and criteria]`. Do not add sample records or unsupported rules. Report the changed files and checks.
+
+Some tools do not read repository instructions. If your tool does not load these files, paste this prompt into it.
+
 ## First-time setup (on your laptop)
 
 Run every command from the **main project folder** (`csit314-group-project`), not inside `server` or `client`.
