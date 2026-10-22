@@ -4,8 +4,33 @@ const { DataTypes, Model } = require('sequelize');
 const sequelize = require('../db');
 
 class UserProfile extends Model {
-  // Entity methods for user stories go here, e.g.
-  // static async createProfile(name, description) { ... }
+  static async createProfile(name, description) {
+    return this.create({ name, description });
+  }
+
+  static async viewProfile(id) {
+    return this.findByPk(id);
+  }
+
+  static async updateProfile(id, name, description) {
+    const profile = await this.findByPk(id);
+    return profile ? profile.update({ name, description }) : null;
+  }
+
+  static async suspendProfile(id) {
+    const profile = await this.findByPk(id);
+    return profile ? profile.update({ status: 'suspended' }) : null;
+  }
+
+  static async searchProfiles(keyword = '') {
+    const profiles = await this.findAll({ order: [['name', 'ASC'], ['id', 'ASC']] });
+    const term = keyword.trim().toLowerCase();
+    // Role lists are small. Literal matching keeps wildcard and case behaviour
+    // identical in the SQLite tests and PostgreSQL production database.
+    return profiles.filter((profile) =>
+      profile.name.toLowerCase().includes(term) ||
+      (profile.description || '').toLowerCase().includes(term));
+  }
 }
 
 UserProfile.init(
