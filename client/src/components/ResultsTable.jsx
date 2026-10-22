@@ -56,6 +56,8 @@ export default function ResultsTable({ columns, rows, actions = [], ariaLabel = 
                         key={action.label}
                         size="sm"
                         variant={action.variant || 'secondary'}
+                        type="button"
+                        disabled={typeof action.disabled === 'function' ? action.disabled(row) : action.disabled}
                         onClick={() => action.onClick(row)}
                       >
                         {action.label}

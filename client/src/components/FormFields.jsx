@@ -50,6 +50,7 @@ export default function FormFields({
           error={errors[field.name]}
           accept={field.accept}
           multiple={field.multiple}
+          maxLength={field.maxLength}
         />
       ))}
       <div className="flex flex-wrap justify-end gap-3 pt-2">

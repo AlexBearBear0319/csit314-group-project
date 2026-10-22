@@ -3,5 +3,6 @@
 const sequelize = require('../db');
 const UserProfile = require('./UserProfile');
 const UserAccount = require('./UserAccount');
+const IDPCategory = require('./IDPCategory');
 
-module.exports = { sequelize, UserProfile, UserAccount };
+module.exports = { sequelize, UserProfile, UserAccount, IDPCategory };

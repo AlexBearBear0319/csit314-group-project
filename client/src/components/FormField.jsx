@@ -16,6 +16,7 @@ export default function FormField({
   autoComplete,
   accept,
   multiple = false,
+  maxLength,
 }) {
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
@@ -48,6 +49,7 @@ export default function FormField({
       ) : type === 'textarea' ? (
         <textarea
           {...sharedProps}
+          maxLength={maxLength}
           rows={4}
           value={value ?? ''}
           className={`${CONTROL_CLASS} min-h-28 resize-y`}
@@ -64,6 +66,7 @@ export default function FormField({
         <input
           {...sharedProps}
           type={type}
+          maxLength={maxLength}
           autoComplete={autoComplete}
           value={value ?? ''}
           className={CONTROL_CLASS}

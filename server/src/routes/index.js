@@ -4,6 +4,8 @@
 //   router.post('/user-accounts/:id/suspend', async (req, res) => { ... });
 const express = require('express');
 const router = express.Router();
+router.use('/user-profiles', require('./userProfiles'));
+router.use('/idp-categories', require('./idpCategories'));
 
 // Health check: proves the backend is running
 router.get('/health', (req, res) => {
