@@ -1,11 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api';
 import Button from '../components/Button';
 import DetailsView from '../components/DetailsView';
 import FormField from '../components/FormField';
 import Message from '../components/Message';
 import ProjectImageCarousel from '../components/ProjectImageCarousel';
-import ResultsTable from '../components/ResultsTable';
+import ProjectFolderCard from '../components/ProjectFolderCard';
 import SearchBar from '../components/SearchBar';
 import { uploadSignedImage } from '../storage';
 
@@ -40,6 +40,10 @@ export default function DesignerIdpsPage({ status }) {
   const title = past ? 'Past IDPs' : 'Current IDPs';
   const basePath = `/designer/${status}-idps`;
   const [projects, setProjects] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [pageNumber, setPageNumber] = useState(1);
+  const [pagination, setPagination] = useState({ page: 1, pageSize: 9, total: 0, totalPages: 0 });
+  const [refreshKey, setRefreshKey] = useState(0);
   const [editor, setEditor] = useState(null);
   const [files, setFiles] = useState([]);
   const [removedImageIds, setRemovedImageIds] = useState(() => new Set());
@@ -52,37 +56,72 @@ export default function DesignerIdpsPage({ status }) {
   const [uploadProgress, setUploadProgress] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const dialogRef = useRef(null);
-  const deleteButtonRef = useRef(null);
   const restoreFocusRef = useRef(null);
-
-  const loadProjects = useCallback(async (query = '') => {
-    setIsLoading(true);
-    setError('');
-    try {
-      const suffix = query.trim() ? `?q=${encodeURIComponent(query.trim())}` : '';
-      const response = await api.get(`${basePath}${suffix}`);
-      setProjects(response.projects);
-    } catch (requestError) {
-      setError(requestError.message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [basePath]);
+  const listRequestIdRef = useRef(0);
 
   useEffect(() => {
-    const timer = window.setTimeout(() => loadProjects(), 0);
-    return () => window.clearTimeout(timer);
-  }, [loadProjects]);
+    let active = true;
+    let redirected = false;
+    const requestId = ++listRequestIdRef.current;
+    const params = new URLSearchParams({ page: String(pageNumber), pageSize: '9' });
+    if (searchQuery.trim()) params.set('q', searchQuery.trim());
+
+    api.get(`${basePath}?${params.toString()}`).then((response) => {
+      if (!active || requestId !== listRequestIdRef.current) return;
+      const pageInfo = response.pagination || {
+        page: pageNumber,
+        pageSize: 9,
+        total: response.projects.length,
+        totalPages: response.projects.length ? 1 : 0,
+      };
+      const lastPage = Math.max(1, pageInfo.totalPages);
+      if (pageNumber > lastPage) {
+        redirected = true;
+        setProjects([]);
+        setIsLoading(true);
+        setPageNumber(lastPage);
+        return;
+      }
+      setProjects(response.projects);
+      setPagination(pageInfo);
+    }).catch((requestError) => {
+      if (active && requestId === listRequestIdRef.current) setError(requestError.message);
+    }).finally(() => {
+      if (active && requestId === listRequestIdRef.current && !redirected) setIsLoading(false);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [basePath, pageNumber, refreshKey, searchQuery]);
 
   useEffect(() => {
     const dialog = dialogRef.current;
     if (deleteTarget && dialog && !dialog.open) {
-      restoreFocusRef.current = document.activeElement;
       dialog.showModal();
     } else if (!deleteTarget && dialog?.open) {
       dialog.close();
     }
   }, [deleteTarget]);
+
+  function handleSearch(query) {
+    setIsLoading(true);
+    setError('');
+    setNotice('');
+    setSearchQuery(query.trim());
+    setPageNumber(1);
+    setRefreshKey((current) => current + 1);
+  }
+
+  function goToPage(page) {
+    setIsLoading(true);
+    setPageNumber(page);
+  }
+
+  function openDelete(project, focusTarget) {
+    restoreFocusRef.current = focusTarget || document.activeElement;
+    setDeleteTarget(project);
+  }
 
   function beginCreate() {
     setError('');
@@ -253,10 +292,11 @@ export default function DesignerIdpsPage({ status }) {
       setUploadProgress(null);
       setRemovedImageIds(new Set());
       setViewProject(null);
+      setIsLoading(true);
       setNotice(cleanupPending
         ? 'Project saved. Image cleanup is pending.'
         : wasExisting ? 'Project saved.' : 'Project added.');
-      await loadProjects();
+      setRefreshKey((current) => current + 1);
     } catch (requestError) {
       setError(requestError.message || 'The project could not be saved. Try again.');
       if (projectId) {
@@ -288,8 +328,9 @@ export default function DesignerIdpsPage({ status }) {
       const result = await api.del(`${basePath}/${deleteTarget.id}`);
       setDeleteTarget(null);
       if (viewProject?.id === deleteTarget.id) setViewProject(null);
+      setIsLoading(true);
       setNotice(result.cleanupPending ? 'Project deleted. Image cleanup is pending.' : 'Project deleted.');
-      await loadProjects();
+      setRefreshKey((current) => current + 1);
     } catch (requestError) {
       setError(requestError.message);
       setDeleteTarget(null);
@@ -297,21 +338,6 @@ export default function DesignerIdpsPage({ status }) {
       setIsDeleting(false);
     }
   }
-
-  const columns = [
-    { key: 'name', label: 'Project name' },
-    { key: 'propertyType', label: 'Property type' },
-    { key: 'designStyle', label: 'Design style' },
-    ...(past ? [{ key: 'completionDate', label: 'Completion date' }] : []),
-    { key: 'imageCount', label: 'Images' },
-  ];
-  const rows = projects.map((project) => ({
-    ...project,
-    propertyType: project.propertyType || '—',
-    designStyle: project.designStyle || '—',
-    completionDate: project.completionDate || '—',
-    imageCount: project.images.length,
-  }));
 
   return (
     <section className="grid gap-6">
@@ -431,23 +457,62 @@ export default function DesignerIdpsPage({ status }) {
         </section>
       ) : (
         <>
-          <SearchBar placeholder="Search by project name, property type or design style" onSearch={loadProjects} />
+          <SearchBar
+            key={searchQuery}
+            placeholder="Search by project name, property type or design style"
+            initialValue={searchQuery}
+            onSearch={handleSearch}
+          />
           {isLoading ? (
             <p role="status" className="rounded-card border border-border bg-surface px-5 py-8 text-center text-muted">Loading projects.</p>
+          ) : projects.length > 0 ? (
+            <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
+              {projects.map((project) => (
+                <ProjectFolderCard
+                  key={project.id}
+                  project={project}
+                  past={past}
+                  onView={showProject}
+                  onEdit={beginEdit}
+                  onDelete={openDelete}
+                />
+              ))}
+            </div>
           ) : (
-            <ResultsTable
-              columns={columns}
-              rows={rows}
-              ariaLabel={title}
-              actions={[
-                { label: 'View', onClick: showProject },
-                { label: 'Edit', onClick: beginEdit },
-                { label: 'Delete', variant: 'outline-danger', onClick: (project) => {
-                  deleteButtonRef.current = document.activeElement;
-                  setDeleteTarget(project);
-                } },
-              ]}
-            />
+            <p role="status" className="rounded-card border border-dashed border-border bg-surface px-5 py-12 text-center text-muted">No projects found.</p>
+          )}
+
+          {!isLoading && pagination.total > 0 && (
+            <nav aria-label="Project pages" className="flex flex-col items-center justify-between gap-3 border-t border-border pt-4 sm:flex-row">
+              <p className="text-sm text-muted" role="status" aria-live="polite">
+                Showing {Math.min((pageNumber - 1) * pagination.pageSize + 1, pagination.total)}–{Math.min(pageNumber * pagination.pageSize, pagination.total)} of {pagination.total} projects
+              </p>
+              {pagination.totalPages > 1 && (
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={pageNumber <= 1}
+                    onClick={() => goToPage(Math.max(1, pageNumber - 1))}
+                  >
+                    Previous
+                  </Button>
+                  <span className="min-w-20 text-center text-sm text-ink" aria-current="page">
+                    Page {pageNumber} of {pagination.totalPages}
+                  </span>
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={pageNumber >= pagination.totalPages}
+                    onClick={() => goToPage(Math.min(pagination.totalPages, pageNumber + 1))}
+                  >
+                    Next
+                  </Button>
+                </div>
+              )}
+            </nav>
           )}
 
           {viewProject && (
@@ -482,7 +547,8 @@ export default function DesignerIdpsPage({ status }) {
         onCancel={(event) => { event.preventDefault(); setDeleteTarget(null); }}
         onClose={() => {
           if (deleteTarget) setDeleteTarget(null);
-          (restoreFocusRef.current || deleteButtonRef.current)?.focus?.();
+          restoreFocusRef.current?.focus?.();
+          restoreFocusRef.current = null;
         }}
       >
         <div className="grid gap-5 p-6">

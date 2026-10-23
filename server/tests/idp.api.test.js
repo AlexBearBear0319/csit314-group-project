@@ -1,8 +1,9 @@
 const bcrypt = require('bcryptjs');
 const request = require('supertest');
 const app = require('../src/app');
-const { sequelize, UserProfile, UserAccount } = require('../src/entity');
+const { sequelize, UserProfile, UserAccount, InteriorDesignProject } = require('../src/entity');
 const { setStorageAdapterForTests } = require('../src/storage/IdpImageStorage');
+const { resetRateLimitsForTests } = require('../src/middleware/rateLimit');
 
 const ORIGIN = 'http://localhost:5173';
 
@@ -38,6 +39,7 @@ async function makeProject(session, status, values = {}) {
 }
 
 beforeEach(async () => {
+  resetRateLimitsForTests();
   setStorageAdapterForTests(null);
   await sequelize.sync({ force: true });
 
@@ -153,6 +155,70 @@ describe('Interior Designer IDP use cases #20-29', () => {
     expect(current.body.projects[0].status).toBe('current');
     expect(past.body.projects).toHaveLength(1);
     expect(past.body.projects[0].status).toBe('past');
+  });
+
+  test('paginates current projects in stable groups of nine and validates page values', async () => {
+    const session = await startSession('designer-one', 'Interior Designer');
+    const list = (page = 1) => session.client.get(`/api/designer/current-idps?page=${page}&pageSize=9`);
+
+    let response = await list(1).expect(200);
+    expect(response.body.projects).toHaveLength(0);
+    expect(response.body.pagination).toEqual({ page: 1, pageSize: 9, total: 0, totalPages: 0 });
+
+    const addProjects = async (from, to) => {
+      for (let number = from; number <= to; number += 1) {
+        await InteriorDesignProject.createOwned({
+          name: `Pagination project ${number}`,
+          description: null,
+          propertyType: 'Apartment',
+          designStyle: 'Modern',
+          status: 'current',
+          completionDate: null,
+          designerAccountId: designerOne.id,
+        });
+      }
+    };
+
+    await addProjects(1, 1);
+    response = await list(1).expect(200);
+    expect(response.body.projects).toHaveLength(1);
+    expect(response.body.pagination).toMatchObject({ total: 1, totalPages: 1 });
+
+    await addProjects(2, 9);
+    response = await list(1).expect(200);
+    expect(response.body.projects).toHaveLength(9);
+    expect(response.body.pagination).toMatchObject({ total: 9, totalPages: 1 });
+    const firstPageIds = response.body.projects.map((project) => project.id);
+    expect((await list(1)).body.projects.map((project) => project.id)).toEqual(firstPageIds);
+
+    await addProjects(10, 10);
+    const tenthProjectPage = await list(2).expect(200);
+    expect(tenthProjectPage.body.projects).toHaveLength(1);
+    expect(tenthProjectPage.body.pagination).toMatchObject({ page: 2, total: 10, totalPages: 2 });
+
+    await addProjects(11, 18);
+    const eighteenthProjectPage = await list(2).expect(200);
+    expect(eighteenthProjectPage.body.projects).toHaveLength(9);
+    expect(eighteenthProjectPage.body.pagination).toMatchObject({ total: 18, totalPages: 2 });
+
+    await addProjects(19, 19);
+    const secondPage = await list(2).expect(200);
+    const thirdPage = await list(3).expect(200);
+    const finalFirstPage = await list(1).expect(200);
+    expect(secondPage.body.projects).toHaveLength(9);
+    expect(thirdPage.body.projects).toHaveLength(1);
+    expect(thirdPage.body.pagination).toMatchObject({ page: 3, total: 19, totalPages: 3 });
+    expect(new Set([...finalFirstPage.body.projects.map((project) => project.id), ...secondPage.body.projects.map((project) => project.id), ...thirdPage.body.projects.map((project) => project.id)]).size).toBe(19);
+
+    await session.client.get('/api/designer/current-idps?page=0').expect(422);
+    await session.client.get('/api/designer/current-idps?page=1.5').expect(422);
+    await session.client.get('/api/designer/current-idps?page=abc').expect(422);
+    await session.client.get('/api/designer/current-idps?pageSize=10').expect(422);
+
+    await withCsrf(session, 'delete', `/designer/current-idps/${thirdPage.body.projects[0].id}`).expect(200);
+    const afterLastPageDelete = await list(3).expect(200);
+    expect(afterLastPageDelete.body.projects).toHaveLength(0);
+    expect(afterLastPageDelete.body.pagination).toMatchObject({ page: 3, total: 18, totalPages: 2 });
   });
 
   test('does not let one designer read, edit, delete or upload to another designer project', async () => {

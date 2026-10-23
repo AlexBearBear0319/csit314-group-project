@@ -1,6 +1,9 @@
 // ENTITY: InteriorDesignProject — current and completed designer projects.
 const { DataTypes, Model, Op, col, fn, where } = require('sequelize');
 const sequelize = require('../db');
+const ProjectImage = require('./ProjectImage');
+
+const IDP_PAGE_SIZE = 9;
 
 class InteriorDesignProject extends Model {
   static createOwned(values) {
@@ -15,7 +18,7 @@ class InteriorDesignProject extends Model {
     });
   }
 
-  static listOwned({ designerAccountId, status, query }) {
+  static async listOwned({ designerAccountId, status, query, page = 1 }) {
     const whereClause = { designerAccountId, status };
     const term = String(query || '').trim().toLowerCase();
 
@@ -28,18 +31,46 @@ class InteriorDesignProject extends Model {
         {
           [Op.or]: fields.map((field) => (
             field === 'completionDate'
-              ? where(sequelize.cast(col(field), 'TEXT'), { [Op.like]: pattern })
-              : where(fn('LOWER', col(field)), { [Op.like]: pattern })
+              ? where(sequelize.cast(col('completion_date'), 'TEXT'), { [Op.like]: pattern })
+              : where(fn('LOWER', col({ propertyType: 'property_type', designStyle: 'design_style' }[field] || field)), { [Op.like]: pattern })
           )),
         },
       ];
     }
 
-    return InteriorDesignProject.findAll({
+    const { count, rows } = await InteriorDesignProject.findAndCountAll({
       where: whereClause,
       order: [['updatedAt', 'DESC'], ['id', 'DESC']],
-      include: [{ association: 'images' }],
+      limit: IDP_PAGE_SIZE,
+      offset: (page - 1) * IDP_PAGE_SIZE,
     });
+
+    const projectIds = rows.map((project) => project.id);
+    const imageRows = projectIds.length
+      ? await ProjectImage.findAll({
+        attributes: ['id', 'projectId', 'storagePath', 'fileName', 'contentType', 'sizeBytes', 'altText', 'sortOrder'],
+        where: { projectId: projectIds },
+        order: [['sortOrder', 'ASC'], ['id', 'ASC']],
+      })
+      : [];
+    const imagesByProject = new Map();
+    for (const image of imageRows) {
+      const projectImages = imagesByProject.get(image.projectId) || [];
+      projectImages.push(image);
+      imagesByProject.set(image.projectId, projectImages);
+    }
+
+    return {
+      total: count,
+      projects: rows.map((project) => {
+        const images = imagesByProject.get(project.id) || [];
+        return {
+          ...project.get({ plain: true }),
+          imageCount: images.length,
+          previewImages: images.slice(0, 3),
+        };
+      }),
+    };
   }
 }
 
@@ -67,3 +98,4 @@ InteriorDesignProject.init(
 );
 
 module.exports = InteriorDesignProject;
+module.exports.IDP_PAGE_SIZE = IDP_PAGE_SIZE;

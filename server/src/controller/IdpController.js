@@ -6,6 +6,7 @@ const {
   IdpImageCleanupTask,
 } = require('../entity');
 const { createSignedReadUrl, removeObjects } = require('../storage/IdpImageStorage');
+const IDP_PAGE_SIZE = InteriorDesignProject.IDP_PAGE_SIZE || 9;
 
 const PROJECT_FIELDS = ['name', 'description', 'propertyType', 'designStyle'];
 
@@ -53,28 +54,25 @@ function sendValidationError(res, errors) {
   return res.status(422).json({ message: 'Check the project details.', errors });
 }
 
-async function renderProject(project) {
-  const orderedImages = [...(project.images || [])].sort((left, right) => (
-    left.sortOrder - right.sortOrder || String(left.id).localeCompare(String(right.id))
-  ));
-  const images = await Promise.all(orderedImages.map(async (image) => {
-    let url = null;
-    try {
-      url = await createSignedReadUrl(image.storagePath);
-    } catch {
-      // Keep saved metadata visible if Storage is offline. The page can retry.
-    }
-    return {
-      id: image.id,
-      fileName: image.fileName,
-      contentType: image.contentType,
-      sizeBytes: image.sizeBytes,
-      altText: image.altText,
-      sortOrder: image.sortOrder,
-      url,
-    };
-  }));
+async function renderImage(image) {
+  let url = null;
+  try {
+    url = await createSignedReadUrl(image.storagePath);
+  } catch {
+    // Keep saved metadata visible if Storage is offline. The page can retry.
+  }
+  return {
+    id: image.id,
+    fileName: image.fileName,
+    contentType: image.contentType,
+    sizeBytes: image.sizeBytes,
+    altText: image.altText,
+    sortOrder: image.sortOrder,
+    url,
+  };
+}
 
+function projectFields(project) {
   return {
     id: project.id,
     name: project.name,
@@ -85,8 +83,25 @@ async function renderProject(project) {
     completionDate: project.completionDate,
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
+  };
+}
+
+async function renderProject(project) {
+  const orderedImages = [...(project.images || [])].sort((left, right) => (
+    left.sortOrder - right.sortOrder || String(left.id).localeCompare(String(right.id))
+  ));
+  const images = await Promise.all(orderedImages.map(renderImage));
+
+  return {
+    ...projectFields(project),
+    imageCount: images.length,
     images,
   };
+}
+
+async function renderProjectSummary(project) {
+  const images = await Promise.all((project.previewImages || []).map(renderImage));
+  return { ...projectFields(project), imageCount: project.imageCount || 0, images };
 }
 
 async function getOwnedProject(id, req, status, transaction) {
@@ -144,12 +159,30 @@ async function searchIdps(req, res, next, status) {
   try {
     const query = String(req.query.q || '').trim();
     if (query.length > 160) return res.status(422).json({ message: 'Use 160 characters or less for search.' });
-    const projects = await InteriorDesignProject.listOwned({
+    const pageValue = req.query.page === undefined ? '1' : req.query.page;
+    if (typeof pageValue !== 'string' || !/^[1-9]\d*$/.test(pageValue) || Number(pageValue) > 1000000) {
+      return res.status(422).json({ message: 'Enter a valid page number.' });
+    }
+    if (req.query.pageSize !== undefined
+      && (typeof req.query.pageSize !== 'string' || req.query.pageSize !== String(IDP_PAGE_SIZE))) {
+      return res.status(422).json({ message: `Page size must be ${IDP_PAGE_SIZE}.` });
+    }
+    const page = Number(pageValue);
+    const result = await InteriorDesignProject.listOwned({
       designerAccountId: req.auth.accountId,
       status,
       query,
+      page,
     });
-    return res.json({ projects: await Promise.all(projects.map(renderProject)) });
+    return res.json({
+      projects: await Promise.all(result.projects.map(renderProjectSummary)),
+      pagination: {
+        page,
+        pageSize: IDP_PAGE_SIZE,
+        total: result.total,
+        totalPages: Math.ceil(result.total / IDP_PAGE_SIZE),
+      },
+    });
   } catch (error) {
     return next(error);
   }
