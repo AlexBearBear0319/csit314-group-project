@@ -105,7 +105,9 @@ The routes below are in `client/src/App.jsx`.
 
 | Page | Current state | Story area |
 |---|---|---|
-| `/login` | Existing UI placeholder. It stores the typed name and selected role for navigation. This is not authentication. | Login for the four roles; show the existing login error text. |
+| `/login` | Server-backed login with a user ID and password. The server reads the role from the linked user profile. | Sign in to one of the four roles. |
+| `/register` | Choose an account type. | Public sign-up for Customer or Interior Designer. |
+| `/register/customer`, `/register/designer` | Server-backed account creation. | Create a Customer or Interior Designer account. |
 | `/admin` | Existing role dashboard with a page heading. | User Admin home. No dashboard data is defined in the stories. |
 | `/admin/accounts` | Existing title placeholder. | User account create, view, update, delete, and search. |
 | `/admin/profiles` | Existing title placeholder. | User profile create, view, update, delete, and search. |
@@ -121,7 +123,7 @@ The routes below are in `client/src/App.jsx`.
 | `/manager/reports` | Existing title placeholder. | Daily, weekly, and monthly reports. |
 | `*` | Existing not-found title placeholder. | No business story is defined for this route. |
 
-The current login accepts any non-empty user ID and password. It does not check an account. Keep this behaviour during UI work. Do not call it a complete login feature.
+Login, registration and role checks use the server API. Do not add a role selector to the login form or allow public sign-up as User Admin or Platform Manager.
 
 ### Source items to confirm
 

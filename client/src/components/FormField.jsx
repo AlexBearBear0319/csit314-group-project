@@ -14,6 +14,10 @@ export default function FormField({
   hint,
   error,
   autoComplete,
+  minLength,
+  maxLength,
+  inputMode,
+  pattern,
   accept,
   multiple = false,
 }) {
@@ -65,6 +69,10 @@ export default function FormField({
           {...sharedProps}
           type={type}
           autoComplete={autoComplete}
+          minLength={minLength}
+          maxLength={maxLength}
+          inputMode={inputMode}
+          pattern={pattern}
           value={value ?? ''}
           className={CONTROL_CLASS}
         />

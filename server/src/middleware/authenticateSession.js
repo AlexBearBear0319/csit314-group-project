@@ -1,6 +1,7 @@
 const crypto = require('node:crypto');
 const { Op } = require('sequelize');
 const { UserAccount, UserProfile, UserSession } = require('../entity');
+const { canonicalRole } = UserAccount;
 
 const COOKIE_NAME = 'csit314_session';
 
@@ -29,7 +30,8 @@ function authenticateSession(req, res, next) {
   }).then(async (session) => {
     const account = session?.UserAccount;
     const profile = account?.UserProfile;
-    if (!session || !account || account.status !== 'active' || profile?.status !== 'active') {
+    const role = canonicalRole(profile?.name);
+    if (!session || !account || account.status !== 'active' || profile?.status !== 'active' || !role) {
       if (session) await session.destroy();
       return res.status(401).json({ message: 'Sign in to continue.' });
     }
@@ -38,7 +40,9 @@ function authenticateSession(req, res, next) {
       accountId: account.id,
       username: account.username,
       name: account.name,
-      role: profile.name,
+      email: account.email,
+      photo: account.photo,
+      role,
     };
     req.userSession = session;
     return next();

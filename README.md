@@ -73,7 +73,7 @@ Then open a Pull Request on GitHub, wait for all the checks (including Vercel) t
 
 **Do not run `npm run seed`.** The database is shared by the whole team, and seeding **wipes everything**. Ask Kaz if the data needs resetting.
 
-Demo logins in the database: `admin1`, `designer1`, `customer1`, `manager1`, password `password123`.
+Use a project account with a password that the account owner has confirmed. This workspace cannot verify shared database passwords. Do not run the seed command against the shared database.
 
 ## If something breaks
 

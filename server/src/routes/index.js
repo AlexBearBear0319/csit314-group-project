@@ -8,17 +8,18 @@ const SessionController = require('../controller/SessionController');
 const { IdpController } = require('../controller/IdpController');
 const IdpImageController = require('../controller/IdpImageController');
 const { authenticateSession, requireCsrf, requireRole } = require('../middleware/authenticateSession');
+const { loginRateLimit, loginAccountRateLimit, signupRateLimit, signupIdentityRateLimit } = require('../middleware/rateLimit');
 const { sequelize } = require('../entity');
 const { checkStorageReady } = require('../storage/IdpImageStorage');
 
 const REQUIRED_COLUMNS = {
-  user_profile: ['id', 'name', 'status'],
-  user_account: ['id', 'username', 'password', 'name', 'status', 'profileId'],
-  user_session: ['id', 'account_id', 'token_hash', 'csrf_token', 'expires_at'],
-  interior_design_project: ['id', 'name', 'description', 'property_type', 'design_style', 'status', 'completion_date', 'designer_account_id'],
-  project_image: ['id', 'project_id', 'storage_path', 'file_name', 'content_type', 'size_bytes', 'alt_text', 'sort_order'],
-  idp_image_upload_intent: ['id', 'project_id', 'designer_account_id', 'storage_path', 'file_name', 'content_type', 'size_bytes', 'alt_text', 'expires_at'],
-  idp_image_cleanup_task: ['id', 'designer_account_id', 'storage_path', 'attempts', 'last_error'],
+  user_profile: ['id', 'name', 'description', 'status', 'createdAt', 'updatedAt'],
+  user_account: ['id', 'username', 'password', 'name', 'email', 'dob', 'photo', 'status', 'profileId', 'createdAt', 'updatedAt'],
+  user_session: ['id', 'account_id', 'token_hash', 'csrf_token', 'expires_at', 'created_at', 'updated_at'],
+  interior_design_project: ['id', 'name', 'description', 'property_type', 'design_style', 'status', 'completion_date', 'designer_account_id', 'created_at', 'updated_at'],
+  project_image: ['id', 'project_id', 'storage_path', 'file_name', 'content_type', 'size_bytes', 'alt_text', 'sort_order', 'created_at', 'updated_at'],
+  idp_image_upload_intent: ['id', 'project_id', 'designer_account_id', 'storage_path', 'file_name', 'content_type', 'size_bytes', 'alt_text', 'expires_at', 'created_at', 'updated_at'],
+  idp_image_cleanup_task: ['id', 'designer_account_id', 'storage_path', 'attempts', 'last_error', 'created_at', 'updated_at'],
 };
 
 // Health check: proves the backend is running
@@ -28,6 +29,7 @@ router.get('/health', (req, res) => {
 
 router.get('/health/ready', async (req, res) => {
   const checks = { api: 'ok', database: 'unavailable', schema: 'unknown', storage: 'unavailable' };
+  const schemaIssues = [];
   try {
     await sequelize.authenticate();
     checks.database = 'ok';
@@ -36,15 +38,17 @@ router.get('/health/ready', async (req, res) => {
     checks.schema = 'ok';
     for (const [table, requiredColumns] of Object.entries(REQUIRED_COLUMNS)) {
       if (!names.has(table)) {
-        checks.schema = 'missing_tables';
-        break;
+        schemaIssues.push({ table, missingTable: true, missingColumns: [] });
+        continue;
       }
       const columns = await sequelize.getQueryInterface().describeTable(table);
-      if (requiredColumns.some((column) => !Object.hasOwn(columns, column))) {
-        checks.schema = 'missing_columns';
-        break;
+      const missingColumns = requiredColumns.filter((column) => !Object.hasOwn(columns, column));
+      if (missingColumns.length) {
+        schemaIssues.push({ table, missingTable: false, missingColumns });
       }
     }
+    if (schemaIssues.some((issue) => issue.missingTable)) checks.schema = 'missing_tables';
+    else if (schemaIssues.length) checks.schema = 'missing_columns';
   } catch {
     checks.schema = 'unknown';
   }
@@ -56,10 +60,12 @@ router.get('/health/ready', async (req, res) => {
   }
 
   const ready = checks.database === 'ok' && checks.schema === 'ok' && checks.storage === 'ok';
-  return res.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'not_ready', checks });
+  return res.status(ready ? 200 : 503).json({ status: ready ? 'ready' : 'not_ready', checks, schemaIssues });
 });
 
-router.post('/login', SessionController.login);
+router.post('/login', loginRateLimit, loginAccountRateLimit, SessionController.login);
+router.post('/register/customer', signupRateLimit, signupIdentityRateLimit, SessionController.registerCustomer);
+router.post('/register/designer', signupRateLimit, signupIdentityRateLimit, SessionController.registerDesigner);
 router.get('/session', authenticateSession, SessionController.current);
 router.delete('/session', authenticateSession, requireCsrf, SessionController.logout);
 

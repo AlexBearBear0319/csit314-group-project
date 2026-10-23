@@ -1,58 +1,45 @@
 # Interior Designer IDP setup
 
-This setup covers current and past Interior Designer Projects (IDPs), login sessions and project images. It does not change existing account or profile tables.
+This setup covers account roles, login sessions, current and past Interior Designer Projects (IDPs), and project images.
 
-## 1. Add the database tables
+## 1. Prepare account tables
 
-Open the Supabase SQL Editor. Review and run [`interior-designer-idps.sql`](interior-designer-idps.sql). The script stops if `public.user_account` or `public.user_profile` does not exist.
+Open the Supabase SQL Editor. Review and run [`auth-account-schema.sql`](auth-account-schema.sql) first. It creates or updates these tables:
 
 | Table | Purpose |
 | --- | --- |
-| `interior_design_project` | Current and past project details |
-| `project_image` | Image details and the private Storage path |
-| `user_session` | Revocable browser login sessions |
-| `idp_image_upload_intent` | Temporary image upload records |
-| `idp_image_cleanup_task` | Images waiting for a Storage delete retry |
+| `user_profile` | The four role names and their active status |
+| `user_account` | User ID, bcrypt password, name, email, optional date of birth/photo, status and role link |
+| `user_session` | Hashed login token, CSRF token and 8-hour expiry |
 
-`interior_design_project` fields:
+The account role link is `user_account."profileId"` → `user_profile.id`. The role names are `User Admin`, `Interior Designer`, `Customer`, and `Platform Manager`. The script does not change existing roles, account IDs, projects, or passwords. It prints rows that need review. Match any existing accounts to the right role and reset imported plain-text passwords with the tool in section 5.
 
-| Field | Type | Rule |
-| --- | --- | --- |
-| `id` | integer | Project ID |
-| `name` | varchar(160) | Required project name |
-| `description` | text | Optional description |
-| `property_type` | varchar(80) | Optional property type |
-| `design_style` | varchar(80) | Optional design style |
-| `status` | varchar(16) | `current` or `past` |
-| `completion_date` | date | Required for a past project; empty for a current project |
-| `designer_account_id` | integer | Owner ID from `user_account.id` |
-| `created_at`, `updated_at` | timestamp with time zone | Record dates |
+The main account columns are:
 
-`project_image` fields:
+| Table | Column | Type | Rule |
+| --- | --- | --- | --- |
+| `user_profile` | `id` | integer identity | Primary key |
+| `user_profile` | `name` | varchar | One of the four role names |
+| `user_profile` | `description` | text | Optional role description |
+| `user_profile` | `status` | varchar | `active` or `suspended` |
+| `user_account` | `id` | integer identity | Primary key; existing values stay the same |
+| `user_account` | `username` | varchar | Required user ID; sign-up treats it as case-insensitive |
+| `user_account` | `password` | varchar | Required bcrypt hash; never store plain text |
+| `user_account` | `name`, `email` | varchar | Required for new accounts |
+| `user_account` | `dob`, `photo` | date, text | Optional |
+| `user_account` | `status` | varchar | `active` or `suspended` |
+| `user_account` | `"profileId"` | integer | Foreign key to `user_profile.id` |
+| `user_session` | `account_id` | integer | Foreign key to `user_account.id` |
+| `user_session` | `token_hash`, `csrf_token` | varchar | Server-managed session values |
+| `user_session` | `expires_at` | timestamp with time zone | Eight hours after sign-in |
 
-| Field | Type | Rule |
-| --- | --- | --- |
-| `id` | integer | Image record ID |
-| `project_id` | integer | Parent project ID |
-| `storage_path` | varchar(512) | Private object path in the bucket |
-| `file_name` | varchar(255) | Original file name |
-| `content_type` | varchar(80) | JPEG, PNG or WebP |
-| `size_bytes` | integer | 1 to 5,242,880 bytes |
-| `alt_text` | varchar(240) | Image text |
-| `sort_order` | integer | Image order |
-
-The SQL turns on row-level security and removes direct `anon` and `authenticated` table access. The app uses the backend database connection. The backend checks project ownership for every request.
+Next, review and run [`interior-designer-idps.sql`](interior-designer-idps.sql). It creates the project and image tables. It also creates `user_session` if it is not there yet.
 
 ## 2. Create the image bucket
 
-In Supabase, open **Storage** and create this bucket:
+In Supabase, create the private bucket `designer-idp-images` with a 5 MB file size limit. Allow `image/jpeg`, `image/png`, and `image/webp`.
 
-- Name: `designer-idp-images`
-- Public: off
-- Maximum file size: `5 MB`
-- Allowed MIME types: `image/jpeg`, `image/png`, `image/webp`
-
-Keep the bucket private. The app uses short-lived signed upload and view links. It does not need SQL changes to Supabase Storage tables.
+The SQL turns on row-level security and removes direct `anon` and `authenticated` table access. The app uses the backend database connection. The backend checks project ownership for every request.
 
 ## 3. Set backend environment variables
 
@@ -68,11 +55,13 @@ Set these on the backend host, such as Render. Keep `SUPABASE_SECRET_KEY` on the
 | `NODE_ENV` | `production` on the live backend; local value is `development` |
 | `PORT` | Set by the host; local default is `3000` |
 
-The backend uses the existing account tables for login. It does not create or seed tables when it starts. Use a backend database connection with access to the tables, such as the `postgres` connection shown in `server/.env.example`.
+The backend does not create or seed tables when it starts. Use a server database connection that can read and write these tables, such as the `postgres` connection shown in `server/.env.example`.
 
 ## 4. Set Vercel environment variables
 
-Add these to the Vercel project, then redeploy the site:
+For one Vercel deployment, set the project root to this repository and the framework to **Services**. Leave `VITE_API_URL` empty. The root [`vercel.json`](../vercel.json) sends `/api/*` to the server and other paths to the client. Keep the Vercel site origin in `FRONTEND_URL`. Vercel requires the Services framework setting when the project uses its multi-service configuration.
+
+If the client and API use separate hosts, set this value to the API origin and redeploy the client:
 
 | Variable | Value |
 | --- | --- |
@@ -82,18 +71,24 @@ Add these to the Vercel project, then redeploy the site:
 
 The publishable key may be in the website. The secret key must stay on the backend. Add the exact Vercel site address to the backend's `FRONTEND_URL` value so browser requests can pass CORS checks.
 
-## 5. Check the API links
+## 5. Check API and account data
 
 Open these addresses for the deployed backend:
 
 | Address | Expected result |
 | --- | --- |
 | `/api/health` | HTTP 200 and `{"status":"ok"}` when the API process is running |
-| `/api/health/ready` | HTTP 200 and all checks show `ok` when the database, tables and bucket are ready |
+| `/api/health/ready` | HTTP 200 and all checks show `ok` when the database, required tables and bucket are ready |
 
-If readiness returns HTTP 503, read the `checks` values. `database` means the backend cannot connect to PostgreSQL. `schema` means a required table is missing. `storage` means the bucket, key or bucket settings are not ready. These responses do not show credentials or database errors.
+If readiness returns HTTP 503, read the `checks` values and `schemaIssues`. `database` means the backend cannot connect to PostgreSQL. `schemaIssues` lists missing table or column names. `storage` means the bucket, key or bucket settings are not ready. These responses do not show credentials or database errors.
 
-The browser uses the backend API for login and project actions. It sends images to Supabase Storage with a short-lived upload link. The backend checks and records each image after upload.
+The browser uses the backend API for login, registration and project actions. It sends images to Supabase Storage with a short-lived upload link. The backend checks and records each image after upload.
+
+Login accepts `username` and `password`. The server reads the role from `user_account."profileId"`; do not send a role value from the browser. Public sign-up is available only for Customer and Interior Designer accounts.
+
+Run the read-only account check from the project folder with `npm run auth:audit --workspace server`. It reports account IDs, user IDs, role links, password-hash status, project counts and duplicate IDs or emails. It does not print password values or hashes.
+
+To reset one password, run `npm run auth:provision --workspace server -- --username=USER_ID` in a private terminal. Type the exact user ID, then enter the new password twice. The command keeps the account and project IDs and revokes that account's old sessions. Add `--role="Customer"`, `--role="Interior Designer"`, `--role="User Admin"`, or `--role="Platform Manager"` only when you intend to change a broken role link. Do not put a password in the command.
 
 If the page says image cleanup is pending, run `npm run storage:cleanup --workspace server` in an environment with the backend variables set. The command retries Storage deletes for expired uploads and queued cleanup tasks.
 
@@ -107,7 +102,7 @@ Use an active Interior Designer account. Do not use the shared database seed com
 4. Open **Past IDPs**. Add a project with a completion date. Search by project name, property type, design style and completion date.
 5. Edit the past project, remove an image, then delete the project.
 
-To check API access with local code, run `npm test` and `npm run build` from the project folder. The API tests use a temporary SQLite database and do not connect to Supabase. The live checks above confirm the deployed database and Storage connection.
+To check API access with local code, run `npm test` and `npm run build` from the project folder. The API tests use a temporary SQLite database and do not connect to Supabase. The live health links confirm the deployed API, database, schema and Storage connection.
 
 ## API routes
 
@@ -122,3 +117,11 @@ To check API access with local code, run `npm test` and `npm run build` from the
 | `PATCH`, `DELETE` | `/api/designer/:type-idps/:id/images/:imageId` | Edit image text or remove an image |
 
 The current and past routes keep their results separate. The server gets the owner ID from the signed-in session, not from the browser request.
+
+| Method | Route | Use |
+| --- | --- | --- |
+| `POST` | `/api/login` | Sign in with user ID and password; role comes from the database |
+| `POST` | `/api/register/customer` | Create a Customer account |
+| `POST` | `/api/register/designer` | Create an Interior Designer account |
+| `GET` | `/api/session` | Check the signed-in account and session expiry |
+| `DELETE` | `/api/session` | End the signed-in session |

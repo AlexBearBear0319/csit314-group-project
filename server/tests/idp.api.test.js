@@ -10,12 +10,12 @@ let designerOne;
 let designerTwo;
 let customer;
 
-async function startSession(username, profile) {
+async function startSession(username) {
   const client = request.agent(app);
   const response = await client
     .post('/api/login')
     .set('Origin', ORIGIN)
-    .send({ username, password: 'password123', profile });
+    .send({ username, password: 'password123' });
   return { client, csrfToken: response.body.csrfToken, account: response.body.account, response };
 }
 

@@ -41,6 +41,15 @@ export default function Layout() {
 
   useEffect(() => {
     hydrateSession();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') hydrateSession();
+    };
+    window.addEventListener('focus', refreshWhenVisible);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => {
+      window.removeEventListener('focus', refreshWhenVisible);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
   }, []);
 
   useEffect(() => {
@@ -71,11 +80,13 @@ export default function Layout() {
     setLogoutError('');
     try {
       await killSession();
+      navigate('/login');
     } catch {
       setLogoutError('The server could not end this session. Check your connection and try again.');
     }
-    navigate('/login');
   }
+
+  const initials = user?.name?.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || '?';
 
   return (
     <div className="flex min-h-screen flex-col bg-canvas text-ink">
@@ -139,11 +150,24 @@ export default function Layout() {
           </nav>
 
           {user && (
-            <div className="col-span-2 flex min-w-0 items-center justify-end gap-3 lg:col-span-1 lg:col-start-3 lg:row-start-1">
-              <span className="min-w-0 truncate text-right text-xs text-muted sm:text-sm">
-                {user.name} <span className="hidden sm:inline">({user.role})</span>
-              </span>
-              <Button variant="secondary" size="sm" onClick={logout}>Logout</Button>
+            <div className="col-span-2 flex min-w-0 justify-end lg:col-span-1 lg:col-start-3 lg:row-start-1">
+              <details className="group relative">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-control border border-border bg-surface px-2 py-1.5 hover:bg-surface-hover focus-visible:outline-action [&::-webkit-details-marker]:hidden">
+                  <span className="relative flex size-8 items-center justify-center overflow-hidden rounded-full bg-action-soft text-xs font-semibold text-action-ink" aria-hidden="true">
+                    <span>{initials}</span>
+                    {user.photo && <img src={user.photo} alt="" className="absolute size-8 rounded-full object-cover" onError={(event) => { event.currentTarget.hidden = true; }} />}
+                  </span>
+                  <span className="max-w-32 truncate text-sm font-medium text-ink">{user.name}</span>
+                  <span className="text-xs text-muted" aria-hidden="true">⌄</span>
+                </summary>
+                <div className="absolute right-0 z-30 mt-2 w-64 rounded-card border border-border bg-surface p-4 shadow-menu" role="region" aria-label="Account details">
+                  <p className="truncate font-medium text-ink">{user.name}</p>
+                  <p className="mt-1 break-all text-sm text-muted">{user.email}</p>
+                  <p className="mt-3 text-xs text-muted">Role</p>
+                  <p className="text-sm font-medium text-ink">{user.role}</p>
+                  <Button className="mt-4 w-full" variant="secondary" size="sm" onClick={logout}>Logout</Button>
+                </div>
+              </details>
             </div>
           )}
         </div>

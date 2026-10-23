@@ -27,6 +27,7 @@ describe('GET /api/health', () => {
     expect(res.body).toEqual({
       status: 'ready',
       checks: { api: 'ok', database: 'ok', schema: 'ok', storage: 'ok' },
+      schemaIssues: [],
     });
   });
 });
