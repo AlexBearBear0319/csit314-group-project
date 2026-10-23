@@ -168,13 +168,13 @@ Use `ResultsTable` with its current `columns`, `rows`, and `actions` props. Keep
 
 ### Project cards, galleries, and details
 
-Current and past IDPs use the shared project folder card. Show the project name, property type, design style, and image count. Past IDPs also show the completion date. Use a 1.35:1 photo preview and real project images only. Show a plain folder when a project has no usable preview. Do not add preview photos, sample records, or project facts as app content.
+Current and past IDPs use the shared project folder card. Show the project name, property type, design style, and image count. Past IDPs also show the completion date. Use a 1.35:1 photo preview and real project images only. Show a plain folder when a project has no usable preview. Use a frosted front panel over the image sheets. On hover or keyboard focus, lift the sheets and tilt the panel. Do not add preview photos, sample records, or project facts as app content.
 
 Show three project cards per row on wide screens, two on tablet screens, and one on phone screens. Load nine projects per page from the API. Return the total and page count. Load preview images for the selected page and load the full gallery when a user opens a project. Keep the sort order stable. Search starts at page 1. After a delete on the last page, show the previous page when it has projects.
 
-Give each folder an accessible `Open project` action. Keep View, Edit, and Delete in a keyboard-accessible More menu. Do not hide an action on hover. Support Enter, Space, and Escape. Keep a visible focus ring and usable touch targets. Respect reduced motion.
+Give each folder an accessible `Open project` action. Open project details in a modal dialog. Keep View, Edit, and Delete in a keyboard-accessible More menu. Do not hide an action on hover. Support Enter, Space, and Escape. Keep a visible focus ring and usable touch targets. Respect reduced motion.
 
-Use `DetailsView` for a label and value list. Keep each field name visible. For a gallery, keep the image order, offer clear previous and next controls with the current position, and do not advance automatically. Keep key content in view. For multiple uploads, keep each selected image visible and show which image is uploading. Do not add project metrics or company facts without a source.
+Use `DetailsView` for a label and value list. Keep each field name visible. In the project dialog, keep the image at its source ratio and fit it inside the viewer; do not crop it. For a gallery, keep the image order and do not advance automatically. Show arrows and photo dots at the bottom of the image. Support phone swipes, and wrap from the last photo to the first. Return focus to the control that opened the dialog. Keep key content in view. For multiple uploads, keep each selected image visible and show which image is uploading. Do not add project metrics or company facts without a source.
 
 ### Delete and suspend confirmation
 

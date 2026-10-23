@@ -25,16 +25,16 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
   }
 
   return (
-    <article className="min-w-0 rounded-panel border border-border bg-surface p-4 shadow-card transition duration-200 hover:-translate-y-0.5 hover:shadow-menu motion-reduce:transform-none motion-reduce:transition-none">
-      <div className="relative mb-4 pt-3">
+    <article className="project-folder-card group min-w-0 rounded-panel border border-border bg-surface p-4 shadow-card transition duration-200 hover:-translate-y-0.5 hover:shadow-menu motion-reduce:transform-none motion-reduce:transition-none">
+      <div className="project-folder-frame relative mb-4 pt-3">
         <span aria-hidden="true" className="absolute left-4 top-0 h-4 w-24 rounded-t-control border border-b-0 border-border bg-action-soft" />
         <span aria-hidden="true" className="absolute inset-x-2 bottom-0 top-5 rotate-[-3deg] rounded-card border border-border bg-action-soft/70" />
         <span aria-hidden="true" className="absolute inset-x-1 bottom-0 top-4 rotate-[2deg] rounded-card border border-border bg-canvas" />
         <button
           type="button"
-          className="button-feedback group relative block aspect-[1.35/1] w-full overflow-hidden rounded-card border border-border bg-action-soft/50 text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-action"
+          className="project-folder-preview button-feedback group relative block aspect-[1.35/1] w-full overflow-hidden rounded-card border border-border bg-action-soft/50 text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-action"
           aria-label={`Open project ${project.name}`}
-          onClick={() => onView(project)}
+          onClick={(event) => onView(project, event.currentTarget)}
         >
           {previews.length > 0 ? (
             <>
@@ -42,7 +42,7 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
                 <span
                   key={image.id}
                   aria-hidden="true"
-                  className={`absolute inset-2 overflow-hidden rounded-card border border-white bg-white shadow-card ${index === 0 ? 'rotate-[-5deg]' : 'rotate-[5deg]'}`}
+                  className={`project-folder-sheet absolute inset-2 overflow-hidden rounded-card border border-white bg-white shadow-card transition-transform duration-200 group-hover:-translate-y-1 group-focus-within:-translate-y-1 motion-reduce:transition-none ${index === 0 ? 'rotate-[-5deg]' : 'rotate-[5deg]'}`}
                 >
                   <img src={image.url} alt="" className="size-full object-cover" />
                 </span>
@@ -50,7 +50,7 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
               <img
                 src={previews[0].url}
                 alt=""
-                className="absolute inset-2 size-[calc(100%-1rem)] rounded-card object-cover shadow-card transition-transform duration-200 group-hover:scale-[1.02] motion-reduce:transition-none"
+                className="project-folder-sheet absolute inset-2 size-[calc(100%-1rem)] rounded-card object-cover shadow-card transition-transform duration-200 group-hover:-translate-y-1 group-hover:scale-[1.02] group-focus-within:-translate-y-1 motion-reduce:transition-none"
               />
             </>
           ) : (
@@ -62,7 +62,8 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
               </svg>
             </span>
           )}
-          <span className="absolute bottom-2 right-2 rounded-control bg-ink/85 px-2.5 py-1 text-xs font-medium text-white">
+          <span className="project-folder-glass" aria-hidden="true" />
+          <span className="absolute bottom-2 right-2 z-10 rounded-control border border-white/60 bg-white/85 px-2.5 py-1 text-xs font-medium text-ink shadow-card backdrop-blur-sm">
             {imageCount} {imageCount === 1 ? 'image' : 'images'}
           </span>
         </button>
@@ -81,7 +82,7 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
             <span>More</span>
           </summary>
           <div className="absolute right-0 top-12 z-20 grid min-w-36 gap-1 rounded-card border border-border bg-surface p-1.5 shadow-menu">
-            <button type="button" className="button-feedback min-h-10 rounded-control px-3 text-left text-sm text-ink hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-action" onClick={() => runAction(() => onView(project))}>View</button>
+            <button type="button" className="button-feedback min-h-10 rounded-control px-3 text-left text-sm text-ink hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-action" onClick={() => runAction(() => onView(project, moreButtonRef.current))}>View</button>
             <button type="button" className="button-feedback min-h-10 rounded-control px-3 text-left text-sm text-ink hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-action" onClick={() => runAction(() => onEdit(project))}>Edit</button>
             <button type="button" className="button-feedback min-h-10 rounded-control px-3 text-left text-sm text-danger hover:bg-danger-soft focus-visible:outline-2 focus-visible:outline-danger" onClick={() => runAction(() => onDelete(project, moreButtonRef.current))}>Delete</button>
           </div>
@@ -105,7 +106,7 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
         )}
       </dl>
 
-      <Button type="button" variant="secondary" size="sm" className="mt-4 w-full" onClick={() => onView(project)}>
+      <Button type="button" variant="secondary" size="sm" className="mt-4 w-full" onClick={(event) => onView(project, event.currentTarget)}>
         View project
       </Button>
     </article>

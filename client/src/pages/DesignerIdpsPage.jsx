@@ -55,9 +55,13 @@ export default function DesignerIdpsPage({ status }) {
   const [isSaving, setIsSaving] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isViewing, setIsViewing] = useState(false);
   const dialogRef = useRef(null);
+  const projectDialogRef = useRef(null);
   const restoreFocusRef = useRef(null);
+  const projectRestoreFocusRef = useRef(null);
   const listRequestIdRef = useRef(0);
+  const projectRequestIdRef = useRef(0);
 
   useEffect(() => {
     let active = true;
@@ -104,6 +108,16 @@ export default function DesignerIdpsPage({ status }) {
     }
   }, [deleteTarget]);
 
+  useEffect(() => {
+    const dialog = projectDialogRef.current;
+    if (viewProject && dialog && !dialog.open) {
+      dialog.showModal();
+      dialog.querySelector('[data-project-view-title]')?.focus();
+    } else if (!viewProject && dialog?.open) {
+      dialog.close();
+    }
+  }, [viewProject]);
+
   function handleSearch(query) {
     setIsLoading(true);
     setError('');
@@ -116,6 +130,12 @@ export default function DesignerIdpsPage({ status }) {
   function goToPage(page) {
     setIsLoading(true);
     setPageNumber(page);
+  }
+
+  function closeProject() {
+    projectRequestIdRef.current += 1;
+    setIsViewing(false);
+    setViewProject(null);
   }
 
   function openDelete(project, focusTarget) {
@@ -151,17 +171,27 @@ export default function DesignerIdpsPage({ status }) {
     }
   }
 
-  async function showProject(project) {
+  async function showProject(project, focusTarget) {
     setError('');
     setNotice('');
     setEditor(null);
     setFiles([]);
     setUploadProgress(null);
+    const requestId = ++projectRequestIdRef.current;
+    projectRestoreFocusRef.current = focusTarget || document.activeElement;
+    setViewProject({ id: project.id, name: project.name, images: [] });
+    setIsViewing(true);
     try {
       const response = await api.get(`${basePath}/${project.id}`);
+      if (requestId !== projectRequestIdRef.current) return;
       setViewProject(response.project);
     } catch (requestError) {
-      setError(requestError.message);
+      if (requestId === projectRequestIdRef.current) {
+        setViewProject(null);
+        setError(requestError.message);
+      }
+    } finally {
+      if (requestId === projectRequestIdRef.current) setIsViewing(false);
     }
   }
 
@@ -515,30 +545,62 @@ export default function DesignerIdpsPage({ status }) {
             </nav>
           )}
 
-          {viewProject && (
-            <section className="rounded-panel border border-border bg-surface p-5 shadow-card sm:p-7" aria-labelledby="project-details-title">
-              <div className="mb-5 flex flex-wrap items-center justify-between gap-3">
-                <h2 id="project-details-title" className="text-2xl text-ink">Project details</h2>
-                <div className="flex flex-wrap gap-2">
-                  <Button size="sm" variant="secondary" onClick={() => beginEdit(viewProject)}>Edit</Button>
-                  <Button size="sm" variant="secondary" onClick={() => setViewProject(null)}>Close</Button>
-                </div>
-              </div>
-              <DetailsView
-                fields={[
-                  { key: 'name', label: 'Project name' },
-                  { key: 'description', label: 'Description' },
-                  { key: 'propertyType', label: 'Property type' },
-                  { key: 'designStyle', label: 'Design style' },
-                  ...(past ? [{ key: 'completionDate', label: 'Completion date' }] : []),
-                ]}
-                item={viewProject}
-              />
-              <ProjectImageCarousel key={viewProject.id} images={viewProject.images} projectName={viewProject.name} />
-            </section>
-          )}
         </>
       )}
+
+      <dialog
+        ref={projectDialogRef}
+        className="m-auto w-[min(96vw,72rem)] max-h-[92dvh] overflow-hidden rounded-panel border border-border bg-surface p-0 text-ink shadow-menu backdrop:bg-ink/45"
+        aria-labelledby="project-view-title"
+        onCancel={(event) => { event.preventDefault(); closeProject(); }}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) closeProject();
+        }}
+        onClose={() => {
+          if (viewProject) closeProject();
+          const focusTarget = projectRestoreFocusRef.current;
+          projectRestoreFocusRef.current = null;
+          if (focusTarget?.isConnected) focusTarget.focus();
+        }}
+      >
+        {viewProject && (
+          <div className="max-h-[92dvh] overflow-y-auto">
+            <header className="sticky top-0 z-10 flex flex-wrap items-center justify-between gap-3 border-b border-border bg-surface/95 px-4 py-3 backdrop-blur-sm sm:px-6">
+              <h2 id="project-view-title" data-project-view-title tabIndex={-1} className="min-w-0 break-words text-2xl text-ink">
+                {viewProject.name}
+              </h2>
+              <div className="flex shrink-0 gap-2">
+                <Button size="sm" variant="secondary" onClick={() => beginEdit(viewProject)} disabled={isViewing}>Edit</Button>
+                <Button size="sm" variant="secondary" onClick={closeProject} aria-label="Close project view">
+                  Close
+                </Button>
+              </div>
+            </header>
+
+            <div aria-busy={isViewing || undefined}>
+              {isViewing ? (
+                <p className="px-4 py-8 text-center text-muted sm:px-6" role="status" aria-live="polite">Loading project.</p>
+              ) : (
+                <div className={`grid gap-5 p-4 sm:p-6 ${viewProject.images?.length ? 'lg:grid-cols-[minmax(0,1.6fr)_minmax(17rem,0.8fr)]' : ''}`}>
+                  <ProjectImageCarousel key={viewProject.id} images={viewProject.images || []} projectName={viewProject.name} />
+                  <aside className={`min-w-0 ${viewProject.images?.length ? 'border-t border-border pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0' : ''}`}>
+                    <DetailsView
+                      fields={[
+                        { key: 'name', label: 'Project name' },
+                        { key: 'description', label: 'Description' },
+                        { key: 'propertyType', label: 'Property type' },
+                        { key: 'designStyle', label: 'Design style' },
+                        ...(past ? [{ key: 'completionDate', label: 'Completion date' }] : []),
+                      ]}
+                      item={viewProject}
+                    />
+                  </aside>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+      </dialog>
 
       <dialog
         ref={dialogRef}
