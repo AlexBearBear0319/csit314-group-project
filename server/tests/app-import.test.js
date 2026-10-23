@@ -1,7 +1,7 @@
 const request = require('supertest');
 
 afterEach(() => {
-  jest.dontMock('../src/routes/index.js');
+  jest.dontMock('../src/routes/index.cjs');
 });
 
 test.each(['commonjs', 'default', 'nested-default', 'named-router'])('starts with a %s router export', async (shape) => {
@@ -17,7 +17,7 @@ test.each(['commonjs', 'default', 'nested-default', 'named-router'])('starts wit
       'nested-default': { default: { default: router } },
       'named-router': { router },
     };
-    jest.doMock('../src/routes/index.js', () => exportsByShape[shape]);
+    jest.doMock('../src/routes/index.cjs', () => exportsByShape[shape]);
     app = require('../src/app');
   });
 
@@ -28,7 +28,7 @@ test.each(['commonjs', 'default', 'nested-default', 'named-router'])('starts wit
 
 test('rejects an invalid router export at startup', () => {
   jest.isolateModules(() => {
-    jest.doMock('../src/routes/index.js', () => ({}));
+    jest.doMock('../src/routes/index.cjs', () => ({}));
     expect(() => require('../src/app')).toThrow('The API routes must export an Express router.');
   });
 });
