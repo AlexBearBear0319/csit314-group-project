@@ -5,13 +5,30 @@ function allowedOrigins() {
     .split(',')
     .map((value) => value.trim())
     .filter(Boolean);
-  return new Set(configured.map((value) => {
+  const origins = configured.map((value) => {
     try {
       return new URL(value).origin;
     } catch {
       return '';
     }
-  }).filter(Boolean));
+  });
+
+  // Vercel's server and client services share the incoming deployment host.
+  // Allow the current deployment URL and the project's production URL when
+  // FRONTEND_URL is not set in the Vercel environment.
+  const vercelHosts = [
+    process.env.VERCEL_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL,
+  ].filter(Boolean);
+  const vercelOrigins = vercelHosts.map((host) => {
+    try {
+      return new URL(`https://${host}`).origin;
+    } catch {
+      return '';
+    }
+  });
+
+  return new Set([...origins, ...vercelOrigins].filter(Boolean));
 }
 
 function isTrustedOrigin(origin) {
