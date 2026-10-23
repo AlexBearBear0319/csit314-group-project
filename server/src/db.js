@@ -9,6 +9,18 @@ let sequelize;
 
 if (process.env.NODE_ENV === 'test') {
   sequelize = new Sequelize({ dialect: 'sqlite', storage: ':memory:', logging: false });
+} else if (process.env.VERCEL_ENV === 'preview' && !process.env.DATABASE_URL) {
+  // Preview deployments can start without production database credentials.
+  // Database calls fail fast until a Preview DATABASE_URL is configured.
+  sequelize = new Sequelize('preview_unconfigured', 'preview_unconfigured', 'preview_unconfigured', {
+    host: '127.0.0.1',
+    port: 1,
+    dialect: 'postgres',
+    logging: false,
+    retry: { max: 0 },
+    pool: { max: 1, min: 0, acquire: 1000, idle: 1000 },
+    dialectOptions: { ssl: { require: true, rejectUnauthorized: false } },
+  });
 } else {
   if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL is missing. Copy .env.example to .env and fill it in.');
