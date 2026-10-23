@@ -15,7 +15,7 @@ test.each(['commonjs', 'default', 'nested-default', 'named-router'])('starts wit
       commonjs: router,
       default: { default: router },
       'nested-default': { default: { default: router } },
-      'named-router': { routes: { router } },
+      'named-router': { router },
     };
     jest.doMock('../src/routes/index.js', () => exportsByShape[shape]);
     app = require('../src/app');

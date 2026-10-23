@@ -95,4 +95,6 @@ router.post('/designer/past-idps/:id/images/:intentId/complete', (req, res, next
 router.patch('/designer/past-idps/:id/images/:imageId', (req, res, next) => IdpImageController.updateImage(req, res, next, 'past'));
 router.delete('/designer/past-idps/:id/images/:imageId', (req, res, next) => IdpImageController.deleteImage(req, res, next, 'past'));
 
-module.exports = router;
+// Use a named export so Vercel's module wrapper can keep the router when it
+// loads this CommonJS module from the Express service entrypoint.
+module.exports = { router };
