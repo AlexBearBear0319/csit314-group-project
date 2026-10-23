@@ -2,8 +2,9 @@
 // header, role-based menu, logout button, and the page content in the middle.
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { getUser, killSession } from '../session';
+import { hydrateSession, killSession, useSession } from '../session';
 import Button from '../components/Button';
+import Message from '../components/Message';
 
 // Menu links per role. Add a link here when you build a new page.
 const MENUS = {
@@ -31,11 +32,16 @@ const MENUS = {
 };
 
 export default function Layout() {
-  const user = getUser();
+  const { user } = useSession();
   const navigate = useNavigate();
   const menuButtonRef = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
   const links = user ? MENUS[user.role] || [] : [];
+
+  useEffect(() => {
+    hydrateSession();
+  }, []);
 
   useEffect(() => {
     function closeOnHistoryNavigation() {
@@ -61,8 +67,13 @@ export default function Layout() {
   }, [menuOpen]);
 
   // LogoutPg behaviour: logout() -> killSession() -> back to login page
-  function logout() {
-    killSession();
+  async function logout() {
+    setLogoutError('');
+    try {
+      await killSession();
+    } catch {
+      setLogoutError('The server could not end this session. Check your connection and try again.');
+    }
     navigate('/login');
   }
 
@@ -142,6 +153,7 @@ export default function Layout() {
         tabIndex={-1}
         className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-8 focus:outline-none sm:px-6 lg:px-8 lg:py-12"
       >
+        <Message type="error" text={logoutError} />
         <Outlet />
       </main>
     </div>

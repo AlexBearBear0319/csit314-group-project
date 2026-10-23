@@ -1,45 +1,38 @@
-// BOUNDARY: UserLoginPg  (user stories: Login for all 4 actors)
-// Methods from the design: displaySuccess(), displayError()
-//
-// TODO (Login story owner): replace the PLACEHOLDER block with a real call:
-//   const account = await api.post('/login', { username, password, profile });
-//   if account is returned -> displaySuccess(account), else -> displayError()
-import { useState } from 'react';
+// BOUNDARY: UserLoginPg (login for all four roles)
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ROLES, setUser } from '../session';
+import { api } from '../api';
+import { ROLES, homeForRole, setUser, useSession } from '../session';
 import Button from '../components/Button';
 import FormField from '../components/FormField';
 import Message from '../components/Message';
 
-const HOME = {
-  'User Admin': '/admin',
-  'Interior Designer': '/designer',
-  Customer: '/customer',
-  'Platform Manager': '/manager',
-};
-
 export default function UserLoginPg() {
   const navigate = useNavigate();
+  const { user } = useSession();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [profile, setProfile] = useState(ROLES[0]);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function displaySuccess(account) {
-    setUser({ name: account.name, role: profile });
-    navigate(HOME[profile]);
-  }
+  useEffect(() => {
+    if (user) navigate(homeForRole(user.role), { replace: true });
+  }, [navigate, user]);
 
-  function displayError() {
-    setError('Login failed. Check your ID, password and user profile.');
-  }
-
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    // ---- PLACEHOLDER: lets the team see each role's menu until Login is built ----
-    if (username && password) displaySuccess({ name: username });
-    else displayError();
-    // ---- END PLACEHOLDER ----
+    setError('');
+    setIsSubmitting(true);
+    try {
+      const { account, csrfToken } = await api.post('/login', { username, password, profile });
+      setUser(account, csrfToken);
+      navigate(homeForRole(account.role), { replace: true });
+    } catch (requestError) {
+      setError(requestError.message || 'Login failed. Check your details and try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -75,7 +68,7 @@ export default function UserLoginPg() {
             value={profile}
             onChange={(event) => setProfile(event.target.value)}
           />
-          <Button type="submit" variant="primary" className="mt-1 w-full">Login</Button>
+          <Button type="submit" variant="primary" className="mt-1 w-full" loading={isSubmitting}>Login</Button>
         </form>
       </section>
     </div>

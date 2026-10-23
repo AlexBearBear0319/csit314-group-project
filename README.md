@@ -14,6 +14,7 @@ Class and method names in the code must match the diagrams exactly.
 
 - Read [UI_GUIDELINES.md](UI_GUIDELINES.md) before a UI change.
 - See the [standalone UI preview](docs/ui-preview.html) for the approved visual example. Its sample records do not belong to the app.
+- See [Interior Designer IDP setup](docs/INTERIOR_DESIGNER_IDPS_SETUP.md) for the SQL, Supabase Storage settings, deployment variables and live API checks.
 
 For another coding tool, use this prompt:
 
