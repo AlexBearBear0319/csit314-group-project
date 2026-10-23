@@ -2,14 +2,14 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ApiError, api } from '../api';
-import { homeForRole, setUser, useSession } from '../session';
+import { homeForRole, hydrateSession, setUser, useSession } from '../session';
 import Button from '../components/Button';
 import FormField from '../components/FormField';
 import Message from '../components/Message';
 
 export default function UserLoginPg() {
   const navigate = useNavigate();
-  const { user } = useSession();
+  const { user, status, error: sessionError } = useSession();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -39,7 +39,12 @@ export default function UserLoginPg() {
       <section className="rounded-panel border border-border bg-surface p-6 shadow-card sm:p-9">
         <h1 className="text-3xl tracking-tight text-ink">Login</h1>
         <div className="mt-6">
-          <Message type="error" text={error} />
+          <Message type="error" text={error || (status === 'unavailable' ? sessionError : '')} />
+          {status === 'unavailable' && (
+            <Button type="button" variant="secondary" className="mb-5" onClick={hydrateSession}>
+              Check connection
+            </Button>
+          )}
         </div>
         <form className="grid gap-5" onSubmit={handleSubmit}>
           <FormField

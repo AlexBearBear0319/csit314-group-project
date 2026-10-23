@@ -27,36 +27,45 @@ async function request(method, path, body) {
     headers['X-CSRF-Token'] = csrfToken;
   }
 
-  let response;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
   try {
-    response = await fetch(`${BASE_URL}/api${path}`, {
+    const response = await fetch(`${BASE_URL}/api${path}`, {
       method,
       headers,
       credentials: 'include',
       body: body === undefined ? undefined : JSON.stringify(body),
+      signal: controller.signal,
     });
-  } catch {
-    throw new ApiError('The server could not be reached. Check the API address and try again.');
-  }
 
-  const contentType = response.headers.get('content-type') || '';
-  let data = null;
-  if (contentType.toLowerCase().includes('application/json')) {
-    data = await response.json().catch(() => null);
-  } else if (!response.ok) {
-    throw new ApiError('The API route did not return JSON. Check the website and API routing.', { status: response.status });
-  }
-
-  if (!response.ok) {
-    const error = new ApiError(data?.message || `Request failed (${response.status}).`, { status: response.status, data });
-    if (response.status === 401 && !['/login', '/session', '/register/customer', '/register/designer'].includes(path)) {
-      unauthorizedHandler();
+    const contentType = response.headers.get('content-type') || '';
+    let data = null;
+    if (contentType.toLowerCase().includes('application/json')) {
+      data = await response.json();
+    } else {
+      throw new ApiError('The server is unavailable. Try again later.', { status: response.status });
     }
-    throw error;
-  }
 
-  if (data === null) throw new ApiError('The API sent an invalid response.', { status: response.status });
-  return data;
+    if (!response.ok) {
+      const error = new ApiError(data?.message || `Request failed (${response.status}).`, { status: response.status, data });
+      if (response.status === 401 && !['/login', '/session', '/register/customer', '/register/designer'].includes(path)) {
+        unauthorizedHandler();
+      }
+      throw error;
+    }
+
+    if (data === null) throw new ApiError('The API sent an invalid response.', { status: response.status });
+    return data;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    if (controller.signal.aborted) {
+      throw new ApiError('The server took too long to respond. Try again.');
+    }
+    if (error instanceof SyntaxError) throw new ApiError('The API sent an invalid response.');
+    throw new ApiError('The server could not be reached. Check your connection and try again.');
+  } finally {
+    clearTimeout(timeout);
+  }
 }
 
 export const api = {

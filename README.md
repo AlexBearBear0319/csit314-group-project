@@ -41,8 +41,7 @@ Check it works:
 
 ```
 npm test                          (all tests should pass)
-npm run dev:server                (backend: open http://localhost:3000/api/health, should say ok)
-npm run dev:client                (in a second terminal; website on http://localhost:5173)
+npm run dev                       (starts the API on port 3000 and the website on port 5173)
 ```
 
 ## Daily routine
@@ -67,6 +66,7 @@ Then open a Pull Request on GitHub, wait for all the checks (including Vercel) t
 |---|---|
 | `npm install` | Installs or updates all packages |
 | `npm test` | Runs all server unit tests (uses a temporary test database, never the real one) |
+| `npm run dev` | Starts the API and website together; Ctrl+C stops both |
 | `npm run dev:server` | Starts the backend and restarts it when you save a file |
 | `npm run dev:client` | Starts the website |
 | `npm run build` | Builds the website (same as Vercel does) |

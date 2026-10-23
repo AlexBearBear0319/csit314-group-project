@@ -4,6 +4,7 @@ import Button from '../components/Button';
 import DetailsView from '../components/DetailsView';
 import FormField from '../components/FormField';
 import Message from '../components/Message';
+import ProjectImageCarousel from '../components/ProjectImageCarousel';
 import ResultsTable from '../components/ResultsTable';
 import SearchBar from '../components/SearchBar';
 import { uploadSignedImage } from '../storage';
@@ -48,6 +49,7 @@ export default function DesignerIdpsPage({ status }) {
   const [notice, setNotice] = useState('');
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const dialogRef = useRef(null);
   const deleteButtonRef = useRef(null);
@@ -88,6 +90,7 @@ export default function DesignerIdpsPage({ status }) {
     setViewProject(null);
     setRemovedImageIds(new Set());
     setFiles([]);
+    setUploadProgress(null);
     setEditor({ ...EMPTY_PROJECT });
   }
 
@@ -98,6 +101,7 @@ export default function DesignerIdpsPage({ status }) {
       const response = await api.get(`${basePath}/${project.id}`);
       setViewProject(null);
       setFiles([]);
+      setUploadProgress(null);
       setRemovedImageIds(new Set());
       setEditor({
         ...response.project,
@@ -113,6 +117,7 @@ export default function DesignerIdpsPage({ status }) {
     setNotice('');
     setEditor(null);
     setFiles([]);
+    setUploadProgress(null);
     try {
       const response = await api.get(`${basePath}/${project.id}`);
       setViewProject(response.project);
@@ -124,6 +129,7 @@ export default function DesignerIdpsPage({ status }) {
   function cancelEdit() {
     setEditor(null);
     setFiles([]);
+    setUploadProgress(null);
     setRemovedImageIds(new Set());
     setError('');
   }
@@ -220,7 +226,8 @@ export default function DesignerIdpsPage({ status }) {
         });
       }
 
-      for (const pending of files) {
+      for (const [index, pending] of files.entries()) {
+        setUploadProgress({ current: index + 1, total: files.length, fileName: pending.file.name });
         let uploadId = '';
         try {
           const created = await api.post(`${basePath}/${projectId}/images/upload-url`, {
@@ -243,6 +250,7 @@ export default function DesignerIdpsPage({ status }) {
 
       setEditor(null);
       setFiles([]);
+      setUploadProgress(null);
       setRemovedImageIds(new Set());
       setViewProject(null);
       setNotice(cleanupPending
@@ -267,6 +275,7 @@ export default function DesignerIdpsPage({ status }) {
         }
       }
     } finally {
+      setUploadProgress(null);
       setIsSaving(false);
     }
   }
@@ -357,6 +366,7 @@ export default function DesignerIdpsPage({ status }) {
                         size="sm"
                         variant="secondary"
                         disabled={isSaving}
+                        aria-pressed={removed}
                         onClick={() => setRemovedImageIds((current) => {
                           const next = new Set(current);
                           if (removed) next.delete(image.id);
@@ -384,7 +394,7 @@ export default function DesignerIdpsPage({ status }) {
             />
             {files.length > 0 && (
               <fieldset className="grid gap-4">
-                <legend className="mb-1 text-sm font-medium text-ink">Images to upload</legend>
+                <legend className="mb-1 text-sm font-medium text-ink">Images to upload ({files.length})</legend>
                 {files.map((item) => (
                   <div key={item.key} className="grid gap-3 rounded-card border border-border p-4 sm:grid-cols-[8rem_minmax(0,1fr)_auto] sm:items-center">
                     <FilePreview file={item.file} />
@@ -408,6 +418,11 @@ export default function DesignerIdpsPage({ status }) {
               </fieldset>
             )}
 
+            {uploadProgress && (
+              <p className="text-sm text-muted" role="status" aria-live="polite">
+                Uploading image {uploadProgress.current} of {uploadProgress.total}: <span className="break-all">{uploadProgress.fileName}</span>
+              </p>
+            )}
             <div className="flex flex-wrap justify-end gap-3 pt-2">
               <Button type="button" variant="secondary" onClick={cancelEdit} disabled={isSaving}>Cancel</Button>
               <Button type="submit" loading={isSaving}>Save project</Button>
@@ -454,23 +469,7 @@ export default function DesignerIdpsPage({ status }) {
                 ]}
                 item={viewProject}
               />
-              {viewProject.images.length > 0 && (
-                <div className="mt-5 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {viewProject.images.map((image) => (
-                    <figure key={image.id} className="overflow-hidden rounded-card border border-border bg-white">
-                      {image.url ? (
-                        <img src={image.url} alt={image.altText} className="aspect-[4/3] w-full object-cover" />
-                      ) : (
-                        <div className="grid aspect-[4/3] place-items-center bg-canvas text-sm text-muted">Preview unavailable</div>
-                      )}
-                      <figcaption className="grid gap-1 p-3">
-                        <span className="text-sm font-medium text-ink">{image.fileName}</span>
-                        <span className="text-xs text-muted">{image.altText} · {imageSize(image.sizeBytes)}</span>
-                      </figcaption>
-                    </figure>
-                  ))}
-                </div>
-              )}
+              <ProjectImageCarousel key={viewProject.id} images={viewProject.images} projectName={viewProject.name} />
             </section>
           )}
         </>

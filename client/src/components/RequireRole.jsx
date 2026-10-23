@@ -1,4 +1,4 @@
-import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { hydrateSession, useSession } from '../session';
 import Button from './Button';
 
@@ -8,6 +8,7 @@ function SessionUnavailable() {
       <h1 className="text-2xl text-ink">Cannot reach the sign-in service</h1>
       <p className="mt-3 text-sm text-muted">Check the connection and try again.</p>
       <Button className="mt-5" variant="secondary" onClick={hydrateSession}>Try again</Button>
+      <Link className="ml-4 text-sm text-action underline" to="/login">Go to login</Link>
     </section>
   );
 }

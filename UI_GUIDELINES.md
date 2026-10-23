@@ -83,6 +83,7 @@ Keep pages usable at 320px. Do not let the page itself scroll from side to side.
 - Keep a clear focus ring on every link, button, and form control.
 - Use a 3px action-colour outline with a 3px offset.
 - Keep keyboard focus visible. Do not remove the outline without adding a clear replacement.
+- Give enabled buttons a short hover and pressed response. Keep the response visible without relying on colour alone.
 - Respect `prefers-reduced-motion`. Remove or shorten motion when the user asks for less motion.
 - Do not use movement to show an error, success, or selection.
 
@@ -141,6 +142,7 @@ Use `Button` from `client/src/components/Button.jsx`. Keep one clear main action
 The shared component accepts `primary`, `secondary`, `success`, `danger`, `warning`, `info`, `light`, `dark`, `outline-primary`, `outline-secondary`, `outline-success`, `outline-danger`, `outline-warning`, `outline-info`, `outline-light`, `outline-dark`, and `link`. `ResultsTable` keeps its existing `actions` API and passes each `variant` to `Button`.
 
 Set a button type. Use `type="submit"` for a form action. Use `type="button"` for every other button. Disable a button while its action cannot run. For a pending action, set `loading`; keep the action name visible.
+After an action finishes, show a short success or error message. Do not show success while work is still pending.
 
 ### Forms and validation
 
@@ -168,7 +170,7 @@ Use `ResultsTable` with its current `columns`, `rows`, and `actions` props. Keep
 
 Project cards are a future pattern for IDPs. Use a 1.35:1 image, a short project title, and only fields required by the story. Give each image a useful text alternative. Use an empty image state when the story has no image. Do not use preview photos or names as app content.
 
-Use `DetailsView` for a label and value list. Keep each field name visible. For a gallery, keep the image order, offer a clear way to view a larger image, and do not crop key content. Do not add project metrics or company facts without a source.
+Use `DetailsView` for a label and value list. Keep each field name visible. For a gallery, keep the image order, offer clear previous and next controls with the current position, and do not advance automatically. Keep key content in view. Respect reduced motion. For multiple uploads, keep each selected image visible and show which image is uploading. Do not add project metrics or company facts without a source.
 
 ### Delete and suspend confirmation
 

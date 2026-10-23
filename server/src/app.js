@@ -3,7 +3,8 @@
 require('dotenv').config({ quiet: true });
 const express = require('express');
 const cors = require('cors');
-const routes = require('./routes');
+const routesModule = require('./routes/index.js');
+const routes = typeof routesModule === 'function' ? routesModule : routesModule.default;
 const { allowedOrigins, requireTrustedOrigin } = require('./security/browserOrigin');
 
 const app = express();
@@ -23,6 +24,9 @@ app.use(cors({
 
 app.use(express.json({ limit: '32kb' }));
 app.use('/api', requireTrustedOrigin);
+if (typeof routes !== 'function') {
+  throw new TypeError('The API routes must export an Express router.');
+}
 app.use('/api', routes);
 
 app.use((error, req, res, next) => {
