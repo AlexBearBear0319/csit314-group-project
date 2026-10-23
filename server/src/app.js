@@ -4,8 +4,27 @@ require('dotenv').config({ quiet: true });
 const express = require('express');
 const cors = require('cors');
 const routesModule = require('./routes/index.js');
-const routes = typeof routesModule === 'function' ? routesModule : routesModule.default;
 const { allowedOrigins, requireTrustedOrigin } = require('./security/browserOrigin');
+
+function resolveRouterExport(moduleValue) {
+  const pending = [moduleValue];
+  const seen = new Set();
+
+  while (pending.length) {
+    const candidate = pending.shift();
+    if (typeof candidate === 'function') return candidate;
+    if (!candidate || typeof candidate !== 'object' || seen.has(candidate)) continue;
+
+    seen.add(candidate);
+    for (const key of ['default', 'router', 'routes']) {
+      if (candidate[key] !== undefined) pending.push(candidate[key]);
+    }
+  }
+
+  return null;
+}
+
+const routes = resolveRouterExport(routesModule);
 
 const app = express();
 
@@ -25,7 +44,10 @@ app.use(cors({
 app.use(express.json({ limit: '32kb' }));
 app.use('/api', requireTrustedOrigin);
 if (typeof routes !== 'function') {
-  throw new TypeError('The API routes must export an Express router.');
+  const exportKeys = routesModule && typeof routesModule === 'object'
+    ? Object.keys(routesModule).join(', ')
+    : typeof routesModule;
+  throw new TypeError(`The API routes must export an Express router. Received: ${exportKeys}.`);
 }
 app.use('/api', routes);
 

@@ -4,14 +4,20 @@ afterEach(() => {
   jest.dontMock('../src/routes/index.js');
 });
 
-test.each(['commonjs', 'default'])('starts with a %s router export', async (shape) => {
+test.each(['commonjs', 'default', 'nested-default', 'named-router'])('starts with a %s router export', async (shape) => {
   const express = require('express');
   const router = express.Router();
   router.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
   let app;
   jest.isolateModules(() => {
-    jest.doMock('../src/routes/index.js', () => shape === 'default' ? { default: router } : router);
+    const exportsByShape = {
+      commonjs: router,
+      default: { default: router },
+      'nested-default': { default: { default: router } },
+      'named-router': { routes: { router } },
+    };
+    jest.doMock('../src/routes/index.js', () => exportsByShape[shape]);
     app = require('../src/app');
   });
 
