@@ -6,6 +6,19 @@ const cors = require('cors');
 const routesModule = require('./routes/index.cjs');
 const { allowedOrigins, requireTrustedOrigin } = require('./security/browserOrigin');
 
+if (process.env.VERCEL) {
+  const routeModulePath = require.resolve('./routes/index.cjs');
+  const routeCacheEntry = require.cache[routeModulePath];
+  console.error('[API startup]', JSON.stringify({
+    vercelEnv: process.env.VERCEL_ENV || 'unset',
+    databaseUrlConfigured: Boolean(process.env.DATABASE_URL),
+    routesModuleType: typeof routesModule,
+    routesModuleKeys: routesModule && typeof routesModule === 'object' ? Object.keys(routesModule) : [],
+    routeFileLoaded: routeCacheEntry?.loaded ?? null,
+    routeFileExportType: routeCacheEntry ? typeof routeCacheEntry.exports : 'not-cached',
+  }));
+}
+
 function resolveRouterExport(moduleValue) {
   const pending = [moduleValue];
   const seen = new Set();
