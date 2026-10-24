@@ -48,6 +48,7 @@ export default function DesignerIdpsPage({ status }) {
   const [files, setFiles] = useState([]);
   const [removedImageIds, setRemovedImageIds] = useState(() => new Set());
   const [viewProject, setViewProject] = useState(null);
+  const [projectStartIndex, setProjectStartIndex] = useState(0);
   const [deleteTarget, setDeleteTarget] = useState(null);
   const [error, setError] = useState('');
   const [notice, setNotice] = useState('');
@@ -171,7 +172,7 @@ export default function DesignerIdpsPage({ status }) {
     }
   }
 
-  async function showProject(project, focusTarget) {
+  async function showProject(project, focusTarget, imageId) {
     setError('');
     setNotice('');
     setEditor(null);
@@ -179,11 +180,15 @@ export default function DesignerIdpsPage({ status }) {
     setUploadProgress(null);
     const requestId = ++projectRequestIdRef.current;
     projectRestoreFocusRef.current = focusTarget || document.activeElement;
+    setProjectStartIndex(0);
     setViewProject({ id: project.id, name: project.name, images: [] });
     setIsViewing(true);
     try {
       const response = await api.get(`${basePath}/${project.id}`);
       if (requestId !== projectRequestIdRef.current) return;
+      const images = response.project.images || [];
+      const selectedIndex = imageId ? images.findIndex((image) => image.id === imageId) : 0;
+      setProjectStartIndex(selectedIndex < 0 ? 0 : selectedIndex);
       setViewProject(response.project);
     } catch (requestError) {
       if (requestId === projectRequestIdRef.current) {
@@ -497,11 +502,12 @@ export default function DesignerIdpsPage({ status }) {
             <p role="status" className="rounded-card border border-border bg-surface px-5 py-8 text-center text-muted">Loading projects.</p>
           ) : projects.length > 0 ? (
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
-              {projects.map((project) => (
+              {projects.map((project, index) => (
                 <ProjectFolderCard
                   key={project.id}
                   project={project}
                   past={past}
+                  appearDelay={index * 70}
                   onView={showProject}
                   onEdit={beginEdit}
                   onDelete={openDelete}
@@ -582,7 +588,7 @@ export default function DesignerIdpsPage({ status }) {
                 <p className="px-4 py-8 text-center text-muted sm:px-6" role="status" aria-live="polite">Loading project.</p>
               ) : (
                 <div className={`grid gap-5 p-4 sm:p-6 ${viewProject.images?.length ? 'lg:grid-cols-[minmax(0,1.6fr)_minmax(17rem,0.8fr)]' : ''}`}>
-                  <ProjectImageCarousel key={viewProject.id} images={viewProject.images || []} projectName={viewProject.name} />
+                  <ProjectImageCarousel key={viewProject.id} images={viewProject.images || []} projectName={viewProject.name} initialIndex={projectStartIndex} />
                   <aside className={`min-w-0 ${viewProject.images?.length ? 'border-t border-border pt-4 lg:border-l lg:border-t-0 lg:pl-5 lg:pt-0' : ''}`}>
                     <DetailsView
                       fields={[

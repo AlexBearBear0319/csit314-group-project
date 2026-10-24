@@ -1,90 +1,271 @@
-import { useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import Button from './Button';
 
 function displayValue(value) {
   return value || '—';
 }
 
-export default function ProjectFolderCard({ project, past, onView, onEdit, onDelete }) {
+function filePosition(index, count) {
+  const slot = index - (count - 1) / 2;
+  return {
+    '--project-file-x': `${slot * 3.25}rem`,
+    '--project-file-rotation': `${slot * 11}deg`,
+    '--project-file-delay': `${index * 45}ms`,
+    zIndex: index + 1,
+  };
+}
+
+export default function ProjectFolderCard({ project, past, onView, onEdit, onDelete, appearDelay = 0 }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [hasEntered, setHasEntered] = useState(() => typeof IntersectionObserver === 'undefined');
+  const cardRef = useRef(null);
+  const folderRef = useRef(null);
+  const folderButtonRef = useRef(null);
+  const fileListRef = useRef(null);
   const moreRef = useRef(null);
   const moreButtonRef = useRef(null);
+  const menuRef = useRef(null);
+  const filesId = useId().replace(/:/g, '');
   const previews = (project.images || []).filter((image) => image.url).slice(0, 3);
   const imageCount = project.imageCount ?? project.images?.length ?? 0;
 
+  useEffect(() => {
+    const card = cardRef.current;
+    if (!card) return undefined;
+    if (typeof IntersectionObserver === 'undefined') return undefined;
+
+    let delayTimer;
+    const observer = new IntersectionObserver((entries) => {
+      if (!entries.some((entry) => entry.isIntersecting)) return;
+      observer.disconnect();
+      delayTimer = window.setTimeout(() => setHasEntered(true), appearDelay);
+    }, { threshold: 0.15 });
+    observer.observe(card);
+
+    return () => {
+      observer.disconnect();
+      window.clearTimeout(delayTimer);
+    };
+  }, [appearDelay]);
+
+  useEffect(() => {
+    const folder = folderRef.current;
+    if (!folder) return undefined;
+
+    let frame = 0;
+    let rotateX = '0deg';
+    let rotateY = '0deg';
+    const applyTilt = () => {
+      frame = 0;
+      folder.style.setProperty('--project-folder-rotate-x', rotateX);
+      folder.style.setProperty('--project-folder-rotate-y', rotateY);
+    };
+    const onPointerMove = (event) => {
+      if (event.pointerType === 'touch') return;
+      const bounds = folder.getBoundingClientRect();
+      const x = Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width) * 2 - 1));
+      const y = Math.max(-1, Math.min(1, ((event.clientY - bounds.top) / bounds.height) * 2 - 1));
+      rotateX = `${(-y * 4).toFixed(2)}deg`;
+      rotateY = `${(x * 5).toFixed(2)}deg`;
+      if (!frame) frame = window.requestAnimationFrame(applyTilt);
+    };
+    const onPointerLeave = () => {
+      rotateX = '0deg';
+      rotateY = '0deg';
+      if (!frame) frame = window.requestAnimationFrame(applyTilt);
+    };
+
+    folder.addEventListener('pointermove', onPointerMove);
+    folder.addEventListener('pointerleave', onPointerLeave);
+    return () => {
+      folder.removeEventListener('pointermove', onPointerMove);
+      folder.removeEventListener('pointerleave', onPointerLeave);
+      window.cancelAnimationFrame(frame);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isMenuOpen) menuRef.current?.querySelector('[role="menuitem"]')?.focus();
+  }, [isMenuOpen]);
+
+  useEffect(() => {
+    if (!isOpen && !isMenuOpen) return undefined;
+
+    const closeMenu = () => {
+      if (moreRef.current?.open) moreRef.current.open = false;
+      setIsMenuOpen(false);
+    };
+    const onKeyDown = (event) => {
+      if (event.key !== 'Escape') return;
+      if (isMenuOpen) {
+        closeMenu();
+        moreButtonRef.current?.focus();
+      } else if (isOpen) {
+        setIsOpen(false);
+        folderButtonRef.current?.focus();
+      }
+    };
+    const onPointerDown = (event) => {
+      if (isOpen && !cardRef.current?.contains(event.target)) setIsOpen(false);
+      if (isMenuOpen && !moreRef.current?.contains(event.target)) closeMenu();
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.removeEventListener('pointerdown', onPointerDown);
+    };
+  }, [isOpen, isMenuOpen]);
+
   function runAction(action) {
-    moreRef.current?.removeAttribute('open');
+    if (moreRef.current?.open) moreRef.current.open = false;
+    setIsMenuOpen(false);
     action();
   }
 
   function handleMenuKeyDown(event) {
-    if (event.key === 'Escape' && moreRef.current?.open) {
+    if (!moreRef.current?.open) return;
+    if (event.key === 'Escape') {
       event.preventDefault();
+      event.stopPropagation();
       moreRef.current.open = false;
+      setIsMenuOpen(false);
       moreButtonRef.current?.focus();
+      return;
     }
+
+    const items = [...(menuRef.current?.querySelectorAll('[role="menuitem"]') || [])];
+    if (!items.length || !['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return;
+    event.preventDefault();
+    const currentIndex = items.indexOf(document.activeElement);
+    const nextIndex = event.key === 'Home'
+      ? 0
+      : event.key === 'End'
+        ? items.length - 1
+        : event.key === 'ArrowDown'
+          ? (currentIndex + 1) % items.length
+          : (currentIndex <= 0 ? items.length - 1 : currentIndex - 1);
+    items[nextIndex].focus();
   }
 
   return (
-    <article className="project-folder-card group min-w-0 rounded-panel border border-border bg-surface p-4 shadow-card transition duration-200 hover:-translate-y-0.5 hover:shadow-menu motion-reduce:transform-none motion-reduce:transition-none">
-      <div className="project-folder-frame relative mb-4 pt-3">
-        <span aria-hidden="true" className="absolute left-4 top-0 h-4 w-24 rounded-t-control border border-b-0 border-border bg-action-soft" />
-        <span aria-hidden="true" className="absolute inset-x-2 bottom-0 top-5 rotate-[-3deg] rounded-card border border-border bg-action-soft/70" />
-        <span aria-hidden="true" className="absolute inset-x-1 bottom-0 top-4 rotate-[2deg] rounded-card border border-border bg-canvas" />
-        <button
-          type="button"
-          className="project-folder-preview button-feedback group relative block aspect-[1.35/1] w-full overflow-hidden rounded-card border border-border bg-action-soft/50 text-left focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-action"
-          aria-label={`Open project ${project.name}`}
-          onClick={(event) => onView(project, event.currentTarget)}
-        >
-          {previews.length > 0 ? (
-            <>
-              {previews.slice(1).map((image, index) => (
-                <span
-                  key={image.id}
-                  aria-hidden="true"
-                  className={`project-folder-sheet absolute inset-2 overflow-hidden rounded-card border border-white bg-white shadow-card transition-transform duration-200 group-hover:-translate-y-1 group-focus-within:-translate-y-1 motion-reduce:transition-none ${index === 0 ? 'rotate-[-5deg]' : 'rotate-[5deg]'}`}
-                >
-                  <img src={image.url} alt="" className="size-full object-cover" />
-                </span>
-              ))}
-              <img
-                src={previews[0].url}
-                alt=""
-                className="project-folder-sheet absolute inset-2 size-[calc(100%-1rem)] rounded-card object-cover shadow-card transition-transform duration-200 group-hover:-translate-y-1 group-hover:scale-[1.02] group-focus-within:-translate-y-1 motion-reduce:transition-none"
-              />
-            </>
-          ) : (
-            <span aria-hidden="true" className="absolute inset-0 grid place-items-center text-action">
-              <svg viewBox="0 0 96 72" fill="none" className="w-1/2 max-w-28" aria-hidden="true">
+    <article
+      ref={cardRef}
+      className="project-folder-card group min-w-0 rounded-panel border border-border bg-surface p-4 shadow-card transition duration-200 hover:-translate-y-0.5 hover:shadow-menu motion-reduce:transform-none motion-reduce:transition-none"
+    >
+      <h2 className="sr-only">{project.name}</h2>
+
+      <div
+        ref={folderRef}
+        className="project-folder-frame relative mb-4"
+        data-open={isOpen ? 'true' : 'false'}
+        data-entered={hasEntered ? 'true' : 'false'}
+      >
+        <div className="project-folder-stage">
+          <span className="project-folder-tab" aria-hidden="true" />
+          <div className="project-folder-back" aria-hidden="true">
+            {previews[0]?.url ? (
+              <img src={previews[0].url} alt="" className="project-folder-art" />
+            ) : (
+              <svg viewBox="0 0 96 72" fill="none" className="project-folder-empty-art" aria-hidden="true">
                 <path d="M8 19a7 7 0 0 1 7-7h23l8 9h35a7 7 0 0 1 7 7v27a7 7 0 0 1-7 7H15a7 7 0 0 1-7-7V19Z" fill="currentColor" opacity=".18" />
                 <path d="M8 26a7 7 0 0 1 7-7h66a7 7 0 0 1 7 7v29a7 7 0 0 1-7 7H15a7 7 0 0 1-7-7V26Z" fill="currentColor" opacity=".72" />
-                <path d="M14 29h68v25H14z" fill="white" opacity=".45" />
               </svg>
+            )}
+          </div>
+
+          <div
+            id={filesId}
+            ref={fileListRef}
+            className="project-folder-files"
+            role="list"
+            aria-label={`${project.name} photos`}
+            aria-hidden={!isOpen}
+            inert={!isOpen}
+          >
+            {previews.length ? previews.map((image, index) => (
+              <div
+                key={image.id || `${image.fileName}-${index}`}
+                className="project-folder-file-slot"
+                style={filePosition(index, previews.length)}
+                role="listitem"
+              >
+                <button
+                  type="button"
+                  className="project-folder-file button-feedback focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action"
+                  aria-label={`View ${image.fileName || `project photo ${index + 1}`}`}
+                  onClick={(event) => onView(project, event.currentTarget, image.id)}
+                >
+                  <img src={image.url} alt="" className="project-folder-file-image" />
+                  <span className="project-folder-file-name">{image.fileName || `Photo ${index + 1}`}</span>
+                </button>
+              </div>
+            )) : (
+              <div className="project-folder-empty-message" role="listitem">No photo previews</div>
+            )}
+          </div>
+
+          <button
+            ref={folderButtonRef}
+            type="button"
+            className="project-folder-front button-feedback focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-action"
+            aria-label={`${isOpen ? 'Close' : 'Open'} photo folder for ${project.name}`}
+            aria-expanded={isOpen}
+            aria-controls={filesId}
+            onClick={() => setIsOpen((current) => !current)}
+          >
+            <span className="project-folder-glass" aria-hidden="true" />
+            <span className="project-folder-label" aria-hidden="true">
+              <span className="project-folder-name">{project.name}</span>
+              <span className="project-folder-meta">{imageCount} {imageCount === 1 ? 'image' : 'images'}</span>
             </span>
-          )}
-          <span className="project-folder-glass" aria-hidden="true" />
-          <span className="absolute bottom-2 right-2 z-10 rounded-control border border-white/60 bg-white/85 px-2.5 py-1 text-xs font-medium text-ink shadow-card backdrop-blur-sm">
-            {imageCount} {imageCount === 1 ? 'image' : 'images'}
-          </span>
-        </button>
+          </button>
+
+          <button
+            type="button"
+            className="project-folder-key button-feedback focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action"
+            aria-label={`Add photos to ${project.name}`}
+            title="Open the project editor to add photos."
+            onClick={() => {
+              setIsOpen(false);
+              onEdit(project);
+            }}
+          >
+            <span aria-hidden="true">+</span>
+          </button>
+        </div>
       </div>
 
-      <div className="flex items-start justify-between gap-2">
-        <h2 className="min-w-0 break-words text-lg font-semibold leading-snug text-ink">
-          {project.name}
-        </h2>
-        <details ref={moreRef} className="relative shrink-0" onKeyDown={handleMenuKeyDown}>
+      <div className="flex items-start justify-end gap-2">
+        <details
+          ref={moreRef}
+          className="relative shrink-0"
+          onToggle={(event) => setIsMenuOpen(event.currentTarget.open)}
+          onKeyDown={handleMenuKeyDown}
+        >
           <summary
             ref={moreButtonRef}
             aria-label={`More actions for ${project.name}`}
-            className="grid min-h-10 min-w-10 cursor-pointer list-none place-items-center rounded-control border border-border bg-surface px-2 text-sm font-medium text-ink transition-colors hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action [&::-webkit-details-marker]:hidden"
+            aria-haspopup="menu"
+            aria-expanded={isMenuOpen}
+            className="grid min-h-10 min-w-10 cursor-pointer list-none place-items-center rounded-control border border-border bg-surface px-2 text-xl leading-none text-ink transition-colors hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action [&::-webkit-details-marker]:hidden"
           >
-            <span>More</span>
+            <span aria-hidden="true">···</span>
           </summary>
-          <div className="absolute right-0 top-12 z-20 grid min-w-36 gap-1 rounded-card border border-border bg-surface p-1.5 shadow-menu">
-            <button type="button" className="button-feedback min-h-10 rounded-control px-3 text-left text-sm text-ink hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-action" onClick={() => runAction(() => onView(project, moreButtonRef.current))}>View</button>
-            <button type="button" className="button-feedback min-h-10 rounded-control px-3 text-left text-sm text-ink hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-action" onClick={() => runAction(() => onEdit(project))}>Edit</button>
-            <button type="button" className="button-feedback min-h-10 rounded-control px-3 text-left text-sm text-danger hover:bg-danger-soft focus-visible:outline-2 focus-visible:outline-danger" onClick={() => runAction(() => onDelete(project, moreButtonRef.current))}>Delete</button>
+          <div
+            ref={menuRef}
+            role="menu"
+            aria-label={`${project.name} options`}
+            className="absolute right-0 top-12 z-20 grid min-w-44 gap-1 rounded-card border border-border bg-surface/90 p-1.5 shadow-menu backdrop-blur-lg"
+          >
+            <button type="button" role="menuitem" className="button-feedback min-h-10 rounded-control px-3 text-left text-sm text-ink hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-action" onClick={() => runAction(() => setIsOpen((current) => !current))}>
+              {isOpen ? 'Close photo folder' : 'Open photo folder'}
+            </button>
+            <button type="button" role="menuitem" className="button-feedback min-h-10 rounded-control px-3 text-left text-sm text-ink hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-action" onClick={() => runAction(() => onView(project, moreButtonRef.current))}>View project</button>
+            <button type="button" role="menuitem" className="button-feedback min-h-10 rounded-control px-3 text-left text-sm text-ink hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-action" onClick={() => runAction(() => onEdit(project))}>Edit project</button>
+            <button type="button" role="menuitem" className="button-feedback min-h-10 rounded-control px-3 text-left text-sm text-danger hover:bg-danger-soft focus-visible:outline-2 focus-visible:outline-danger" onClick={() => runAction(() => onDelete(project, moreButtonRef.current))}>Delete project</button>
           </div>
         </details>
       </div>

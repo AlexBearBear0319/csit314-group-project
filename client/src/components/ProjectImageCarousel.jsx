@@ -8,8 +8,8 @@ function imageSize(sizeBytes) {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export default function ProjectImageCarousel({ images = [], projectName }) {
-  const [activeIndex, setActiveIndex] = useState(0);
+export default function ProjectImageCarousel({ images = [], projectName, initialIndex = 0 }) {
+  const [activeIndex, setActiveIndex] = useState(initialIndex);
   const touchStartRef = useRef(null);
   const imageCount = images.length;
   const safeIndex = Math.min(activeIndex, Math.max(0, imageCount - 1));
