@@ -1,0 +1,112 @@
+### Manual tests for User Account stories #6-10
+### Needs: VS Code "REST Client" extension, and the backend running (npm run dev:server).
+### Click "Send Request" above each request, top to bottom.
+### This uses the SHARED database. Only suspend or edit the test account you create in step 2.
+
+@base = http://localhost:3000/api
+@origin = http://localhost:5173
+
+### 1. Log in as a User Admin (saves the session cookie automatically)
+# @name login
+POST {{base}}/login
+Content-Type: application/json
+Origin: {{origin}}
+
+{ "username": "admin1", "password": "password123" }
+
+@csrf = {{login.response.body.csrfToken}}
+
+### 2. #6 Create a test account. profileId 3 is Customer in the seeded data.
+###    If unsure, run step 5 first and read the profileId next to a Customer account.
+# @name created
+POST {{base}}/user-accounts
+Content-Type: application/json
+Origin: {{origin}}
+X-CSRF-Token: {{csrf}}
+
+{
+  "username": "kaz.test",
+  "password": "test-password-123",
+  "name": "Kaz Test",
+  "email": "kaz.test@example.com",
+  "profileId": 3
+}
+
+@newId = {{created.response.body.id}}
+
+### 3. #6 Create again with the same user ID -> expect 409 "already in use"
+POST {{base}}/user-accounts
+Content-Type: application/json
+Origin: {{origin}}
+X-CSRF-Token: {{csrf}}
+
+{
+  "username": "kaz.test",
+  "password": "test-password-123",
+  "name": "Duplicate",
+  "email": "other@example.com",
+  "profileId": 3
+}
+
+### 4. #6 Create with bad fields -> expect 400 with a list of errors
+POST {{base}}/user-accounts
+Content-Type: application/json
+Origin: {{origin}}
+X-CSRF-Token: {{csrf}}
+
+{ "username": "x", "password": "short", "name": "", "email": "nope", "profileId": 999 }
+
+### 5. #10 Search all accounts
+GET {{base}}/user-accounts
+
+### 6. #10 Search by keyword
+GET {{base}}/user-accounts?keyword=kaz
+
+### 7. #7 View the test account
+GET {{base}}/user-accounts/{{newId}}
+
+### 8. #7 View an account that does not exist -> expect 404
+GET {{base}}/user-accounts/999999
+
+### 9. #8 Update the test account's name
+PUT {{base}}/user-accounts/{{newId}}
+Content-Type: application/json
+Origin: {{origin}}
+X-CSRF-Token: {{csrf}}
+
+{ "name": "Kaz Test Renamed" }
+
+### 10. #9 Suspend the test account
+POST {{base}}/user-accounts/{{newId}}/suspend
+Origin: {{origin}}
+X-CSRF-Token: {{csrf}}
+
+### 11. #9 Try to log in as the suspended account -> expect 403 "This account is suspended."
+POST {{base}}/login
+Content-Type: application/json
+Origin: {{origin}}
+
+{ "username": "kaz.test", "password": "test-password-123" }
+
+### 12. #8 Reactivate the suspended test account (Update with status "active")
+PUT {{base}}/user-accounts/{{newId}}
+Content-Type: application/json
+Origin: {{origin}}
+X-CSRF-Token: {{csrf}}
+
+{ "status": "active" }
+
+### 13. #8 Update cannot suspend -> expect 400 "Use Suspend to suspend an account."
+PUT {{base}}/user-accounts/{{newId}}
+Content-Type: application/json
+Origin: {{origin}}
+X-CSRF-Token: {{csrf}}
+
+{ "status": "suspended" }
+
+### 14. Log in as the reactivated account -> expect 200
+POST {{base}}/login
+Content-Type: application/json
+Origin: {{origin}}
+
+{ "username": "kaz.test", "password": "test-password-123" }

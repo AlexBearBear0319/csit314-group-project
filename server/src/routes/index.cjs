@@ -69,6 +69,20 @@ router.post('/register/designer', signupRateLimit, signupIdentityRateLimit, Sess
 router.get('/session', authenticateSession, SessionController.current);
 router.delete('/session', authenticateSession, requireCsrf, SessionController.logout);
 
+// User Admin: user account stories #6-10 (routes are in ./userAccounts.js).
+// router.use(address, check1, check2, check3, routes) runs the checks in order
+// for EVERY request that starts with /api/user-accounts. If a check fails, it
+// replies with an error and the request never reaches the routes.
+//   authenticateSession       -> is someone logged in? reads the session cookie
+//                                and puts their details in req.auth (else 401)
+//   requireRole('User Admin') -> is req.auth.role "User Admin"? (else 403)
+//   requireCsrf               -> for changes (POST/PUT/PATCH/DELETE): does the
+//                                X-CSRF-Token header match the session? (else 403)
+//                                This stops other websites sending requests
+//                                with the admin's cookie.
+// All 3 checks were written by Alex in middleware/authenticateSession.js.
+router.use('/user-accounts', authenticateSession, requireRole('User Admin'), requireCsrf, require('./userAccounts'));
+
 // Every Interior Designer action uses the account and role read from the
 // server-side session. No route accepts an owner ID from the browser.
 router.use('/designer', authenticateSession, requireRole('Interior Designer'), requireCsrf);
