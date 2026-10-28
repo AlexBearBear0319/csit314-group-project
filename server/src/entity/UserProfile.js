@@ -22,6 +22,11 @@ class UserProfile extends Model {
     return profile ? profile.update({ status: 'suspended' }) : null;
   }
 
+  static async activateProfile(id) {
+    const profile = await this.findByPk(id);
+    return profile ? profile.update({ status: 'active' }) : null;
+  }
+
   static async searchProfiles(keyword = '') {
     const profiles = await this.findAll({ order: [['name', 'ASC'], ['id', 'ASC']] });
     const term = keyword.trim().toLowerCase();

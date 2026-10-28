@@ -22,6 +22,7 @@ router.post('/', async (req, res) => sendProfile(res, await create.createProfile
 router.get('/:id', async (req, res) => sendProfile(res, await view.viewProfile(req.params.id)));
 router.put('/:id', async (req, res) => sendProfile(res, await update.updateProfile(req.params.id, req.body)));
 router.post('/:id/suspend', async (req, res) => sendProfile(res, await suspend.suspendProfile(req.params.id)));
+router.post('/:id/activate', async (req, res) => sendProfile(res, await suspend.activateProfile(req.params.id)));
 
 router.use((error, req, res, next) => {
   if (res.headersSent) return next(error);
