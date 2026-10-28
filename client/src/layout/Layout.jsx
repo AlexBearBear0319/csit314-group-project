@@ -5,31 +5,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { hydrateSession, killSession, useSession } from '../session';
 import Button from '../components/Button';
 import Message from '../components/Message';
-
-// Menu links per role. Add a link here when you build a new page.
-const MENUS = {
-  'User Admin': [
-    { to: '/admin', label: 'Dashboard' },
-    { to: '/admin/accounts', label: 'User Accounts' },
-    { to: '/admin/profiles', label: 'User Profiles' },
-  ],
-  'Interior Designer': [
-    { to: '/designer', label: 'Dashboard' },
-    { to: '/designer/company', label: 'Company Info' },
-    { to: '/designer/current-idps', label: 'Current IDPs' },
-    { to: '/designer/past-idps', label: 'Past IDPs' },
-  ],
-  Customer: [
-    { to: '/customer', label: 'Dashboard' },
-    { to: '/customer/search', label: 'Search IDPs' },
-    { to: '/customer/shortlist', label: 'My Shortlist' },
-  ],
-  'Platform Manager': [
-    { to: '/manager', label: 'Dashboard' },
-    { to: '/manager/categories', label: 'IDP Categories' },
-    { to: '/manager/reports', label: 'Reports' },
-  ],
-};
+import { MENUS } from './menus';
 
 export default function Layout() {
   const { user } = useSession();
