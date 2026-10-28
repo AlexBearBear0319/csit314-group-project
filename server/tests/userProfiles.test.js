@@ -80,6 +80,20 @@ describe('User profile stories #1–5', () => {
     expect((await client.post('/api/user-profiles/9999/suspend')).status).toBe(404);
   });
 
+  test('activating a suspended profile lets its accounts log in again', async () => {
+    const profile = await UserProfile.create({ name: 'Customer', status: 'suspended' });
+    await UserAccount.create({ username: 'customer', password: await bcrypt.hash('password123', 4),
+      name: 'Customer', email: 'c@example.com', profileId: profile.id });
+    expect((await UserAccount.login('customer', 'password123', 'Customer')).reason).toBe('profile-suspended');
+    const res = await client.post(`/api/user-profiles/${profile.id}/activate`);
+    expect(res.status).toBe(200);
+    expect(res.body.status).toBe('active');
+    expect((await UserAccount.login('customer', 'password123', 'Customer')).account).toBeTruthy();
+    expect((await client.post(`/api/user-profiles/${profile.id}/activate`)).status).toBe(200);
+    expect((await client.post('/api/user-profiles/9999/activate')).status).toBe(404);
+    expect((await client.post('/api/user-profiles/not-an-id/activate')).status).toBe(400);
+  });
+
   test('lists and searches profiles by name or description, ignoring case', async () => {
     await UserProfile.bulkCreate([
       { name: 'Customer', description: 'Home owners' },
