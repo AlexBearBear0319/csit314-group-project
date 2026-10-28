@@ -14,9 +14,12 @@ export default function FormField({
   hint,
   error,
   autoComplete,
+  minLength,
+  maxLength,
+  inputMode,
+  pattern,
   accept,
   multiple = false,
-  maxLength,
 }) {
   const hintId = hint ? `${id}-hint` : undefined;
   const errorId = error ? `${id}-error` : undefined;
@@ -66,8 +69,11 @@ export default function FormField({
         <input
           {...sharedProps}
           type={type}
-          maxLength={maxLength}
           autoComplete={autoComplete}
+          minLength={minLength}
+          maxLength={maxLength}
+          inputMode={inputMode}
+          pattern={pattern}
           value={value ?? ''}
           className={CONTROL_CLASS}
         />

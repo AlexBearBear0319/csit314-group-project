@@ -83,6 +83,7 @@ Keep pages usable at 320px. Do not let the page itself scroll from side to side.
 - Keep a clear focus ring on every link, button, and form control.
 - Use a 3px action-colour outline with a 3px offset.
 - Keep keyboard focus visible. Do not remove the outline without adding a clear replacement.
+- Give enabled buttons a short hover and pressed response. Keep the response visible without relying on colour alone.
 - Respect `prefers-reduced-motion`. Remove or shorten motion when the user asks for less motion.
 - Do not use movement to show an error, success, or selection.
 
@@ -105,7 +106,9 @@ The routes below are in `client/src/App.jsx`.
 
 | Page | Current state | Story area |
 |---|---|---|
-| `/login` | Existing UI placeholder. It stores the typed name and selected role for navigation. This is not authentication. | Login for the four roles; show the existing login error text. |
+| `/login` | Server-backed login with a user ID and password. The server reads the role from the linked user profile. | Sign in to one of the four roles. |
+| `/register` | Choose an account type. | Public sign-up for Customer or Interior Designer. |
+| `/register/customer`, `/register/designer` | Server-backed account creation. | Create a Customer or Interior Designer account. |
 | `/admin` | Existing role dashboard with a page heading. | User Admin home. No dashboard data is defined in the stories. |
 | `/admin/accounts` | Existing title placeholder. | User account create, view, update, delete, and search. |
 | `/admin/profiles` | Existing title placeholder. | User profile create, view, update, delete, and search. |
@@ -121,7 +124,7 @@ The routes below are in `client/src/App.jsx`.
 | `/manager/reports` | Existing title placeholder. | Daily, weekly, and monthly reports. |
 | `*` | Existing not-found title placeholder. | No business story is defined for this route. |
 
-The current login accepts any non-empty user ID and password. It does not check an account. Keep this behaviour during UI work. Do not call it a complete login feature.
+Login, registration and role checks use the server API. Do not add a role selector to the login form or allow public sign-up as User Admin or Platform Manager.
 
 ### Source items to confirm
 
@@ -139,6 +142,7 @@ Use `Button` from `client/src/components/Button.jsx`. Keep one clear main action
 The shared component accepts `primary`, `secondary`, `success`, `danger`, `warning`, `info`, `light`, `dark`, `outline-primary`, `outline-secondary`, `outline-success`, `outline-danger`, `outline-warning`, `outline-info`, `outline-light`, `outline-dark`, and `link`. `ResultsTable` keeps its existing `actions` API and passes each `variant` to `Button`.
 
 Set a button type. Use `type="submit"` for a form action. Use `type="button"` for every other button. Disable a button while its action cannot run. For a pending action, set `loading`; keep the action name visible.
+After an action finishes, show a short success or error message. Do not show success while work is still pending.
 
 ### Forms and validation
 
@@ -164,9 +168,13 @@ Use `ResultsTable` with its current `columns`, `rows`, and `actions` props. Keep
 
 ### Project cards, galleries, and details
 
-Project cards are a future pattern for IDPs. Use a 1.35:1 image, a short project title, and only fields required by the story. Give each image a useful text alternative. Use an empty image state when the story has no image. Do not use preview photos or names as app content.
+Current and past IDPs use the shared project folder card. Show the project name, property type, design style, and image count. Past IDPs also show the completion date. Use a 1.35:1 folder and real project photos only. Use a plain folder when a project has no photo preview. Use a frosted front panel over the photo sheets. Assemble the folder as it enters view. Let the panel lean toward the pointer. On hover or keyboard focus, lift the sheets. When the folder opens, fan out its photo sheets as buttons. Do not add preview photos, sample records, or project facts as app content.
 
-Use `DetailsView` for a label and value list. Keep each field name visible. For a gallery, keep the image order, offer a clear way to view a larger image, and do not crop key content. Do not add project metrics or company facts without a source.
+Show three project cards per row on wide screens, two on tablet screens, and one on phone screens. Load nine projects per page from the API. Return the total and page count. Load preview images for the selected page and load the full gallery when a user opens a project. Keep the sort order stable. Search starts at page 1. After a delete on the last page, show the previous page when it has projects.
+
+Give each folder an accessible open and close action. Add photos opens the project editor. Keep View project visible and open project details in a modal dialog. Keep Open/Close folder, View, Edit, and Delete in a keyboard-accessible More menu. A photo sheet opens the viewer at that photo. Do not hide an action on hover. Support Enter, Space, Escape, and arrow keys in the menu. Keep a visible focus ring and usable touch targets. Respect reduced motion.
+
+Use `DetailsView` for a label and value list. Keep each field name visible. In the project dialog, keep the image at its source ratio and fit it inside the viewer; do not crop it. For a gallery, keep the image order and do not advance automatically. Show arrows and photo dots at the bottom of the image. Support phone swipes, and wrap from the last photo to the first. Return focus to the control that opened the dialog. Keep key content in view. For multiple uploads, keep each selected image visible and show which image is uploading. Do not add project metrics or company facts without a source.
 
 ### Delete and suspend confirmation
 

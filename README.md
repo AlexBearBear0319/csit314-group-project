@@ -14,6 +14,7 @@ Class and method names in the code must match the diagrams exactly.
 
 - Read [UI_GUIDELINES.md](UI_GUIDELINES.md) before a UI change.
 - See the [standalone UI preview](docs/ui-preview.html) for the approved visual example. Its sample records do not belong to the app.
+- See [Interior Designer IDP setup](docs/INTERIOR_DESIGNER_IDPS_SETUP.md) for the SQL, Supabase Storage settings, deployment variables and live API checks.
 
 For another coding tool, use this prompt:
 
@@ -40,8 +41,7 @@ Check it works:
 
 ```
 npm test                          (all tests should pass)
-npm run dev:server                (backend: open http://localhost:3000/api/health, should say ok)
-npm run dev:client                (in a second terminal; website on http://localhost:5173)
+npm run dev                       (starts the API on port 3000 and the website on port 5173)
 ```
 
 ## Daily routine
@@ -66,13 +66,14 @@ Then open a Pull Request on GitHub, wait for all the checks (including Vercel) t
 |---|---|
 | `npm install` | Installs or updates all packages |
 | `npm test` | Runs all server unit tests (uses a temporary test database, never the real one) |
+| `npm run dev` | Starts the API and website together; Ctrl+C stops both |
 | `npm run dev:server` | Starts the backend and restarts it when you save a file |
 | `npm run dev:client` | Starts the website |
 | `npm run build` | Builds the website (same as Vercel does) |
 
 **Do not run `npm run seed`.** The database is shared by the whole team, and seeding **wipes everything**. Ask Kaz if the data needs resetting.
 
-Demo logins in the database: `admin1`, `designer1`, `customer1`, `manager1`, password `password123`.
+Use a project account with a password that the account owner has confirmed. This workspace cannot verify shared database passwords. Do not run the seed command against the shared database.
 
 ## If something breaks
 

@@ -40,7 +40,7 @@ export default function Button({
     <button
       {...props}
       type={type}
-      className={`inline-flex items-center justify-center gap-2 rounded-control border font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-55 ${sizeClass} ${variantClass} ${className}`.trim()}
+      className={`button-feedback inline-flex items-center justify-center gap-2 rounded-control border font-medium transition-all duration-150 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action motion-reduce:transition-none disabled:cursor-not-allowed disabled:opacity-55 ${sizeClass} ${variantClass} ${className}`.trim()}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
     >

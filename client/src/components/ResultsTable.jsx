@@ -5,6 +5,10 @@
 //   rows={accounts}
 //   actions={[{ label: 'View', onClick: (row) => ... }, { label: 'Suspend', variant: 'danger', onClick: ... }]}
 // />
+// Optional per action: show: (row) => true/false. When given, the button only
+// appears on rows where it returns true, e.g. Suspend only on active accounts:
+//   { label: 'Suspend', show: (row) => row.rawStatus === 'active', onClick: ... }
+// Actions without "show" appear on every row, as before.
 import Button from './Button';
 
 export default function ResultsTable({ columns, rows, actions = [], ariaLabel = 'Results' }) {
@@ -51,7 +55,10 @@ export default function ResultsTable({ columns, rows, actions = [], ariaLabel = 
               {actions.length > 0 && (
                 <td className="border-b border-border px-4 py-3">
                   <div className="flex items-center gap-2">
-                    {actions.map((action) => (
+                    {/* .filter keeps only the actions to show on THIS row:
+                        no "show" function means always show. Then .map draws
+                        one button for each. */}
+                    {actions.filter((action) => !action.show || action.show(row)).map((action) => (
                       <Button
                         key={action.label}
                         size="sm"

@@ -2,8 +2,9 @@
 // header, role-based menu, logout button, and the page content in the middle.
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
-import { getUser, killSession } from '../session';
+import { hydrateSession, killSession, useSession } from '../session';
 import Button from '../components/Button';
+import Message from '../components/Message';
 
 // Menu links per role. Add a link here when you build a new page.
 const MENUS = {
@@ -31,11 +32,25 @@ const MENUS = {
 };
 
 export default function Layout() {
-  const user = getUser();
+  const { user } = useSession();
   const navigate = useNavigate();
   const menuButtonRef = useRef(null);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
   const links = user ? MENUS[user.role] || [] : [];
+
+  useEffect(() => {
+    hydrateSession();
+    const refreshWhenVisible = () => {
+      if (document.visibilityState === 'visible') hydrateSession();
+    };
+    window.addEventListener('focus', refreshWhenVisible);
+    document.addEventListener('visibilitychange', refreshWhenVisible);
+    return () => {
+      window.removeEventListener('focus', refreshWhenVisible);
+      document.removeEventListener('visibilitychange', refreshWhenVisible);
+    };
+  }, []);
 
   useEffect(() => {
     function closeOnHistoryNavigation() {
@@ -61,10 +76,17 @@ export default function Layout() {
   }, [menuOpen]);
 
   // LogoutPg behaviour: logout() -> killSession() -> back to login page
-  function logout() {
-    killSession();
-    navigate('/login');
+  async function logout() {
+    setLogoutError('');
+    try {
+      await killSession();
+      navigate('/login');
+    } catch {
+      setLogoutError('The server could not end this session. Check your connection and try again.');
+    }
   }
+
+  const initials = user?.name?.trim().split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase() || '?';
 
   return (
     <div className="flex min-h-screen flex-col bg-canvas text-ink">
@@ -128,11 +150,24 @@ export default function Layout() {
           </nav>
 
           {user && (
-            <div className="col-span-2 flex min-w-0 items-center justify-end gap-3 lg:col-span-1 lg:col-start-3 lg:row-start-1">
-              <span className="min-w-0 truncate text-right text-xs text-muted sm:text-sm">
-                {user.name} <span className="hidden sm:inline">({user.role})</span>
-              </span>
-              <Button variant="secondary" size="sm" onClick={logout}>Logout</Button>
+            <div className="col-span-2 flex min-w-0 justify-end lg:col-span-1 lg:col-start-3 lg:row-start-1">
+              <details className="group relative">
+                <summary className="flex min-h-11 cursor-pointer list-none items-center gap-2 rounded-control border border-border bg-surface px-2 py-1.5 hover:bg-surface-hover focus-visible:outline-action [&::-webkit-details-marker]:hidden">
+                  <span className="relative flex size-8 items-center justify-center overflow-hidden rounded-full bg-action-soft text-xs font-semibold text-action-ink" aria-hidden="true">
+                    <span>{initials}</span>
+                    {user.photo && <img src={user.photo} alt="" className="absolute size-8 rounded-full object-cover" onError={(event) => { event.currentTarget.hidden = true; }} />}
+                  </span>
+                  <span className="max-w-32 truncate text-sm font-medium text-ink">{user.name}</span>
+                  <span className="text-xs text-muted" aria-hidden="true">⌄</span>
+                </summary>
+                <div className="absolute right-0 z-30 mt-2 w-64 rounded-card border border-border bg-surface p-4 shadow-menu" role="region" aria-label="Account details">
+                  <p className="truncate font-medium text-ink">{user.name}</p>
+                  <p className="mt-1 break-all text-sm text-muted">{user.email}</p>
+                  <p className="mt-3 text-xs text-muted">Role</p>
+                  <p className="text-sm font-medium text-ink">{user.role}</p>
+                  <Button className="mt-4 w-full" variant="secondary" size="sm" onClick={logout}>Logout</Button>
+                </div>
+              </details>
             </div>
           )}
         </div>
@@ -142,6 +177,7 @@ export default function Layout() {
         tabIndex={-1}
         className="mx-auto w-full max-w-[1200px] flex-1 px-4 py-8 focus:outline-none sm:px-6 lg:px-8 lg:py-12"
       >
+        <Message type="error" text={logoutError} />
         <Outlet />
       </main>
     </div>

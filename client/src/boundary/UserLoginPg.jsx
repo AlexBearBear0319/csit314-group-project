@@ -1,45 +1,37 @@
-// BOUNDARY: UserLoginPg  (user stories: Login for all 4 actors)
-// Methods from the design: displaySuccess(), displayError()
-//
-// TODO (Login story owner): replace the PLACEHOLDER block with a real call:
-//   const account = await api.post('/login', { username, password, profile });
-//   if account is returned -> displaySuccess(account), else -> displayError()
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ROLES, setUser } from '../session';
+// BOUNDARY: UserLoginPg (login for all four roles)
+import { useEffect, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { ApiError, api } from '../api';
+import { homeForRole, hydrateSession, setUser, useSession } from '../session';
 import Button from '../components/Button';
 import FormField from '../components/FormField';
 import Message from '../components/Message';
 
-const HOME = {
-  'User Admin': '/admin',
-  'Interior Designer': '/designer',
-  Customer: '/customer',
-  'Platform Manager': '/manager',
-};
-
 export default function UserLoginPg() {
   const navigate = useNavigate();
+  const { user, status, error: sessionError } = useSession();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [profile, setProfile] = useState(ROLES[0]);
   const [error, setError] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  function displaySuccess(account) {
-    setUser({ name: account.name, role: profile });
-    navigate(HOME[profile]);
-  }
+  useEffect(() => {
+    if (user) navigate(homeForRole(user.role), { replace: true });
+  }, [navigate, user]);
 
-  function displayError() {
-    setError('Login failed. Check your ID, password and user profile.');
-  }
-
-  function handleSubmit(e) {
+  async function handleSubmit(e) {
     e.preventDefault();
-    // ---- PLACEHOLDER: lets the team see each role's menu until Login is built ----
-    if (username && password) displaySuccess({ name: username });
-    else displayError();
-    // ---- END PLACEHOLDER ----
+    setError('');
+    setIsSubmitting(true);
+    try {
+      const { account, csrfToken, expiresAt } = await api.post('/login', { username, password });
+      setUser(account, csrfToken, expiresAt);
+      navigate(homeForRole(account.role), { replace: true });
+    } catch (requestError) {
+      setError(requestError instanceof ApiError ? requestError.message : 'Login failed. Check your details and try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -47,13 +39,19 @@ export default function UserLoginPg() {
       <section className="rounded-panel border border-border bg-surface p-6 shadow-card sm:p-9">
         <h1 className="text-3xl tracking-tight text-ink">Login</h1>
         <div className="mt-6">
-          <Message type="error" text={error} />
+          <Message type="error" text={error || (status === 'unavailable' ? sessionError : '')} />
+          {status === 'unavailable' && (
+            <Button type="button" variant="secondary" className="mb-5" onClick={hydrateSession}>
+              Check connection
+            </Button>
+          )}
         </div>
         <form className="grid gap-5" onSubmit={handleSubmit}>
           <FormField
             id="username"
             name="username"
             label="User ID"
+            required
             autoComplete="username"
             value={username}
             onChange={(event) => setUsername(event.target.value)}
@@ -63,20 +61,16 @@ export default function UserLoginPg() {
             name="password"
             label="Password"
             type="password"
+            required
             autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
-          <FormField
-            id="profile"
-            name="profile"
-            label="User profile"
-            options={ROLES.map((role) => ({ value: role, label: role }))}
-            value={profile}
-            onChange={(event) => setProfile(event.target.value)}
-          />
-          <Button type="submit" variant="primary" className="mt-1 w-full">Login</Button>
+          <Button type="submit" variant="primary" className="mt-1 w-full" loading={isSubmitting}>Login</Button>
         </form>
+        <p className="mt-5 text-center text-sm text-muted">
+          New here? <Link className="font-medium text-action underline" to="/register">Create an account</Link>
+        </p>
       </section>
     </div>
   );

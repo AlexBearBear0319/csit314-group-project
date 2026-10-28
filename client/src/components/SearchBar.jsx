@@ -3,7 +3,7 @@
 import { useId, useState } from 'react';
 import Button from './Button';
 
-export default function SearchBar({ placeholder = 'Search...', onSearch, initialKeyword = '' }) {
+export default function SearchBar({ placeholder = 'Search...', onSearch, initialValue = '', initialKeyword = initialValue }) {
   const inputId = useId();
   const [keyword, setKeyword] = useState(initialKeyword);
   return (

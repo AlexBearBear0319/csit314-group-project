@@ -29,13 +29,15 @@ Boundary URLs start at `/admin/profiles` and `/manager/categories`. Both have `/
 
 ## Integration work
 
-**Login owner:** Frontend role guards use the existing browser session scaffold. They are navigation checks, not authentication. The management APIs currently have no server-side authorization. Attach the team's authenticated User Admin guard to profile routes and Platform Manager guard to category management routes before deployment. Decide separately whether designers/customers need authenticated read access to categories. Do not trust a role supplied by the browser.
+**Login integration (28 Oct 2026):** This branch now includes `origin/main` at `e250b41`. Profile APIs require a real User Admin session; category APIs require a real Platform Manager session. Both use `authenticateSession`, `requireRole` and `requireCsrf` in `routes/index.cjs`. React routes use the shared reactive `RequireRole`. The shared API client carries cookies and CSRF tokens, and retains caller cancellation for search/detail requests. The readiness check includes `idp_category`.
 
-The login dropdown, navigation menus and dashboard routing still use four fixed role names. Newly created or renamed profiles are stored successfully but do not gain a corresponding menu or access policy. The spec does not define the relationship between editable profile names and system permissions. Agree that contract with the login owner and tutor before adding role mappings or restricting profile edits. The frontend placeholder login does not call `UserAccount.login()` yet, so suspension is verified at the entity level rather than through a completed sign-in flow.
+The session middleware reloads account and profile status for every protected request. Suspending a profile therefore blocks its existing sessions as well as future logins. Integration tests cover this through the real login API.
+
+The shared login still supports four canonical roles. Creating or renaming a profile does not define new permissions; unknown role names cannot sign in. Agree any additional role mappings with the team before expanding permissions. This implementation does not invent a reactivation flow or a rule preventing suspension of the administrator's own profile.
 
 **IDP owner:** Import `IDPCategory` from `server/src/entity`. Link projects to category IDs using a foreign key (or an association table if several categories per project are agreed). Use `ON DELETE RESTRICT` rather than cascading deletion of projects. The delete route maps foreign-key violations to 409 and displays an in-use message. A real association is not added here because the IDP entity and agreed cardinality do not yet exist. The test suite uses a test-only reference table to verify this behaviour.
 
-**Team:** Category fields follow the existing name/description pattern. Property, room, and style taxonomies, permission editing, reactivation, and preventing suspension of the current administrator are not prescribed in the supplied specification or allocation. These remain requirements decisions rather than hidden business rules. Compare the class/method table above with the completed diagrams before merge; those diagrams were not available during implementation.
+**Team:** Category fields follow the existing name/description pattern. Property, room, and style taxonomies, permission editing, reactivation, and preventing suspension of the current administrator are not prescribed in the supplied specification or allocation. These remain requirements decisions rather than hidden business rules. The per-story diagrams and use case descriptions are in [christy-stories/README.md](christy-stories/README.md). They describe current code and still need team/tutor review.
 
 ## Validation and local testing
 
@@ -52,3 +54,11 @@ Server tests use SQLite in memory. The category suite includes 100 temporary rec
 Run `npm.cmd run dev:server` and `npm.cmd run dev:client` in separate terminals. The backend uses `server/.env`, so manual changes affect whichever database its `DATABASE_URL` selects. Do not run the destructive seed script to test these features.
 
 The client uses `VITE_API_URL` when provided. Otherwise development uses `http://localhost:3000`, and production uses same-origin `/api` routes, matching the root Vercel rewrites. A separate backend host still requires `VITE_API_URL` and matching backend `FRONTEND_URL` configuration.
+
+## Schema and remaining evidence
+
+Run `docs/christy-schema.sql` after the shared auth schema when the team is ready to apply the database changes. It widens `user_profile.name` to 255 characters and creates the category table with RLS enabled and no direct browser grants. No remote database change was performed in this run. Do not run `sync({ force: true })` or the seed script against Supabase.
+
+On 28 Oct the new authorization suite failed all 16 tests before the feature routers were mounted, then passed after integration. The full server suite passed 110 tests. The existing CRUD code predates this run; historical TDD screenshots are unavailable and must not be fabricated. The story pack records this distinction.
+
+The tracker’s final task includes remote CI, PR merge and a live deployment check. Those remain pending, along with applying the SQL and recording lab/manual accessibility evidence. Do not mark task 10 Done from a local green test run alone. The uploaded workbook was left unchanged.
