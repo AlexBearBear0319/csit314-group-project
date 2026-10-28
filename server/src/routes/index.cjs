@@ -13,6 +13,7 @@ const { sequelize } = require('../entity');
 const { checkStorageReady } = require('../storage/IdpImageStorage');
 
 const REQUIRED_COLUMNS = {
+  idp_category: ['id', 'name', 'description', 'createdAt', 'updatedAt'],
   user_profile: ['id', 'name', 'description', 'status', 'createdAt', 'updatedAt'],
   user_account: ['id', 'username', 'password', 'name', 'email', 'dob', 'photo', 'status', 'profileId', 'createdAt', 'updatedAt'],
   user_session: ['id', 'account_id', 'token_hash', 'csrf_token', 'expires_at', 'created_at', 'updated_at'],
@@ -82,6 +83,10 @@ router.delete('/session', authenticateSession, requireCsrf, SessionController.lo
 //                                with the admin's cookie.
 // All 3 checks were written by Alex in middleware/authenticateSession.js.
 router.use('/user-accounts', authenticateSession, requireRole('User Admin'), requireCsrf, require('./userAccounts'));
+
+// Christy's stories #1-5 and #39-43 use the shared session and CSRF checks.
+router.use('/user-profiles', authenticateSession, requireRole('User Admin'), requireCsrf, require('./userProfiles'));
+router.use('/idp-categories', authenticateSession, requireRole('Platform Manager'), requireCsrf, require('./idpCategories'));
 
 // Every Interior Designer action uses the account and role read from the
 // server-side session. No route accepts an owner ID from the browser.

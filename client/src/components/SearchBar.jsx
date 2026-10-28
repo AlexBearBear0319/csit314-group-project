@@ -3,9 +3,9 @@
 import { useId, useState } from 'react';
 import Button from './Button';
 
-export default function SearchBar({ placeholder = 'Search...', onSearch, initialValue = '' }) {
+export default function SearchBar({ placeholder = 'Search...', onSearch, initialValue = '', initialKeyword = initialValue }) {
   const inputId = useId();
-  const [keyword, setKeyword] = useState(initialValue);
+  const [keyword, setKeyword] = useState(initialKeyword);
   return (
     <form
       className="mb-6 flex flex-col gap-3 sm:flex-row"

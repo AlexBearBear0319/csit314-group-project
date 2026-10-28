@@ -3,6 +3,7 @@
 const sequelize = require('../db');
 const UserProfile = require('./UserProfile');
 const UserAccount = require('./UserAccount');
+const IDPCategory = require('./IDPCategory');
 const UserSession = require('./UserSession');
 const InteriorDesignProject = require('./InteriorDesignProject');
 const ProjectImage = require('./ProjectImage');
@@ -23,6 +24,7 @@ module.exports = {
   UserProfile,
   UserAccount,
   UserSession,
+  IDPCategory,
   InteriorDesignProject,
   ProjectImage,
   IdpImageUploadIntent,

@@ -74,3 +74,18 @@ test('invalid JSON is reported as an API error', async (t) => {
   t.mock.method(globalThis, 'fetch', async () => new Response('{', { headers: { 'Content-Type': 'application/json' } }));
   await assert.rejects(api.get('/session'), (error) => error instanceof ApiError && error.message.includes('invalid response'));
 });
+
+
+test('changing a search cancels its request without showing a timeout error', async (t) => {
+  const caller = new AbortController();
+  let signal;
+  t.mock.method(globalThis, 'fetch', (_url, options) => new Promise((_resolve, reject) => {
+    signal = options.signal;
+    signal.addEventListener('abort', () => reject(new DOMException('Aborted', 'AbortError')));
+  }));
+  const result = assert.rejects(api.get('/user-profiles?keyword=old', { signal: caller.signal }),
+    { name: 'AbortError' });
+  caller.abort();
+  await result;
+  assert.equal(signal.aborted, true);
+});
