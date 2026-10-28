@@ -20,7 +20,7 @@ export function setUnauthorizedHandler(handler) {
   unauthorizedHandler = typeof handler === 'function' ? handler : () => {};
 }
 
-async function request(method, path, body) {
+async function request(method, path, body, options = {}) {
   const headers = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (csrfToken && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
@@ -28,6 +28,9 @@ async function request(method, path, body) {
   }
 
   const controller = new AbortController();
+  const cancel = () => controller.abort(options.signal?.reason);
+  if (options.signal?.aborted) cancel();
+  else options.signal?.addEventListener('abort', cancel, { once: true });
   const timeout = setTimeout(() => controller.abort(), 15000);
   try {
     const response = await fetch(`${BASE_URL}/api${path}`, {
@@ -58,6 +61,7 @@ async function request(method, path, body) {
     return data;
   } catch (error) {
     if (error instanceof ApiError) throw error;
+    if (options.signal?.aborted) throw error;
     if (controller.signal.aborted) {
       throw new ApiError('The server took too long to respond. Try again.');
     }
@@ -65,11 +69,12 @@ async function request(method, path, body) {
     throw new ApiError('The server could not be reached. Check your connection and try again.');
   } finally {
     clearTimeout(timeout);
+    options.signal?.removeEventListener('abort', cancel);
   }
 }
 
 export const api = {
-  get: (path) => request('GET', path),
+  get: (path, options) => request('GET', path, undefined, options),
   post: (path, body) => request('POST', path, body),
   put: (path, body) => request('PUT', path, body),
   patch: (path, body) => request('PATCH', path, body),

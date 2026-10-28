@@ -12,6 +12,16 @@ import ViewUserAccountPg from './boundary/ViewUserAccountPg'; // #7
 import UpdateUserAccountPg from './boundary/UpdateUserAccountPg'; // #8
 import Dashboard from './pages/Dashboard';
 import ComingSoon from './pages/ComingSoon';
+import SearchUserProfilePg from './boundary/SearchUserProfilePg';
+import CreateUserProfilePg from './boundary/CreateUserProfilePg';
+import ViewUserProfilePg from './boundary/ViewUserProfilePg';
+import UpdateUserProfilePg from './boundary/UpdateUserProfilePg';
+import SuspendUserProfilePg from './boundary/SuspendUserProfilePg';
+import SearchIDPCategoryPg from './boundary/SearchIDPCategoryPg';
+import CreateIDPCategoryPg from './boundary/CreateIDPCategoryPg';
+import ViewIDPCategoryPg from './boundary/ViewIDPCategoryPg';
+import UpdateIDPCategoryPg from './boundary/UpdateIDPCategoryPg';
+import DeleteIDPCategoryPg from './boundary/DeleteIDPCategoryPg';
 import RequireRole from './components/RequireRole';
 import { homeForRole, useSession } from './session';
 
@@ -50,7 +60,11 @@ export default function App() {
           <Route path="/admin/accounts/new" element={<CreateUserAccountPg />} />
           <Route path="/admin/accounts/:id" element={<ViewUserAccountPg />} />
           <Route path="/admin/accounts/:id/edit" element={<UpdateUserAccountPg />} />
-          <Route path="/admin/profiles" element={<ComingSoon title="User Profiles" />} />
+          <Route path="/admin/profiles" element={<SearchUserProfilePg />} />
+          <Route path="/admin/profiles/create" element={<CreateUserProfilePg />} />
+          <Route path="/admin/profiles/:id" element={<ViewUserProfilePg />} />
+          <Route path="/admin/profiles/:id/edit" element={<UpdateUserProfilePg />} />
+          <Route path="/admin/profiles/:id/suspend" element={<SuspendUserProfilePg />} />
         </Route>
 
         <Route element={<RequireRole role="Interior Designer" />}>
@@ -68,7 +82,11 @@ export default function App() {
 
         <Route element={<RequireRole role="Platform Manager" />}>
           <Route path="/manager" element={<Dashboard role="Platform Manager" />} />
-          <Route path="/manager/categories" element={<ComingSoon title="IDP Categories" />} />
+          <Route path="/manager/categories" element={<SearchIDPCategoryPg />} />
+          <Route path="/manager/categories/create" element={<CreateIDPCategoryPg />} />
+          <Route path="/manager/categories/:id" element={<ViewIDPCategoryPg />} />
+          <Route path="/manager/categories/:id/edit" element={<UpdateIDPCategoryPg />} />
+          <Route path="/manager/categories/:id/delete" element={<DeleteIDPCategoryPg />} />
           <Route path="/manager/reports" element={<ComingSoon title="Reports" />} />
         </Route>
 

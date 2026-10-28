@@ -52,6 +52,7 @@ export default function FormField({
       ) : type === 'textarea' ? (
         <textarea
           {...sharedProps}
+          maxLength={maxLength}
           rows={4}
           value={value ?? ''}
           className={`${CONTROL_CLASS} min-h-28 resize-y`}
