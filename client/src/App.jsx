@@ -1,3 +1,4 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './layout/Layout';
 import UserLoginPg from './boundary/UserLoginPg';
@@ -24,6 +25,8 @@ import UpdateIDPCategoryPg from './boundary/UpdateIDPCategoryPg';
 import DeleteIDPCategoryPg from './boundary/DeleteIDPCategoryPg';
 import RequireRole from './components/RequireRole';
 import { homeForRole, useSession } from './session';
+
+const DesignerDashboard = lazy(() => import('./pages/DesignerDashboard'));
 
 function HomeRoute() {
   const { user } = useSession();
@@ -68,7 +71,7 @@ export default function App() {
         </Route>
 
         <Route element={<RequireRole role="Interior Designer" />}>
-          <Route path="/designer" element={<Dashboard role="Interior Designer" />} />
+          <Route path="/designer" element={<Suspense fallback={<p role="status">Loading studio.</p>}><DesignerDashboard /></Suspense>} />
           <Route path="/designer/company" element={<ComingSoon title="Company Information" />} />
           <Route path="/designer/current-idps" element={<ManageCurrentIdpsPg />} />
           <Route path="/designer/past-idps" element={<ManagePastIdpsPg />} />

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { NavLink } from 'react-router-dom';
 import { api } from '../api';
 import Button from '../components/Button';
 import DetailsView from '../components/DetailsView';
@@ -37,7 +38,7 @@ function FilePreview({ file }) {
 
 export default function DesignerIdpsPage({ status }) {
   const past = status === 'past';
-  const title = past ? 'Past IDPs' : 'Current IDPs';
+  const title = past ? 'Past projects' : 'Current projects';
   const basePath = `/designer/${status}-idps`;
   const [projects, setProjects] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -57,6 +58,7 @@ export default function DesignerIdpsPage({ status }) {
   const [uploadProgress, setUploadProgress] = useState(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isViewing, setIsViewing] = useState(false);
+  const [editingId, setEditingId] = useState(null);
   const dialogRef = useRef(null);
   const projectDialogRef = useRef(null);
   const restoreFocusRef = useRef(null);
@@ -155,6 +157,8 @@ export default function DesignerIdpsPage({ status }) {
   }
 
   async function beginEdit(project) {
+    if (editingId !== null) return;
+    setEditingId(project.id);
     setError('');
     setNotice('');
     try {
@@ -169,6 +173,8 @@ export default function DesignerIdpsPage({ status }) {
       });
     } catch (requestError) {
       setError(requestError.message);
+    } finally {
+      setEditingId(null);
     }
   }
 
@@ -375,10 +381,10 @@ export default function DesignerIdpsPage({ status }) {
   }
 
   return (
-    <section className="grid gap-6">
+    <section className="designer-gallery grid gap-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
-        <h1 className="text-3xl tracking-tight text-ink sm:text-4xl">{title}</h1>
-        {!editor && <Button onClick={beginCreate}>Add project</Button>}
+        <h1 className="text-3xl tracking-tight text-ink sm:text-4xl">{title}<span className="text-action" aria-hidden="true">.</span></h1>
+        {!editor && <Button onClick={beginCreate}><span aria-hidden="true">+</span> Add project</Button>}
       </div>
 
       <Message type="error" text={error} />
@@ -492,6 +498,10 @@ export default function DesignerIdpsPage({ status }) {
         </section>
       ) : (
         <>
+          <nav className="gallery-collections" aria-label="Project collections">
+            <NavLink to="/designer/current-idps">Current</NavLink>
+            <NavLink to="/designer/past-idps">Past</NavLink>
+          </nav>
           <SearchBar
             key={searchQuery}
             placeholder="Search by project name, property type or design style"
@@ -499,7 +509,7 @@ export default function DesignerIdpsPage({ status }) {
             onSearch={handleSearch}
           />
           {isLoading ? (
-            <p role="status" className="rounded-card border border-border bg-surface px-5 py-8 text-center text-muted">Loading projects.</p>
+            <div role="status" className="gallery-loading"><span className="sr-only">Loading projects.</span>{[0, 1, 2].map((item) => <div key={item} aria-hidden="true" />)}</div>
           ) : projects.length > 0 ? (
             <div className="grid grid-cols-1 gap-5 md:grid-cols-2 lg:grid-cols-3">
               {projects.map((project, index) => (
@@ -508,6 +518,7 @@ export default function DesignerIdpsPage({ status }) {
                   project={project}
                   past={past}
                   appearDelay={index * 70}
+                  isEditing={editingId === project.id}
                   onView={showProject}
                   onEdit={beginEdit}
                   onDelete={openDelete}
@@ -556,7 +567,7 @@ export default function DesignerIdpsPage({ status }) {
 
       <dialog
         ref={projectDialogRef}
-        className="m-auto w-[min(96vw,72rem)] max-h-[92dvh] overflow-hidden rounded-panel border border-border bg-surface p-0 text-ink shadow-menu backdrop:bg-ink/45"
+        className="project-preview-dialog m-auto w-[min(96vw,72rem)] max-h-[92dvh] overflow-hidden rounded-panel border border-border bg-surface p-0 text-ink shadow-menu backdrop:bg-ink/45"
         aria-labelledby="project-view-title"
         onCancel={(event) => { event.preventDefault(); closeProject(); }}
         onClick={(event) => {
@@ -576,7 +587,7 @@ export default function DesignerIdpsPage({ status }) {
                 {viewProject.name}
               </h2>
               <div className="flex shrink-0 gap-2">
-                <Button size="sm" variant="secondary" onClick={() => beginEdit(viewProject)} disabled={isViewing}>Edit</Button>
+                <Button size="sm" variant="secondary" onClick={() => beginEdit(viewProject)} disabled={isViewing} loading={editingId === viewProject.id}>Edit</Button>
                 <Button size="sm" variant="secondary" onClick={closeProject} aria-label="Close project view">
                   Close
                 </Button>

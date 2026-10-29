@@ -16,8 +16,8 @@ const MENUS = {
   'Interior Designer': [
     { to: '/designer', label: 'Dashboard' },
     { to: '/designer/company', label: 'Company Info' },
-    { to: '/designer/current-idps', label: 'Current IDPs' },
-    { to: '/designer/past-idps', label: 'Past IDPs' },
+    { to: '/designer/current-idps', label: 'Current projects' },
+    { to: '/designer/past-idps', label: 'Past projects' },
   ],
   Customer: [
     { to: '/customer', label: 'Dashboard' },
@@ -139,7 +139,7 @@ export default function Layout() {
                 end={link.label === 'Dashboard'}
                 className={({ isActive }) => `block rounded-control px-3 py-2.5 text-sm font-medium transition-colors motion-reduce:transition-none lg:whitespace-nowrap ${
                   isActive
-                    ? 'bg-action-soft text-action-ink lg:bg-transparent lg:text-ink'
+                    ? 'bg-action-soft text-action-ink'
                     : 'text-muted hover:bg-surface-hover hover:text-ink lg:hover:bg-transparent lg:hover:text-action'
                 }`}
                 onClick={() => setMenuOpen(false)}

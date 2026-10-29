@@ -1,11 +1,14 @@
 import { useRef, useState } from 'react';
 
-function imageSize(sizeBytes) {
-  const bytes = Number(sizeBytes);
-  if (!Number.isFinite(bytes) || bytes < 0) return '';
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.ceil(bytes / 1024)} KB`;
-  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+function CarouselImage({ image, alt }) {
+  const [failed, setFailed] = useState(false);
+  const [loaded, setLoaded] = useState(false);
+  if (!image.url || failed) return <div className="grid size-full place-items-center p-5 text-sm text-muted" role="status">This photo is unavailable.</div>;
+  return <>
+    {!loaded && <span className="absolute inset-0 grid place-items-center text-sm text-muted" role="status">Loading photo.</span>}
+    <img src={image.url} alt={alt} className="carousel-photo size-full object-contain"
+      onLoad={() => setLoaded(true)} onError={() => setFailed(true)} style={{ opacity: loaded ? 1 : 0 }} />
+  </>;
 }
 
 export default function ProjectImageCarousel({ images = [], projectName, initialIndex = 0 }) {
@@ -32,43 +35,38 @@ export default function ProjectImageCarousel({ images = [], projectName, initial
     if (!start) return;
 
     const touch = event.changedTouches[0];
+    if (!touch) return;
     const deltaX = touch.clientX - start.x;
     const deltaY = touch.clientY - start.y;
     if (Math.abs(deltaX) < 44 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
     moveBy(deltaX < 0 ? 1 : -1);
   }
 
-  const metadata = [image.altText, imageSize(image.sizeBytes)].filter(Boolean).join(' · ');
-
   return (
-    <section className="grid min-w-0 gap-3" aria-label={`${projectName} photos`}>
+    <section className="grid min-w-0 gap-3" aria-label={`${projectName} photos`} aria-roledescription="carousel"
+      onKeyDown={(event) => {
+        if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+          event.preventDefault();
+          moveBy(event.key === 'ArrowRight' ? 1 : -1);
+        }
+      }}>
       <figure className="min-w-0 overflow-hidden rounded-card border border-border bg-surface">
         <div
-          className="relative h-[min(62dvh,42rem)] min-h-44 overflow-hidden rounded-card bg-ink [touch-action:pan-y_pinch-zoom]"
+          className="relative h-[min(52dvh,32rem)] min-h-44 overflow-hidden bg-surface-hover [touch-action:pan-y_pinch-zoom]"
           role="group"
+          tabIndex={0}
           aria-label={`${projectName} photo viewer`}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
           onTouchCancel={() => { touchStartRef.current = null; }}
         >
-          {image.url ? (
-            <img
-              key={image.id || image.url}
-              src={image.url}
-              alt={image.altText || `${projectName} photo ${safeIndex + 1}`}
-              className="size-full object-contain"
-            />
-          ) : (
-            <div className="grid size-full place-items-center px-4 text-center text-sm text-white">
-              Preview unavailable
-            </div>
-          )}
-
+          <CarouselImage key={image.id || image.url || safeIndex} image={image} alt={image.altText || `${projectName} photo ${safeIndex + 1}`} />
+        </div>
           {imageCount > 1 && (
-            <div className="absolute inset-x-3 bottom-3 flex min-w-0 items-center gap-2 rounded-control border border-white/25 bg-ink/75 p-1.5 text-white shadow-menu backdrop-blur-sm">
+            <div className="flex min-w-0 items-center gap-2 border-y border-border bg-surface p-2 text-ink">
               <button
                 type="button"
-                className="button-feedback grid size-10 shrink-0 place-items-center rounded-control border border-border bg-surface text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action"
+                className="button-feedback grid size-11 shrink-0 place-items-center rounded-control border border-border bg-surface text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action"
                 onClick={() => moveBy(-1)}
                 aria-label="Previous photo"
               >
@@ -80,14 +78,14 @@ export default function ProjectImageCarousel({ images = [], projectName, initial
                   <button
                     key={item.id || `${item.fileName}-${index}`}
                     type="button"
-                    className="button-feedback grid size-9 shrink-0 place-items-center rounded-control focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-white"
+                    className="button-feedback grid size-11 shrink-0 place-items-center rounded-control focus-visible:outline-2 focus-visible:outline-offset-1 focus-visible:outline-action"
                     onClick={() => setActiveIndex(index)}
                     aria-label={`Show photo ${index + 1} of ${imageCount}`}
                     aria-pressed={safeIndex === index}
                   >
                     <span
                       aria-hidden="true"
-                      className={`block h-2 rounded-full transition-all motion-reduce:transition-none ${safeIndex === index ? 'w-5 bg-white' : 'w-2 bg-white/55'}`}
+                      className={`block h-2 rounded-full transition-all motion-reduce:transition-none ${safeIndex === index ? 'w-5 bg-action' : 'w-2 bg-muted/40'}`}
                     />
                   </button>
                 ))}
@@ -95,7 +93,7 @@ export default function ProjectImageCarousel({ images = [], projectName, initial
 
               <button
                 type="button"
-                className="button-feedback grid size-10 shrink-0 place-items-center rounded-control border border-border bg-surface text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action"
+                className="button-feedback grid size-11 shrink-0 place-items-center rounded-control border border-border bg-surface text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action"
                 onClick={() => moveBy(1)}
                 aria-label="Next photo"
               >
@@ -103,11 +101,9 @@ export default function ProjectImageCarousel({ images = [], projectName, initial
               </button>
             </div>
           )}
-        </div>
-
-        <figcaption className="grid min-w-0 gap-0.5 px-3 py-2.5">
-          <span className="break-all text-sm font-medium text-ink">{image.fileName}</span>
-          {metadata && <span className="break-words text-xs text-muted">{metadata}</span>}
+        <figcaption className="flex min-w-0 items-start justify-between gap-3 px-3 py-2.5">
+          <span className="break-words text-sm text-muted">{image.altText || image.fileName}</span>
+          <span className="shrink-0 text-xs text-muted" aria-hidden="true">{safeIndex + 1} / {imageCount}</span>
         </figcaption>
       </figure>
 

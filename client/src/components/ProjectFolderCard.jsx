@@ -15,7 +15,7 @@ function filePosition(index, count) {
   };
 }
 
-export default function ProjectFolderCard({ project, past, onView, onEdit, onDelete, appearDelay = 0 }) {
+export default function ProjectFolderCard({ project, past, onView, onEdit, onDelete, appearDelay = 0, isEditing = false }) {
   const [isOpen, setIsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [hasEntered, setHasEntered] = useState(() => typeof IntersectionObserver === 'undefined');
@@ -63,6 +63,7 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
     };
     const onPointerMove = (event) => {
       if (event.pointerType === 'touch') return;
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
       const bounds = folder.getBoundingClientRect();
       const x = Math.max(-1, Math.min(1, ((event.clientX - bounds.left) / bounds.width) * 2 - 1));
       const y = Math.max(-1, Math.min(1, ((event.clientY - bounds.top) / bounds.height) * 2 - 1));
@@ -167,7 +168,7 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
           <span className="project-folder-tab" aria-hidden="true" />
           <div className="project-folder-back" aria-hidden="true">
             {previews[0]?.url ? (
-              <img src={previews[0].url} alt="" className="project-folder-art" />
+              <img src={previews[0].url} alt="" className="project-folder-art" loading="lazy" />
             ) : (
               <svg viewBox="0 0 96 72" fill="none" className="project-folder-empty-art" aria-hidden="true">
                 <path d="M8 19a7 7 0 0 1 7-7h23l8 9h35a7 7 0 0 1 7 7v27a7 7 0 0 1-7 7H15a7 7 0 0 1-7-7V19Z" fill="currentColor" opacity=".18" />
@@ -228,6 +229,8 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
             className="project-folder-key button-feedback focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action"
             aria-label={`Add photos to ${project.name}`}
             title="Open the project editor to add photos."
+            disabled={isEditing}
+            aria-busy={isEditing || undefined}
             onClick={() => {
               setIsOpen(false);
               onEdit(project);
@@ -238,7 +241,8 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
         </div>
       </div>
 
-      <div className="flex items-start justify-end gap-2">
+      <div className="flex items-center justify-between gap-2">
+        <span className="gallery-status">{past ? 'Past project' : 'Current project'}</span>
         <details
           ref={moreRef}
           className="relative shrink-0"
@@ -264,7 +268,7 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
               {isOpen ? 'Close photo folder' : 'Open photo folder'}
             </button>
             <button type="button" role="menuitem" className="button-feedback min-h-10 rounded-control px-3 text-left text-sm text-ink hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-action" onClick={() => runAction(() => onView(project, moreButtonRef.current))}>View project</button>
-            <button type="button" role="menuitem" className="button-feedback min-h-10 rounded-control px-3 text-left text-sm text-ink hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-action" onClick={() => runAction(() => onEdit(project))}>Edit project</button>
+            <button type="button" role="menuitem" disabled={isEditing} className="button-feedback min-h-10 rounded-control px-3 text-left text-sm text-ink hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-action" onClick={() => runAction(() => onEdit(project))}>Edit project</button>
             <button type="button" role="menuitem" className="button-feedback min-h-10 rounded-control px-3 text-left text-sm text-danger hover:bg-danger-soft focus-visible:outline-2 focus-visible:outline-danger" onClick={() => runAction(() => onDelete(project, moreButtonRef.current))}>Delete project</button>
           </div>
         </details>
@@ -288,8 +292,9 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
       </dl>
 
       <Button type="button" variant="secondary" size="sm" className="mt-4 w-full" onClick={(event) => onView(project, event.currentTarget)}>
-        View project
+        View project <span aria-hidden="true">↗</span>
       </Button>
+      {isEditing && <p className="mt-2 text-xs text-muted" role="status">Opening editor.</p>}
     </article>
   );
 }
