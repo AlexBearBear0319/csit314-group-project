@@ -38,6 +38,7 @@
 .studio-section-heading h2 { font-size: 1.75rem; }
 .studio-section-heading a { display: inline-flex; align-items: center; gap: .5rem; min-height: 44px; font-size: .8125rem; color: var(--color-action); }
 .studio-section-heading a:hover { text-decoration: underline; }
+/* Recent work is a button grid. Every card opens the same project dialog. */
 .studio-project-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1.25rem; }
 .studio-project-card { min-width: 0; text-align: left; border-radius: var(--radius-card); }
 .studio-project-cover { position: relative; display: block; aspect-ratio: 4/3; overflow: hidden; border: 1px solid var(--color-border); border-radius: var(--radius-card); background: #e8e5dc; color: #a4a393; }
@@ -53,6 +54,7 @@
 .studio-project-style { display: block; margin-top: .375rem; color: var(--color-muted); font-size: .75rem; }
 .studio-empty, .studio-error { padding: 2rem; border: 1px solid var(--color-border); border-radius: var(--radius-panel); background: var(--color-surface); }
 .studio-empty a { display: inline-block; margin-top: .75rem; color: var(--color-action); text-decoration: underline; }
+/* Keep the active collection visible while users search or change pages. */
 .gallery-collections { display: flex; width: fit-content; gap: .25rem; padding: .25rem; border: 1px solid var(--color-border); border-radius: 30px; background: #edeae1; }
 .gallery-collections a { display: flex; align-items: center; justify-content: center; min-height: 44px; min-width: 100px; padding: .5rem 1.25rem; font-size: .8125rem; border-radius: 24px; color: var(--color-muted); transition: background 180ms, box-shadow 180ms; }
 .gallery-collections a[aria-current="page"] { background: var(--color-surface); box-shadow: 0 2px 6px #2625220c; color: var(--color-action-ink); }
@@ -74,6 +76,7 @@
   .gallery-loading > div:last-child { display: none; }
 }
 @media (max-width: 700px) {
+  /* Stack the room above both collections; recent projects remain two across. */
   .studio-overview { grid-template-columns: minmax(0, 1fr); }
   .studio-collections { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: auto; gap: .75rem; }
   .studio-collection { min-height: 190px; padding: 1rem; }

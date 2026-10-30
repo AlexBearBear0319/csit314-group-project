@@ -36,6 +36,7 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
     if (typeof IntersectionObserver === 'undefined') return undefined;
 
     let delayTimer;
+    // Start the entrance once, when the card first enters the viewport.
     const observer = new IntersectionObserver((entries) => {
       if (!entries.some((entry) => entry.isIntersecting)) return;
       observer.disconnect();
@@ -61,6 +62,8 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
       folder.style.setProperty('--project-folder-rotate-x', rotateX);
       folder.style.setProperty('--project-folder-rotate-y', rotateY);
     };
+    // Write CSS variables once per animation frame instead of setting React
+    // state on each pointer move. Touch and reduced-motion users skip tilt.
     const onPointerMove = (event) => {
       if (event.pointerType === 'touch') return;
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -127,6 +130,8 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
   }
 
   function handleMenuKeyDown(event) {
+    // Use arrows, Home and End to move through the menu. Escape closes it
+    // and returns focus to More actions. All actions work without a mouse.
     if (!moreRef.current?.open) return;
     if (event.key === 'Escape') {
       event.preventDefault();

@@ -1,3 +1,5 @@
+// These colours belong to the room materials. App controls use styles.css.
+// Keep the order stable: StudioMotion stores the selected palette by index.
 export const ROOM_PALETTES = [
   { name: 'Olive & oak', wall: '#e7e2d6', shade: '#d1caba', wood: '#b4936c', fabric: '#677156', light: '#f5efdf' },
   { name: 'Clay & linen', wall: '#edddd0', shade: '#d7bbaa', wood: '#a87855', fabric: '#ba8068', light: '#fff1dc' },

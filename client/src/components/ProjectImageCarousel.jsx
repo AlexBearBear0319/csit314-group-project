@@ -1,6 +1,8 @@
 import { useRef, useState } from 'react';
 
 function CarouselImage({ image, alt }) {
+  // The parent keys this component by image. Each new photo gets a fresh
+  // loading and error state, even when the previous photo failed.
   const [failed, setFailed] = useState(false);
   const [loaded, setLoaded] = useState(false);
   if (!image.url || failed) return <div className="grid size-full place-items-center p-5 text-sm text-muted" role="status">This photo is unavailable.</div>;
@@ -21,6 +23,8 @@ export default function ProjectImageCarousel({ images = [], projectName, initial
   if (!imageCount) return null;
 
   function moveBy(offset) {
+    // Add the count before the second modulo so Previous at index 0 wraps to
+    // the last photo. JavaScript can return a negative remainder.
     setActiveIndex((current) => ((current + offset) % imageCount + imageCount) % imageCount);
   }
 
@@ -38,6 +42,8 @@ export default function ProjectImageCarousel({ images = [], projectName, initial
     if (!touch) return;
     const deltaX = touch.clientX - start.x;
     const deltaY = touch.clientY - start.y;
+    // Keep vertical page scrolling. Change photos only for a clear horizontal
+    // swipe of at least 44 pixels.
     if (Math.abs(deltaX) < 44 || Math.abs(deltaX) <= Math.abs(deltaY)) return;
     moveBy(deltaX < 0 ? 1 : -1);
   }
@@ -52,7 +58,7 @@ export default function ProjectImageCarousel({ images = [], projectName, initial
       }}>
       <figure className="min-w-0 overflow-hidden rounded-card border border-border bg-surface">
         <div
-          className="relative h-[min(52dvh,32rem)] min-h-44 overflow-hidden bg-surface-hover [touch-action:pan-y_pinch-zoom]"
+          className="relative aspect-[4/3] max-h-[min(52dvh,32rem)] min-h-44 overflow-hidden bg-surface-hover [touch-action:pan-y_pinch-zoom]"
           role="group"
           tabIndex={0}
           aria-label={`${projectName} photo viewer`}
@@ -63,7 +69,7 @@ export default function ProjectImageCarousel({ images = [], projectName, initial
           <CarouselImage key={image.id || image.url || safeIndex} image={image} alt={image.altText || `${projectName} photo ${safeIndex + 1}`} />
         </div>
           {imageCount > 1 && (
-            <div className="flex min-w-0 items-center gap-2 border-y border-border bg-surface p-2 text-ink">
+            <div className="flex min-w-0 items-center gap-1 border-y border-border bg-surface p-1 text-ink">
               <button
                 type="button"
                 className="button-feedback grid size-11 shrink-0 place-items-center rounded-control border border-border bg-surface text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-action"

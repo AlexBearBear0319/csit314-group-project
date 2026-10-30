@@ -24,10 +24,14 @@ async function request(method, path, body, options = {}) {
   const headers = {};
   if (body !== undefined) headers['Content-Type'] = 'application/json';
   if (csrfToken && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method)) {
+    // The cookie identifies the session. This extra token protects requests
+    // that change data from cross-site form submissions.
     headers['X-CSRF-Token'] = csrfToken;
   }
 
   const controller = new AbortController();
+  // Combine the page's cancel signal with our timeout. Pages can cancel stale
+  // reads without changing the timeout used by the rest of the app.
   const cancel = () => controller.abort(options.signal?.reason);
   if (options.signal?.aborted) cancel();
   else options.signal?.addEventListener('abort', cancel, { once: true });

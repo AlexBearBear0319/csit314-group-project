@@ -26,6 +26,7 @@ import DeleteIDPCategoryPg from './boundary/DeleteIDPCategoryPg';
 import RequireRole from './components/RequireRole';
 import { homeForRole, useSession } from './session';
 
+// Load the Remotion player only when a designer opens this route.
 const DesignerDashboard = lazy(() => import('./pages/DesignerDashboard'));
 
 function HomeRoute() {

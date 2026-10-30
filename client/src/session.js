@@ -68,6 +68,8 @@ export function setUser(account, token, expiresAt) {
 
 export async function hydrateSession() {
   if (hydration) return hydration;
+  // Login, logout and expiry change revision. An older session check must not
+  // overwrite a newer result when its request finishes later.
   const requestRevision = revision;
   hydration = api.get('/session')
     .then(({ account, csrfToken, expiresAt }) => {

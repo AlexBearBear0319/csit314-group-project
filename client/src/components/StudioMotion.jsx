@@ -6,6 +6,7 @@ import { ROOM_PALETTES } from './roomPalettes';
 
 const DURATION = 120;
 const reducedQuery = '(prefers-reduced-motion: reduce)';
+// Track the system setting even when it changes while this page is open.
 function subscribeMotion(callback) {
   const media = window.matchMedia(reducedQuery);
   media.addEventListener('change', callback);
@@ -14,6 +15,8 @@ function subscribeMotion(callback) {
 function prefersReducedMotion() { return window.matchMedia(reducedQuery).matches; }
 
 function RoomComposition({ palette }) {
+  // Remotion supplies the frame. Use seconds below so the reveal keeps its
+  // timing if the frame rate changes: structure, furniture, then small details.
   const frame = useCurrentFrame();
   const { fps } = useVideoConfig();
   const reveal = (start, end) => interpolate(frame / fps, [start, end], [0, 1], {
@@ -29,6 +32,7 @@ export default function StudioMotion() {
   const [playing, setPlaying] = useState(false);
 
   useEffect(() => {
+    // Read playback events from the player so the button shows its real state.
     const player = playerRef.current;
     const onPlay = () => setPlaying(true);
     const onPause = () => setPlaying(false);
@@ -36,6 +40,7 @@ export default function StudioMotion() {
     player.addEventListener('pause', onPause);
     player.addEventListener('ended', onPause);
     if (reduced) {
+      // Keep the finished room visible without moving it.
       player.pause();
       player.seekTo(DURATION - 1);
     }
@@ -50,6 +55,7 @@ export default function StudioMotion() {
     const player = playerRef.current;
     if (player.isPlaying()) player.pause();
     else {
+      // At the end, Play starts the reveal again. Midway, it resumes.
       if (player.getCurrentFrame() >= DURATION - 1) player.seekTo(0);
       player.play();
     }

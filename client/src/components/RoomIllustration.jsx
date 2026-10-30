@@ -1,6 +1,8 @@
 import { ROOM_PALETTES } from './roomPalettes';
 
 // A code-drawn concept room. It is not a photograph of a client project.
+// Each progress value runs from 0 to 1. Remotion reveals the three SVG groups
+// in order. The default values also make a complete still image.
 export default function RoomIllustration({ palette = 0, structure = 1, furniture = 1, details = 1 }) {
   const p = ROOM_PALETTES[palette];
   return (

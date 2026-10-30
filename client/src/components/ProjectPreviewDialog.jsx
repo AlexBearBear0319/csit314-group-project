@@ -7,6 +7,8 @@ export default function ProjectPreviewDialog({ project, loading, error, onClose 
   const dialogRef = useRef(null);
   const projectId = project?.id;
   useEffect(() => {
+    // showModal traps focus and makes the page behind it inactive. Depend on
+    // the ID so loading the full record does not open the same dialog twice.
     if (!projectId) return undefined;
     const previous = document.activeElement;
     const dialog = dialogRef.current;
@@ -14,6 +16,7 @@ export default function ProjectPreviewDialog({ project, loading, error, onClose 
     dialog.querySelector('h2')?.focus();
     return () => {
       dialog.close();
+      // Return keyboard users to the card that opened this dialog.
       if (previous?.isConnected) previous.focus();
     };
   }, [projectId]);

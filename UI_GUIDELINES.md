@@ -94,7 +94,7 @@ All role pages use the same header and main content width. The header shows the 
 | Role | Home | Current links |
 |---|---|---|
 | User Admin | `/admin` | Dashboard, User Accounts, User Profiles |
-| Interior Designer | `/designer` | Dashboard, Company Info, Current IDPs, Past IDPs |
+| Interior Designer | `/designer` | Dashboard, Company Info, Current projects, Past projects |
 | Customer | `/customer` | Dashboard, Search IDPs, My Shortlist |
 | Platform Manager | `/manager` | Dashboard, IDP Categories, Reports |
 
@@ -112,10 +112,10 @@ The routes below are in `client/src/App.jsx`.
 | `/admin` | Existing role dashboard with a page heading. | User Admin home. No dashboard data is defined in the stories. |
 | `/admin/accounts` | Existing title placeholder. | User account create, view, update, delete, and search. |
 | `/admin/profiles` | Existing title placeholder. | User profile create, view, update, delete, and search. |
-| `/designer` | Existing role dashboard with a page heading. | Interior Designer home. No dashboard data is defined in the stories. |
+| `/designer` | Design studio with saved project totals, recent projects and a material study. | Interior Designer home. Uses the current and past project APIs. |
 | `/designer/company` | Existing title placeholder. | Company information create, view, update, delete, and search. |
-| `/designer/current-idps` | Existing title placeholder. | Current IDP create, view, update, delete, and search; project view and shortlist counts. |
-| `/designer/past-idps` | Existing title placeholder. | Past IDP create, view, update, delete, and search. |
+| `/designer/current-idps` | Folder gallery with search, forms, photo upload and a project dialog. | Current IDP create, view, update, delete, and search. View and shortlist counts are not implemented. |
+| `/designer/past-idps` | Folder gallery with search, forms, photo upload and a project dialog. | Past IDP create, view, update, delete, and search. |
 | `/customer` | Existing role dashboard with a page heading. | Customer home. No dashboard data is defined in the stories. |
 | `/customer/search` | Existing title placeholder. | Search, view, and save IDPs. |
 | `/customer/shortlist` | Existing title placeholder. | Search and view a shortlist. The stories use both saved IDPs and shortlisted designers. See `To confirm` below. |
@@ -168,13 +168,23 @@ Use `ResultsTable` with its current `columns`, `rows`, and `actions` props. Keep
 
 ### Project cards, galleries, and details
 
-Current and past IDPs use the shared project folder card. Show the project name, property type, design style, and image count. Past IDPs also show the completion date. Use a 1.35:1 folder and real project photos only. Use a plain folder when a project has no photo preview. Use a frosted front panel over the photo sheets. Assemble the folder as it enters view. Let the panel lean toward the pointer. On hover or keyboard focus, lift the sheets. When the folder opens, fan out its photo sheets as buttons. Do not add preview photos, sample records, or project facts as app content.
+Current and past IDPs use the shared project folder card. Show the project name, property type, design style, and image count. Past IDPs also show the completion date. Use a 1.35:1 folder and saved project photos. Use a plain folder when a project has no photo preview. Use a frosted front panel over the photo sheets. Assemble the folder as it enters view. Let the panel lean toward the pointer. On hover or keyboard focus, lift the sheets. When the folder opens, fan out its photo sheets as buttons. Add demo records only when the user asks. Mark them with `[Demo]` and keep existing records.
 
 Show three project cards per row on wide screens, two on tablet screens, and one on phone screens. Load nine projects per page from the API. Return the total and page count. Load preview images for the selected page and load the full gallery when a user opens a project. Keep the sort order stable. Search starts at page 1. After a delete on the last page, show the previous page when it has projects.
 
 Give each folder an accessible open and close action. Add photos opens the project editor. Keep View project visible and open project details in a modal dialog. Keep Open/Close folder, View, Edit, and Delete in a keyboard-accessible More menu. A photo sheet opens the viewer at that photo. Do not hide an action on hover. Support Enter, Space, Escape, and arrow keys in the menu. Keep a visible focus ring and usable touch targets. Respect reduced motion.
 
-Use `DetailsView` for a label and value list. Keep each field name visible. In the project dialog, keep the image at its source ratio and fit it inside the viewer; do not crop it. For a gallery, keep the image order and do not advance automatically. Show arrows and photo dots at the bottom of the image. Support phone swipes, and wrap from the last photo to the first. Return focus to the control that opened the dialog. Keep key content in view. For multiple uploads, keep each selected image visible and show which image is uploading. Do not add project metrics or company facts without a source.
+Use `DetailsView` for a label and value list. Keep each field name visible. In the project dialog, keep the image at its source ratio and fit it inside the viewer; do not crop it. Limit the image area to 52% of the viewport height or 32rem. For a gallery, keep the image order and do not advance automatically. Put arrows and photo dots below the image with 44px controls. Support phone swipes and left/right arrow keys. Wrap in both directions. Show the photo position, loading state, and a clear error if an image fails. Return focus to the control that opened the dialog. Keep key content in view. For multiple uploads, keep each selected image visible and show which image is uploading. Do not add project metrics or company facts without a source.
+
+### Designer studio
+
+Use cream, olive and warm material colours with Lora headings. Use simple architectural lines for empty image covers. Do not make a concept illustration look like a saved client photo.
+
+Read project totals from API pagination. Show at most four recent projects from the first page of each collection. Open a project in a dialog. Keep errors separate from an empty collection, and provide a retry action when loading fails.
+
+Use the Remotion player for the room study. The animation shows structure, furniture, then small details. Start with the finished room. Play starts one reveal; Pause stops it; Play at the end replays it. Do not loop or advance project photos automatically. Keep the three material choices available with or without motion. When reduced motion is on, show the finished still and hide the playback control. Keep the player in the designer route so other roles do not load it.
+
+Use short hover and press feedback, loading placeholders and a short dialog entrance. Remove movement when reduced motion is on. At 320px, keep the page within the viewport and allow only the photo-dot strip to scroll if needed.
 
 ### Delete and suspend confirmation
 

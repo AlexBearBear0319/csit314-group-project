@@ -100,11 +100,15 @@ async function renderProject(project) {
 }
 
 async function renderProjectSummary(project) {
+  // Cards need only three signed previews. The detail route loads all images
+  // when the user opens the project.
   const images = await Promise.all((project.previewImages || []).map(renderImage));
   return { ...projectFields(project), imageCount: project.imageCount || 0, images };
 }
 
 async function getOwnedProject(id, req, status, transaction) {
+  // Take the owner from the verified server session, never the request body.
+  // The owner and collection filters also block access through a guessed ID.
   return InteriorDesignProject.findOwned({
     id,
     designerAccountId: req.auth.accountId,

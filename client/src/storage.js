@@ -6,6 +6,8 @@ function encodeStoragePath(value) {
 }
 
 export async function uploadSignedImage(upload, file) {
+  // The API checked ownership and signed this one path. Send the file directly
+  // to Storage. Never put a server secret in a browser-visible VITE_* variable.
   if (!SUPABASE_URL || !PUBLISHABLE_KEY) {
     throw new Error('Image storage is not set up for this website.');
   }

@@ -67,6 +67,8 @@ export default function DesignerIdpsPage({ status }) {
   const projectRequestIdRef = useRef(0);
 
   useEffect(() => {
+    // Search and page changes can overlap. Only the latest response may update
+    // the screen; the server owns the nine-project page boundary.
     let active = true;
     let redirected = false;
     const requestId = ++listRequestIdRef.current;
@@ -82,6 +84,7 @@ export default function DesignerIdpsPage({ status }) {
         totalPages: response.projects.length ? 1 : 0,
       };
       const lastPage = Math.max(1, pageInfo.totalPages);
+      // A delete can empty the last page. Move back to the last valid page.
       if (pageNumber > lastPage) {
         redirected = true;
         setProjects([]);
@@ -185,6 +188,8 @@ export default function DesignerIdpsPage({ status }) {
     setFiles([]);
     setUploadProgress(null);
     const requestId = ++projectRequestIdRef.current;
+    // Show the dialog at once. Ignore its response if it closes or another
+    // project opens before this request finishes.
     projectRestoreFocusRef.current = focusTarget || document.activeElement;
     setProjectStartIndex(0);
     setViewProject({ id: project.id, name: project.name, images: [] });
@@ -279,6 +284,7 @@ export default function DesignerIdpsPage({ status }) {
         designStyle: editor.designStyle,
         ...(past ? { completionDate: editor.completionDate } : {}),
       };
+      // Save the project first: each image upload needs its saved project ID.
       const saved = projectId
         ? await api.put(`${basePath}/${projectId}`, values)
         : await api.post(basePath, values);
@@ -307,6 +313,8 @@ export default function DesignerIdpsPage({ status }) {
       }
 
       for (const [index, pending] of files.entries()) {
+        // Upload one file at a time. The API signs one path, Storage receives
+        // the file, then the API confirms the file and links it to the project.
         setUploadProgress({ current: index + 1, total: files.length, fileName: pending.file.name });
         let uploadId = '';
         try {
@@ -339,6 +347,8 @@ export default function DesignerIdpsPage({ status }) {
         : wasExisting ? 'Project saved.' : 'Project added.');
       setRefreshKey((current) => current + 1);
     } catch (requestError) {
+      // Some steps can succeed before a later upload fails. Reload the saved
+      // record and keep pending files so Retry does not repeat completed work.
       setError(requestError.message || 'The project could not be saved. Try again.');
       if (projectId) {
         try {

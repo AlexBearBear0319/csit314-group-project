@@ -16,6 +16,8 @@ export default function DesignerDashboard() {
   const detailRequest = useRef(null);
 
   useEffect(() => {
+    // The list API returns totals and a page of recent projects. Read both
+    // collections together; do not count only the visible cards.
     const controller = new AbortController();
     Promise.all(['current', 'past'].map(async (status) => {
       const result = await api.get(`/designer/${status}-idps?page=1`, { signal: controller.signal });
@@ -31,6 +33,7 @@ export default function DesignerDashboard() {
   useEffect(() => () => detailRequest.current?.abort(), []);
 
   async function showProject(project) {
+    // Cancel the old request so a late response cannot replace a new selection.
     detailRequest.current?.abort();
     const controller = new AbortController();
     detailRequest.current = controller;
@@ -44,6 +47,7 @@ export default function DesignerDashboard() {
   }
 
   function closeProject() {
+    // A response must not reopen a dialog after the user closes it.
     detailRequest.current?.abort();
     setView(null);
   }
