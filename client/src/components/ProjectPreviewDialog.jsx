@@ -32,7 +32,7 @@ export default function ProjectPreviewDialog({ project, loading, error, onClose 
         </header>
         {loading ? <p className="p-8 text-muted" role="status">Loading project.</p> : error ? <p className="p-8 text-danger" role="alert">{error}</p> :
           <div className={`grid gap-5 p-4 sm:p-6 ${project.images?.length ? 'lg:grid-cols-[minmax(0,1.6fr)_minmax(17rem,0.8fr)]' : ''}`}>
-            <ProjectImageCarousel images={project.images || []} projectName={project.name} />
+            <ProjectImageCarousel key={project.id} images={project.images} projectId={project.id} status={project.status} projectName={project.name} />
             <DetailsView item={project} fields={[
               { key: 'description', label: 'Description' }, { key: 'propertyType', label: 'Property type' },
               { key: 'designStyle', label: 'Design style' },

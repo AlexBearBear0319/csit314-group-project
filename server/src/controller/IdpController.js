@@ -8,6 +8,8 @@ const {
 const { createSignedReadUrl, removeObjects } = require('../storage/IdpImageStorage');
 const IDP_PAGE_SIZE = InteriorDesignProject.IDP_PAGE_SIZE || 9;
 
+// Creation dates belong to the server. Keep them out of this request allowlist
+// for both create and update. A past project's completion date stays editable.
 const PROJECT_FIELDS = ['name', 'description', 'propertyType', 'designStyle'];
 
 function isDateOnly(value) {
@@ -163,6 +165,11 @@ async function searchIdps(req, res, next, status) {
   try {
     const query = String(req.query.q || '').trim();
     if (query.length > 160) return res.status(422).json({ message: 'Use 160 characters or less for search.' });
+    const sort = req.query.sort === undefined ? 'oldest' : req.query.sort;
+    if (Object.keys(req.query).some((key) => key.startsWith('sort['))
+      || typeof sort !== 'string' || !InteriorDesignProject.IDP_SORT_VALUES.includes(sort)) {
+      return res.status(422).json({ message: 'Choose a valid project sort order.' });
+    }
     const pageValue = req.query.page === undefined ? '1' : req.query.page;
     if (typeof pageValue !== 'string' || !/^[1-9]\d*$/.test(pageValue) || Number(pageValue) > 1000000) {
       return res.status(422).json({ message: 'Enter a valid page number.' });
@@ -177,6 +184,7 @@ async function searchIdps(req, res, next, status) {
       status,
       query,
       page,
+      sort,
     });
     return res.json({
       projects: await Promise.all(result.projects.map(renderProjectSummary)),

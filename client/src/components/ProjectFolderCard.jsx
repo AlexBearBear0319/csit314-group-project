@@ -1,5 +1,6 @@
 import { useEffect, useId, useRef, useState } from 'react';
 import Button from './Button';
+import useProjectImages from '../useProjectImages';
 
 function displayValue(value) {
   return value || '—';
@@ -16,6 +17,7 @@ function filePosition(index, count) {
 }
 
 export default function ProjectFolderCard({ project, past, onView, onEdit, onDelete, appearDelay = 0, isEditing = false }) {
+  const photos = useProjectImages({ projectId: project.id, status: past ? 'past' : 'current', images: project.images });
   const [isOpen, setIsOpen] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [hasEntered, setHasEntered] = useState(() => typeof IntersectionObserver === 'undefined');
@@ -27,7 +29,7 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
   const moreButtonRef = useRef(null);
   const menuRef = useRef(null);
   const filesId = useId().replace(/:/g, '');
-  const previews = (project.images || []).filter((image) => image.url).slice(0, 3);
+  const previews = photos.images.filter((image) => image.url).slice(0, 3);
   const imageCount = project.imageCount ?? project.images?.length ?? 0;
 
   useEffect(() => {
@@ -173,7 +175,7 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
           <span className="project-folder-tab" aria-hidden="true" />
           <div className="project-folder-back" aria-hidden="true">
             {previews[0]?.url ? (
-              <img src={previews[0].url} alt="" className="project-folder-art" loading="lazy" />
+              <img key={`${previews[0].url}:${photos.revision}`} src={previews[0].url} alt="" className="project-folder-art" loading="lazy" onError={() => photos.refreshImages()} />
             ) : (
               <svg viewBox="0 0 96 72" fill="none" className="project-folder-empty-art" aria-hidden="true">
                 <path d="M8 19a7 7 0 0 1 7-7h23l8 9h35a7 7 0 0 1 7 7v27a7 7 0 0 1-7 7H15a7 7 0 0 1-7-7V19Z" fill="currentColor" opacity=".18" />
@@ -204,7 +206,7 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
                   aria-label={`View ${image.fileName || `project photo ${index + 1}`}`}
                   onClick={(event) => onView(project, event.currentTarget, image.id)}
                 >
-                  <img src={image.url} alt="" className="project-folder-file-image" />
+                  <img key={`${image.url}:${photos.revision}`} src={image.url} alt="" className="project-folder-file-image" onError={() => photos.refreshImages()} />
                   <span className="project-folder-file-name">{image.fileName || `Photo ${index + 1}`}</span>
                 </button>
               </div>
@@ -246,6 +248,8 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
         </div>
       </div>
 
+      {photos.refreshing && <p role="status" className="mb-3 text-xs text-muted">Refreshing photos.</p>}
+      {photos.unavailable && <Button variant="secondary" size="sm" className="mb-3" onClick={() => photos.refreshImages(true)}>Retry photos</Button>}
       <div className="flex items-center justify-between gap-2">
         <span className="gallery-status">{past ? 'Past project' : 'Current project'}</span>
         <details

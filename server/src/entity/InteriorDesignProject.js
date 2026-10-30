@@ -4,6 +4,15 @@ const sequelize = require('../db');
 const ProjectImage = require('./ProjectImage');
 
 const IDP_PAGE_SIZE = 9;
+// Only these server-owned orders may reach Sequelize. Never use a request
+// value as a column name or SQL fragment. IDs keep ties stable across pages.
+const IDP_SORT_ORDERS = {
+  oldest: [['createdAt', 'ASC'], ['id', 'ASC']],
+  newest: [['createdAt', 'DESC'], ['id', 'DESC']],
+  'name-asc': [[fn('LOWER', col('name')), 'ASC'], ['id', 'ASC']],
+  'name-desc': [[fn('LOWER', col('name')), 'DESC'], ['id', 'DESC']],
+  recent: [['updatedAt', 'DESC'], ['id', 'DESC']],
+};
 
 class InteriorDesignProject extends Model {
   static createOwned(values) {
@@ -18,7 +27,7 @@ class InteriorDesignProject extends Model {
     });
   }
 
-  static async listOwned({ designerAccountId, status, query, page = 1 }) {
+  static async listOwned({ designerAccountId, status, query, page = 1, sort = 'oldest' }) {
     const whereClause = { designerAccountId, status };
     const term = String(query || '').trim().toLowerCase();
 
@@ -40,7 +49,7 @@ class InteriorDesignProject extends Model {
 
     const { count, rows } = await InteriorDesignProject.findAndCountAll({
       where: whereClause,
-      order: [['updatedAt', 'DESC'], ['id', 'DESC']],
+      order: Object.hasOwn(IDP_SORT_ORDERS, sort) ? IDP_SORT_ORDERS[sort] : IDP_SORT_ORDERS.oldest,
       limit: IDP_PAGE_SIZE,
       offset: (page - 1) * IDP_PAGE_SIZE,
     });
@@ -99,3 +108,4 @@ InteriorDesignProject.init(
 
 module.exports = InteriorDesignProject;
 module.exports.IDP_PAGE_SIZE = IDP_PAGE_SIZE;
+module.exports.IDP_SORT_VALUES = Object.keys(IDP_SORT_ORDERS);

@@ -144,6 +144,38 @@ describe('Interior Designer IDP use cases #20-29', () => {
     await withCsrf(session, 'delete', `/designer/past-idps/${project.id}`).expect(200);
   });
 
+  test.each(['current', 'past'])('%s keeps the server creation date fixed while allowing completion-date edits', async (status) => {
+    const session = await startSession('designer-one');
+    const forgedDate = '1900-01-01T00:00:00.000Z';
+    const first = await makeProject(session, status, {
+      name: 'First room', createdAt: forgedDate, created_at: forgedDate,
+      ...(status === 'past' ? { completionDate: '2026-09-01' } : {}),
+    });
+    expect(first.createdAt).not.toBe(forgedDate);
+    const second = await makeProject(session, status, {
+      name: 'Second room', ...(status === 'past' ? { completionDate: '2026-09-02' } : {}),
+    });
+    const updated = await withCsrf(session, 'put', `/designer/${status}-idps/${first.id}`, {
+      name: 'Edited first room', createdAt: '2999-01-01T00:00:00.000Z', created_at: '2999-01-01T00:00:00.000Z',
+      ...(status === 'past' ? { completionDate: '2026-10-14' } : {}),
+    }).expect(200);
+    expect(updated.body.project.createdAt).toBe(first.createdAt);
+    expect(updated.body.project.name).toBe('Edited first room');
+    expect(updated.body.project.completionDate).toBe(status === 'past' ? '2026-10-14' : null);
+    const stored = await InteriorDesignProject.findByPk(first.id);
+    expect(stored.createdAt.toISOString()).toBe(first.createdAt);
+    const fifo = await session.client.get(`/api/designer/${status}-idps?sort=oldest`).expect(200);
+    expect(fifo.body.projects.map((item) => item.id)).toEqual([first.id, second.id]);
+    if (status === 'past') {
+      const invalid = await withCsrf(session, 'put', `/designer/past-idps/${first.id}`, {
+        name: 'Invalid date edit', completionDate: '2026-02-30',
+      }).expect(422);
+      expect(invalid.body.errors.completionDate).toBeTruthy();
+      const unchanged = await session.client.get(`/api/designer/past-idps/${first.id}`).expect(200);
+      expect(unchanged.body.project).toMatchObject({ createdAt: first.createdAt, completionDate: '2026-10-14', name: 'Edited first room' });
+    }
+  });
+
   test('keeps current and past results separate', async () => {
     const session = await startSession('designer-one', 'Interior Designer');
     await makeProject(session, 'current', { name: 'Shared name' });
@@ -219,6 +251,71 @@ describe('Interior Designer IDP use cases #20-29', () => {
     const afterLastPageDelete = await list(3).expect(200);
     expect(afterLastPageDelete.body.projects).toHaveLength(0);
     expect(afterLastPageDelete.body.pagination).toMatchObject({ page: 3, total: 18, totalPages: 2 });
+  });
+
+  test.each(['current', 'past'])('%s rejects an invalid edit without saving any draft fields', async (status) => {
+    const session = await startSession('designer-one');
+    const saved = await makeProject(session, status, {
+      name: 'Saved room', description: 'Saved description',
+      ...(status === 'past' ? { completionDate: '2026-09-01' } : {}),
+    });
+    const result = await withCsrf(session, 'put', `/designer/${status}-idps/${saved.id}`, {
+      name: 'Draft name', description: 'Draft description', designStyle: 'x'.repeat(81),
+      ...(status === 'past' ? { completionDate: saved.completionDate } : {}),
+    }).expect(422);
+    expect(result.body.errors).toEqual({ designStyle: 'Use 80 characters or less.' });
+    const record = await session.client.get(`/api/designer/${status}-idps/${saved.id}`).expect(200);
+    expect(record.body.project).toMatchObject({ name: saved.name, description: saved.description, createdAt: saved.createdAt });
+  });
+
+  test.each(['current', 'past'])('%s sorting is stable before pagination and stays inside the owner and collection', async (status) => {
+    const session = await startSession('designer-one');
+    const rows = await InteriorDesignProject.bulkCreate(Array.from({ length: 20 }, (_, index) => ({
+      name: ['Zulu', 'alpha', 'Alpha', 'Birch'][index % 4],
+      status,
+      designerAccountId: designerOne.id,
+      completionDate: status === 'past' ? '2026-09-01' : null,
+      // Creation order differs from ID and edit order. Each date also has ties.
+      createdAt: new Date(Date.UTC(2025, 0, [3, 1, 6, 2, 5, 4, 7][Math.floor(index / 3)])),
+      updatedAt: new Date(Date.UTC(2025, 1, 20 - Math.floor(index / 2))),
+    })));
+    await InteriorDesignProject.bulkCreate([
+      { name: 'AAA foreign owner', status, designerAccountId: designerTwo.id },
+      { name: 'AAA other collection', status: status === 'past' ? 'current' : 'past', designerAccountId: designerOne.id },
+    ]);
+    const byCreated = (a, b) => a.createdAt - b.createdAt || a.id - b.id;
+    const byName = (a, b) => a.name.toLowerCase().localeCompare(b.name.toLowerCase()) || a.id - b.id;
+    const orders = {
+      oldest: byCreated,
+      newest: (a, b) => -byCreated(a, b),
+      'name-asc': byName,
+      'name-desc': (a, b) => -byName(a, b),
+      recent: (a, b) => b.updatedAt - a.updatedAt || b.id - a.id,
+    };
+    for (const [sort, compare] of Object.entries(orders)) {
+      const actualIds = [];
+      for (const page of [1, 2, 3]) {
+        const response = await session.client.get(`/api/designer/${status}-idps?sort=${sort}&page=${page}`).expect(200);
+        expect(response.body.pagination).toMatchObject({ pageSize: 9, total: 20, totalPages: 3 });
+        expect(response.body.projects).toHaveLength(page === 3 ? 2 : 9);
+        actualIds.push(...response.body.projects.map((item) => item.id));
+      }
+      expect(actualIds).toEqual([...rows].sort(compare).map((item) => item.id));
+    }
+    const defaultPage = await session.client.get(`/api/designer/${status}-idps`).expect(200);
+    expect(defaultPage.body.projects.map((item) => item.id)).toEqual([...rows].sort(byCreated).slice(0, 9).map((item) => item.id));
+    const filtered = await session.client.get(`/api/designer/${status}-idps?q=alpha&sort=name-desc`).expect(200);
+    expect(filtered.body.pagination.total).toBe(10);
+    expect(filtered.body.projects.map((item) => item.id)).toEqual(rows.filter((item) => item.name.toLowerCase() === 'alpha').sort((a, b) => b.id - a.id).slice(0, 9).map((item) => item.id));
+  });
+
+  test.each(['current', 'past'])('%s rejects unknown, structured and SQL-like sort values', async (status) => {
+    const session = await startSession('designer-one');
+    for (const value of ['updatedAt', '__proto__', 'name; DROP TABLE user_account', '']) {
+      await session.client.get(`/api/designer/${status}-idps?sort=${encodeURIComponent(value)}`).expect(422);
+    }
+    await session.client.get(`/api/designer/${status}-idps?sort=oldest&sort=newest`).expect(422);
+    await session.client.get(`/api/designer/${status}-idps?sort[column]=name`).expect(422);
   });
 
   test('does not let one designer read, edit, delete or upload to another designer project', async () => {
