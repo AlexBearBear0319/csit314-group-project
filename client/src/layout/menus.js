@@ -10,8 +10,8 @@ export const MENUS = {
   'Interior Designer': [
     { to: '/designer', label: 'Dashboard' },
     { to: '/designer/company', label: 'Company Info' },
-    { to: '/designer/current-idps', label: 'Current IDPs' },
-    { to: '/designer/past-idps', label: 'Past IDPs' },
+    { to: '/designer/current-idps', label: 'Current projects' },
+    { to: '/designer/past-idps', label: 'Past projects' },
   ],
   Customer: [
     { to: '/customer', label: 'Dashboard' },
