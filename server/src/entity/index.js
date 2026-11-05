@@ -9,6 +9,7 @@ const InteriorDesignProject = require('./InteriorDesignProject');
 const ProjectImage = require('./ProjectImage');
 const IdpImageUploadIntent = require('./IdpImageUploadIntent');
 const IdpImageCleanupTask = require('./IdpImageCleanupTask');
+const ShortlistItem = require('./ShortlistItem'); // Customer shortlist stories #34-36
 
 UserAccount.hasMany(UserSession, { foreignKey: 'accountId', onDelete: 'CASCADE' });
 UserSession.belongsTo(UserAccount, { foreignKey: 'accountId' });
@@ -29,4 +30,5 @@ module.exports = {
   ProjectImage,
   IdpImageUploadIntent,
   IdpImageCleanupTask,
+  ShortlistItem, // Customer shortlist stories #34-36
 };
