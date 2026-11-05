@@ -33,20 +33,24 @@ import { statusLabel } from './userAccountShared'; // 'active' -> 'Active'
 // The details to show, top to bottom. key = field in the account, label = text
 // on the left. DetailsView shows '-' for empty values (e.g. no date of birth).
 const FIELDS = [
-  { key: 'username', label: 'User ID' },
-  { key: 'name', label: 'Name' },
-  { key: 'email', label: 'Email' },
-  { key: 'profileName', label: 'User profile' },
-  { key: 'status', label: 'Status' },
-  { key: 'dob', label: 'Date of birth' },
+  { key: 'username', label: 'User ID' }, // line 1
+  { key: 'name', label: 'Name' }, // line 2
+  { key: 'email', label: 'Email' }, // line 3
+  { key: 'profileName', label: 'User profile' }, // line 4
+  { key: 'status', label: 'Status' }, // line 5
+  { key: 'dob', label: 'Date of birth' }, // line 6
 ];
 
+// =============================================================================
+// FUNCTION: ViewUserAccountPg (the page itself)
+// WHAT IT DOES: draws one account's details and holds all its smaller functions.
+// =============================================================================
 export default function ViewUserAccountPg() {
   // useParams reads :id from the address. For /admin/accounts/5, id is "5"
   // (text, not a number). { id } = take the "id" field out of the result.
   const { id } = useParams();
-  const navigate = useNavigate();
-  const location = useLocation();
+  const navigate = useNavigate(); // navigate('/address') moves to another page
+  const location = useLocation(); // info about this page, including messages
 
   // ---- State --------------------------------------------------------------------
   const [account, setAccount] = useState(null); // the account; null until loaded
@@ -57,58 +61,79 @@ export default function ViewUserAccountPg() {
   const [suspendOpen, setSuspendOpen] = useState(false); // is the Suspend pop-up open?
   const [reactivating, setReactivating] = useState(false); // true while reactivating (spinner)
 
-  // ---- displaySuccess / displayError ------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // FUNCTION: displaySuccess
+  // WHAT IT DOES: shows the loaded account.
   // useCallback keeps these the same between redraws so the useEffect below
   // does not rerun forever (full explanation in SearchUserAccountPg.jsx).
+  // ---------------------------------------------------------------------------
   const displaySuccess = useCallback((found) => {
     setAccount(found); // show the account
     setLoading(false); // hide "Loading..."
   }, []);
 
+  // ---------------------------------------------------------------------------
+  // FUNCTION: displayError
+  // WHAT IT DOES: shows a red message when the account could not load.
+  // ---------------------------------------------------------------------------
   const displayError = useCallback((message) => {
+    // || gives a fallback message if the backend did not send one.
     setError(message || 'The account could not be loaded. Try again.');
-    setLoading(false);
+    setLoading(false); // hide "Loading..."
   }, []);
 
-  // ---- viewAccount: load the account --------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // viewAccount: LOAD THE ACCOUNT
   // Runs when the page opens, and again if the ID in the address changes
   // (id is in the [...] list at the end).
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     // "active" ignores a reply that arrives after the user has left the page
     // or opened a different account. The cleanup below sets it to false.
     let active = true;
     api.get(`/user-accounts/${id}`) // GET /api/user-accounts/5
+      // The reply arrived, so show the account.
       .then((found) => { if (active) displaySuccess(found); })
       // For a wrong ID the backend replies 404 'User account not found.',
       // and that message is shown in the red box.
       .catch((err) => { if (active) displayError(err.message); });
+    // The cleanup function (see "active" above).
     return () => { active = false; };
   }, [id, displaySuccess, displayError]);
 
-  // ---- afterSuspend: the Suspend pop-up calls this when it succeeds --------------------
+  // ---------------------------------------------------------------------------
+  // FUNCTION: afterSuspend
+  // WHAT IT DOES: the Suspend pop-up calls this when it succeeds.
+  // RECEIVES: updated = the account from the backend, now suspended.
+  // ---------------------------------------------------------------------------
   function afterSuspend(updated) {
     setSuspendOpen(false); // close the pop-up
     setAccount(updated); // show the new status (Suspended) without reloading
-    setSuccess('Account suspended. This user can no longer log in.');
-  }
+    setSuccess('Account suspended. This user can no longer log in.'); // green message
+  } // End of afterSuspend.
 
-  // ---- reactivateAccount: runs when Reactivate is clicked (#8, alternative flow) ------
+  // ---------------------------------------------------------------------------
+  // FUNCTION: reactivateAccount
+  // WHAT IT DOES: runs when Reactivate is clicked (#8, alternative flow).
   // No confirm pop-up: reactivating is easy to undo (just suspend again).
+  // ---------------------------------------------------------------------------
   async function reactivateAccount() {
     setReactivating(true); // spinner on the button, blocks double-clicks
     setError(''); // clear old messages
-    setSuccess('');
+    setSuccess(''); // clear old messages
+    // "try" means: run this, and if anything fails, jump to "catch".
     try {
       // PUT /api/user-accounts/5 with only the status. Nothing else changes.
       const updated = await api.put(`/user-accounts/${account.id}`, { status: 'active' });
       setAccount(updated); // show the new status (Active) without reloading
-      setSuccess('Account reactivated. This user can log in again.');
+      setSuccess('Account reactivated. This user can log in again.'); // green message
     } catch (err) {
+      // It failed, so show the red message.
       setError(err.message || 'The account could not be reactivated. Try again.');
     } finally {
       setReactivating(false); // always hide the spinner at the end
     }
-  }
+  } // End of reactivateAccount.
 
   // ---- What the page shows (JSX) --------------------------------------------------------
   return (
@@ -159,10 +184,10 @@ export default function ViewUserAccountPg() {
       {/* The Suspend pop-up. It opens when it is given an account:
           suspendOpen ? account : null = "the account if open, else nothing". */}
       <SuspendUserAccountPg
-        account={suspendOpen ? account : null}
-        onDone={afterSuspend}
-        onCancel={() => setSuspendOpen(false)}
+        account={suspendOpen ? account : null} // the account, or nothing when closed
+        onDone={afterSuspend} // run this after a successful suspend
+        onCancel={() => setSuspendOpen(false)} // close the pop-up on Cancel
       />
     </section>
   );
-}
+} // End of ViewUserAccountPg.

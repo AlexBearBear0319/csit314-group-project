@@ -3,24 +3,41 @@
 // User story #6: "As a User Admin, I want to create user accounts so that
 // users can join the platform."
 //
-// BCE flow:  Boundary (page) -> route POST /api/user-accounts
-//            -> CreateUserAccountC.createAccount()      <- THIS FILE
-//            -> UserAccount.createAccount()  (entity, saves to the database)
+// HOW THE REQUEST TRAVELS (BCE = Boundary, Controller, Entity):
+//   Boundary (the web page) -> route POST /api/user-accounts
+//   -> CreateUserAccountC.createAccount()      <- THIS FILE
+//   -> UserAccount.createAccount()  (entity, saves to the database)
 //
 // A controller's job: check the input, call the entity, and turn the entity's
 // answer into either a result or an error. It never touches the database itself.
+//
+// WORDS USED IN THIS FILE:
+//   const   = give a value a name. The name keeps that value.
+//   require = load code from another file so this file can use it.
+//   class   = a group of related functions. A function in a class is a "method".
+//   async   = this function takes time (it waits for the database).
+//   await   = wait here for the slow work to finish, then carry on.
+//   return  = stop the function and hand back this value.
+//   throw   = stop the function and report an error.
 // =============================================================================
 
-// The entity class that owns the user_account table.
+// Load the entity class that owns the user_account table in the database.
 const UserAccount = require('../entity/UserAccount');
 
-// Shared helpers: RequestError (an error with a status code) and
-// accountValues (checks every field). See userAccountValidation.js.
+// Load 2 shared helpers from userAccountValidation.js:
+//   RequestError  = an error that also carries a web status code
+//   accountValues = checks every field that the user typed
 const { RequestError, accountValues } = require('./userAccountValidation');
 
+// Start of the class. All the code for story #6 sits inside these { } brackets.
 class CreateUserAccountC {
-  // body = the JSON the page sent: { username, password, name, email, profileId, dob? }
-  // Returns the new account (without its password).
+  // ---------------------------------------------------------------------------
+  // FUNCTION: createAccount
+  // WHAT IT DOES: checks the typed details and creates a new user account.
+  // RECEIVES: body = what the page sent: { username, password, name, email,
+  //           profileId, dob (optional) }
+  // GIVES BACK: the new account, without its password.
+  // ---------------------------------------------------------------------------
   async createAccount(body) {
     // Step 1: check and clean every field. If anything is wrong, accountValues
     // throws a 400 error and this method stops here.
@@ -37,14 +54,19 @@ class CreateUserAccountC {
 
     // Step 4: success. The route sends this back with status 201 (Created).
     return result.account;
-  }
+  } // End of createAccount.
 
-  // The list of profiles for the form's "User profile" dropdown.
-  // Returns [{ id, name }, ...]. Used by both the Create and Update pages.
+  // ---------------------------------------------------------------------------
+  // FUNCTION: listProfiles
+  // WHAT IT DOES: gets the choices for the form's "User profile" dropdown.
+  // USED BY: both the Create and the Update pages.
+  // GIVES BACK: a list like [{ id: 3, name: 'Customer' }, ...]
+  // ---------------------------------------------------------------------------
   async listProfiles() {
+    // Ask the entity for the list and hand its answer straight back.
     return UserAccount.profileOptions();
-  }
-}
+  } // End of listProfiles.
+} // End of the class.
 
-// Let routes/userAccounts.js load this class.
+// Let other files load this class. routes/userAccounts.js uses it.
 module.exports = CreateUserAccountC;

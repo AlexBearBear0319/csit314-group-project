@@ -26,8 +26,12 @@ import { accountFields, toRequestBody } from './userAccountShared';
 // accountFields, so each box knows which value is its own.
 const EMPTY = { username: '', password: '', name: '', email: '', profileId: '', dob: '' };
 
+// =============================================================================
+// FUNCTION: CreateUserAccountPg (the page itself)
+// WHAT IT DOES: draws the create form and holds all its smaller functions.
+// =============================================================================
 export default function CreateUserAccountPg() {
-  const navigate = useNavigate();
+  const navigate = useNavigate(); // navigate('/address') moves to another page
 
   // ---- State --------------------------------------------------------------------
   const [profiles, setProfiles] = useState(null); // dropdown choices; null = still loading
@@ -35,8 +39,10 @@ export default function CreateUserAccountPg() {
   const [fieldErrors, setFieldErrors] = useState({}); // { username: 'message', ... } shown under each box
   const [saving, setSaving] = useState(false); // true while the form is being sent (spinner on the button)
 
-  // ---- Load the profile choices when the page opens ----------------------------
+  // ---------------------------------------------------------------------------
+  // LOAD THE PROFILE CHOICES WHEN THE PAGE OPENS
   // [] at the end = run once, when the page first opens.
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     api.get('/user-accounts/profiles') // GET /api/user-accounts/profiles
       // .then(setProfiles) is short for .then((list) => setProfiles(list)).
@@ -45,47 +51,62 @@ export default function CreateUserAccountPg() {
       .catch((err) => { setProfiles([]); setError(err.message); });
   }, []);
 
-  // ---- displaySuccess: the account was created ------------------------------------
-  // Go to the new account's View page and pass a message to show there.
+  // ---------------------------------------------------------------------------
+  // FUNCTION: displaySuccess
+  // WHAT IT DOES: the account was created. Go to the new account's View page
+  // and pass a message to show there.
+  // ---------------------------------------------------------------------------
   function displaySuccess(account) {
     navigate(`/admin/accounts/${account.id}`, { state: { message: 'Account created.' } });
-  }
+  } // End of displaySuccess.
 
-  // ---- displayError: the backend refused --------------------------------------------
+  // ---------------------------------------------------------------------------
+  // FUNCTION: displayError
+  // WHAT IT DOES: the backend refused.
   // err.message = the main message, e.g. 'Some details are already in use.'
   // err.errors  = per-field messages from a 400 or 409 reply, e.g.
   //               { username: 'This user ID is already in use.' }
   // FormFields shows each one under its box and outlines the box in red.
+  // ---------------------------------------------------------------------------
   function displayError(err) {
+    // Show the main red message, or a fallback if the backend sent none.
     setError(err.message || 'The account could not be created. Try again.');
+    // Show the messages under each box, if there are any.
     setFieldErrors(err.errors || {});
-  }
+  } // End of displayError.
 
-  // ---- createAccount: runs when the form is submitted --------------------------------
-  // values = everything typed into the form, e.g. { username: 'kaz', ... }.
+  // ---------------------------------------------------------------------------
+  // FUNCTION: createAccount
+  // WHAT IT DOES: runs when the form is submitted.
+  // RECEIVES: values = everything typed into the form, e.g. { username: 'kaz', ... }.
   // "async" lets us use "await" to wait for the backend.
+  // ---------------------------------------------------------------------------
   async function createAccount(values) {
     setSaving(true); // show the spinner and block double-clicks
     setError(''); // clear old messages
-    setFieldErrors({});
+    setFieldErrors({}); // clear old per-box messages
     // try { ... } catch { ... }: if anything inside try fails, jump to catch.
     try {
       // POST /api/user-accounts with the cleaned-up values.
       const account = await api.post('/user-accounts', toRequestBody(values));
+      // It worked, so go to the new account's page.
       displaySuccess(account);
     } catch (err) {
+      // It failed, so show the messages.
       displayError(err);
     } finally {
       // finally always runs, success or not: hide the spinner.
       setSaving(false);
     }
-  }
+  } // End of createAccount.
 
   // ---- What the page shows (JSX) --------------------------------------------------------
   return (
     // max-w-2xl keeps the form a comfortable width (UI_GUIDELINES: forms up to 672px).
     <section className="grid max-w-2xl gap-6">
+      {/* Link back to the list. */}
       <Link to="/admin/accounts" className="text-sm text-action underline">Back to user accounts</Link>
+      {/* The page heading. */}
       <h1 className="text-3xl tracking-tight text-ink sm:text-4xl">Create account</h1>
 
       {/* Red message box (nothing shown when error is ''). */}
@@ -107,4 +128,4 @@ export default function CreateUserAccountPg() {
         )}
     </section>
   );
-}
+} // End of CreateUserAccountPg.

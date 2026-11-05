@@ -24,17 +24,23 @@ import { api } from '../api'; // calls the backend
 import Button from '../components/Button'; // styled button
 import Message from '../components/Message'; // red error box
 
+// =============================================================================
+// FUNCTION: SuspendUserAccountPg (the pop-up itself)
+// WHAT IT DOES: draws the pop-up and holds all its smaller functions.
 // { account, onDone, onCancel } takes the 3 props out of the props object.
+// =============================================================================
 export default function SuspendUserAccountPg({ account, onDone, onCancel }) {
   // dialogRef.current will point at the <dialog> element once it is drawn.
   const dialogRef = useRef(null);
   const [error, setError] = useState(''); // red message inside the pop-up
   const [loading, setLoading] = useState(false); // true while suspending (spinner)
 
-  // ---- Open or close the pop-up --------------------------------------------------
+  // ---------------------------------------------------------------------------
+  // OPEN OR CLOSE THE POP-UP
   // Runs after every draw where account changed ([account] at the end).
+  // ---------------------------------------------------------------------------
   useEffect(() => {
-    const dialog = dialogRef.current;
+    const dialog = dialogRef.current; // the pop-up element on the page
     if (!dialog) return; // not drawn yet: nothing to do
     if (account && !dialog.open) {
       // An account was given and the pop-up is closed: open it.
@@ -46,30 +52,44 @@ export default function SuspendUserAccountPg({ account, onDone, onCancel }) {
     }
   }, [account]);
 
-  // ---- displaySuccess / displayError ---------------------------------------------
+  // ---------------------------------------------------------------------------
+  // FUNCTION: displaySuccess
+  // WHAT IT DOES: the suspend worked, so tell the parent page.
+  // ---------------------------------------------------------------------------
   function displaySuccess(updated) {
     onDone(updated); // hand the updated account to the parent page
-  }
+  } // End of displaySuccess.
 
+  // ---------------------------------------------------------------------------
+  // FUNCTION: displayError
+  // WHAT IT DOES: the suspend failed, so show a red message in the pop-up.
+  // ---------------------------------------------------------------------------
   function displayError(message) {
     // e.g. 'You cannot suspend your own account.' from the backend.
     setError(message || 'The account could not be suspended. Try again.');
-  }
+  } // End of displayError.
 
-  // ---- suspendAccount: runs when "Suspend account" is clicked -----------------------
+  // ---------------------------------------------------------------------------
+  // FUNCTION: suspendAccount
+  // WHAT IT DOES: runs when "Suspend account" is clicked.
+  // ---------------------------------------------------------------------------
   async function suspendAccount() {
-    setLoading(true);
-    setError('');
+    setLoading(true); // show the spinner and block double-clicks
+    setError(''); // clear the old message
+    // "try" means: run this, and if anything fails, jump to "catch".
     try {
       // POST /api/user-accounts/5/suspend (no body needed).
       const updated = await api.post(`/user-accounts/${account.id}/suspend`);
+      // It worked, so tell the parent page.
       displaySuccess(updated);
     } catch (err) {
+      // It failed, so show the message.
       displayError(err.message);
     } finally {
+      // Always hide the spinner at the end.
       setLoading(false);
     }
-  }
+  } // End of suspendAccount.
 
   // ---- What the pop-up shows (JSX) -------------------------------------------------
   return (
@@ -88,14 +108,17 @@ export default function SuspendUserAccountPg({ account, onDone, onCancel }) {
       {/* Only draw the contents while there is an account. */}
       {account && (
         <div className="grid gap-5 p-6">
+          {/* The pop-up's heading. */}
           <h2 id="suspend-account-title" className="text-2xl">Suspend this account?</h2>
           {/* Say exactly who will be affected, so the admin can check. */}
           <p className="text-sm text-muted">
             {account.name} ({account.username}) will not be able to log in.
           </p>
+          {/* Red message box (nothing shown when error is ''). */}
           <Message type="error" text={error} />
           {/* Buttons on the right: Cancel, then the red Suspend button. */}
           <div className="flex flex-wrap justify-end gap-3">
+            {/* Cancel closes the pop-up. It is disabled while suspending. */}
             <Button variant="secondary" onClick={onCancel} disabled={loading}>Cancel</Button>
             {/* loading={loading} shows a spinner and blocks double-clicks. */}
             <Button variant="danger" onClick={suspendAccount} loading={loading}>Suspend account</Button>
@@ -104,4 +127,4 @@ export default function SuspendUserAccountPg({ account, onDone, onCancel }) {
       )}
     </dialog>
   );
-}
+} // End of SuspendUserAccountPg.
