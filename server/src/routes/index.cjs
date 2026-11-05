@@ -88,6 +88,10 @@ router.use('/user-accounts', authenticateSession, requireRole('User Admin'), req
 router.use('/user-profiles', authenticateSession, requireRole('User Admin'), requireCsrf, require('./userProfiles'));
 router.use('/idp-categories', authenticateSession, requireRole('Platform Manager'), requireCsrf, require('./idpCategories'));
 
+// Customer shortlist stories #34-36 (routes are in ./shortlist.js). Only a
+// logged-in Customer gets past these 3 checks.
+router.use('/customer/shortlist', authenticateSession, requireRole('Customer'), requireCsrf, require('./shortlist'));
+
 // Every Interior Designer action uses the account and role read from the
 // server-side session. No route accepts an owner ID from the browser.
 router.use('/designer', authenticateSession, requireRole('Interior Designer'), requireCsrf);
