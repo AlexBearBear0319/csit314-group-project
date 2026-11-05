@@ -7,8 +7,12 @@ const IDPCategory = require('./IDPCategory');
 const UserSession = require('./UserSession');
 const InteriorDesignProject = require('./InteriorDesignProject');
 const ProjectImage = require('./ProjectImage');
+const Company = require('./Company');
 const IdpImageUploadIntent = require('./IdpImageUploadIntent');
 const IdpImageCleanupTask = require('./IdpImageCleanupTask');
+
+UserAccount.hasOne(Company, { as: 'company', foreignKey: 'designerAccountId', onDelete: 'CASCADE' });
+Company.belongsTo(UserAccount, { as: 'designer', foreignKey: 'designerAccountId' });
 
 UserAccount.hasMany(UserSession, { foreignKey: 'accountId', onDelete: 'CASCADE' });
 UserSession.belongsTo(UserAccount, { foreignKey: 'accountId' });
@@ -21,6 +25,7 @@ IdpImageUploadIntent.belongsTo(InteriorDesignProject, { as: 'project', foreignKe
 
 module.exports = {
   sequelize,
+  Company,
   UserProfile,
   UserAccount,
   UserSession,
