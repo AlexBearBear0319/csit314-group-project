@@ -13,6 +13,12 @@ import ViewUserAccountPg from './boundary/ViewUserAccountPg'; // #7
 import UpdateUserAccountPg from './boundary/UpdateUserAccountPg'; // #8
 import Dashboard from './pages/Dashboard';
 import ComingSoon from './pages/ComingSoon';
+import SearchCompanyPg from './boundary/SearchCompanyPg';
+import CreateCompanyPg from './boundary/CreateCompanyPg';
+import ViewCompanyPg from './boundary/ViewCompanyPg';
+import UpdateCompanyPg from './boundary/UpdateCompanyPg';
+import SearchCustomerIDPPg from './boundary/SearchCustomerIDPPg';
+import GenerateReportPg from './boundary/GenerateReportPg';
 import SearchUserProfilePg from './boundary/SearchUserProfilePg';
 import CreateUserProfilePg from './boundary/CreateUserProfilePg';
 import ViewUserProfilePg from './boundary/ViewUserProfilePg';
@@ -75,7 +81,10 @@ export default function App() {
 
         <Route element={<RequireRole role="Interior Designer" />}>
           <Route path="/designer" element={<Suspense fallback={<p role="status">Loading studio.</p>}><DesignerDashboard /></Suspense>} />
-          <Route path="/designer/company" element={<ComingSoon title="Company Information" />} />
+          <Route path="/designer/company" element={<SearchCompanyPg />} />
+          <Route path="/designer/company/create" element={<CreateCompanyPg />} />
+          <Route path="/designer/company/mine" element={<ViewCompanyPg />} />
+          <Route path="/designer/company/mine/edit" element={<UpdateCompanyPg />} />
           <Route path="/designer/current-idps" element={<ManageCurrentIdpsPg />} />
           <Route path="/designer/past-idps" element={<ManagePastIdpsPg />} />
         </Route>
@@ -85,6 +94,8 @@ export default function App() {
           <Route path="/customer/search" element={<ComingSoon title="Search IDPs" />} />
           <Route path="/customer/shortlist" element={<SearchShortlistPg />} />
           <Route path="/customer/shortlist/:id" element={<ViewShortlistPg />} />
+          <Route path="/customer/search" element={<SearchCustomerIDPPg />} />
+          <Route path="/customer/shortlist" element={<ComingSoon title="My Shortlist" />} />
         </Route>
 
         <Route element={<RequireRole role="Platform Manager" />}>
@@ -94,7 +105,7 @@ export default function App() {
           <Route path="/manager/categories/:id" element={<ViewIDPCategoryPg />} />
           <Route path="/manager/categories/:id/edit" element={<UpdateIDPCategoryPg />} />
           <Route path="/manager/categories/:id/delete" element={<DeleteIDPCategoryPg />} />
-          <Route path="/manager/reports" element={<ComingSoon title="Reports" />} />
+          <Route path="/manager/reports" element={<GenerateReportPg />} />
         </Route>
 
         <Route path="*" element={<UnknownRoute />} />

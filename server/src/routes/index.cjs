@@ -13,11 +13,12 @@ const { sequelize } = require('../entity');
 const { checkStorageReady } = require('../storage/IdpImageStorage');
 
 const REQUIRED_COLUMNS = {
+  company: ['id', 'name', 'description', 'designer_account_id', 'created_at', 'updated_at'],
   idp_category: ['id', 'name', 'description', 'createdAt', 'updatedAt'],
   user_profile: ['id', 'name', 'description', 'status', 'createdAt', 'updatedAt'],
   user_account: ['id', 'username', 'password', 'name', 'email', 'dob', 'photo', 'status', 'profileId', 'createdAt', 'updatedAt'],
   user_session: ['id', 'account_id', 'token_hash', 'csrf_token', 'expires_at', 'created_at', 'updated_at'],
-  interior_design_project: ['id', 'name', 'description', 'property_type', 'design_style', 'status', 'completion_date', 'designer_account_id', 'created_at', 'updated_at'],
+  interior_design_project: ['id', 'name', 'description', 'property_type', 'design_style', 'status', 'completion_date', 'designer_account_id', 'view_count', 'created_at', 'updated_at'],
   project_image: ['id', 'project_id', 'storage_path', 'file_name', 'content_type', 'size_bytes', 'alt_text', 'sort_order', 'created_at', 'updated_at'],
   idp_image_upload_intent: ['id', 'project_id', 'designer_account_id', 'storage_path', 'file_name', 'content_type', 'size_bytes', 'alt_text', 'expires_at', 'created_at', 'updated_at'],
   idp_image_cleanup_task: ['id', 'designer_account_id', 'storage_path', 'attempts', 'last_error', 'created_at', 'updated_at'],
@@ -91,6 +92,9 @@ router.use('/idp-categories', authenticateSession, requireRole('Platform Manager
 // Customer shortlist stories #34-36 (routes are in ./shortlist.js). Only a
 // logged-in Customer gets past these 3 checks.
 router.use('/customer/shortlist', authenticateSession, requireRole('Customer'), requireCsrf, require('./shortlist'));
+router.use('/companies', authenticateSession, requireRole('Interior Designer'), requireCsrf, require('./companies'));
+router.use('/customer/idps', authenticateSession, requireRole('Customer'), requireCsrf, require('./customerIdps'));
+router.use('/reports', authenticateSession, requireRole('Platform Manager'), require('./reports'));
 
 // Every Interior Designer action uses the account and role read from the
 // server-side session. No route accepts an owner ID from the browser.
