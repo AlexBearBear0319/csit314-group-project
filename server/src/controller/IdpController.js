@@ -4,6 +4,7 @@ const {
   ProjectImage,
   IdpImageUploadIntent,
   IdpImageCleanupTask,
+  ShortlistItem,
 } = require('../entity');
 const { createSignedReadUrl, removeObjects } = require('../storage/IdpImageStorage');
 const IDP_PAGE_SIZE = InteriorDesignProject.IDP_PAGE_SIZE || 9;
@@ -83,6 +84,7 @@ function projectFields(project) {
     designStyle: project.designStyle,
     status: project.status,
     completionDate: project.completionDate,
+    viewCount: project.viewCount || 0, // story #30
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
   };
@@ -94,18 +96,20 @@ async function renderProject(project) {
   ));
   const images = await Promise.all(orderedImages.map(renderImage));
 
+  const shortlistCounts = await ShortlistItem.countsByProject([project.id]); // story #31
   return {
     ...projectFields(project),
+    shortlistCount: shortlistCounts.get(project.id) || 0,
     imageCount: images.length,
     images,
   };
 }
 
-async function renderProjectSummary(project) {
+async function renderProjectSummary(project, shortlistCounts = new Map()) {
   // Cards need only three signed previews. The detail route loads all images
   // when the user opens the project.
   const images = await Promise.all((project.previewImages || []).map(renderImage));
-  return { ...projectFields(project), imageCount: project.imageCount || 0, images };
+  return { ...projectFields(project), shortlistCount: shortlistCounts.get(project.id) || 0, imageCount: project.imageCount || 0, images };
 }
 
 async function getOwnedProject(id, req, status, transaction) {
@@ -186,8 +190,9 @@ async function searchIdps(req, res, next, status) {
       page,
       sort,
     });
+    const shortlistCounts = await ShortlistItem.countsByProject(result.projects.map((project) => project.id));
     return res.json({
-      projects: await Promise.all(result.projects.map(renderProjectSummary)),
+      projects: await Promise.all(result.projects.map((project) => renderProjectSummary(project, shortlistCounts))),
       pagination: {
         page,
         pageSize: IDP_PAGE_SIZE,

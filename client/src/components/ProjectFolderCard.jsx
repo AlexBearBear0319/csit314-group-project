@@ -292,6 +292,14 @@ export default function ProjectFolderCard({ project, past, onView, onEdit, onDel
           <dt className="text-muted">Design style</dt>
           <dd className="min-w-0 break-words text-ink">{displayValue(project.designStyle)}</dd>
         </div>
+        <div className="grid min-w-0 grid-cols-[6.25rem_minmax(0,1fr)] gap-2">
+          <dt className="text-muted">Views</dt>
+          <dd className="min-w-0 break-words text-ink">{project.viewCount ?? 0}</dd>
+        </div>
+        <div className="grid min-w-0 grid-cols-[6.25rem_minmax(0,1fr)] gap-2">
+          <dt className="text-muted">Shortlisted</dt>
+          <dd className="min-w-0 break-words text-ink">{project.shortlistCount ?? 0}</dd>
+        </div>
         {past && (
           <div className="grid min-w-0 grid-cols-[6.25rem_minmax(0,1fr)] gap-2">
             <dt className="text-muted">Completed</dt>

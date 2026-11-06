@@ -140,6 +140,37 @@ class ShortlistItem extends Model {
     // SQL: SELECT ... FROM project_image WHERE project_id = ? ORDER BY sort_order
     return ProjectImage.findAll({ where: { projectId }, order: [['sortOrder', 'ASC'], ['id', 'ASC']] });
   } // End of savedImages.
+
+  // ---------------------------------------------------------------------------
+  // FUNCTION: countsByProject
+  // Story #31: how many Customers saved each project.
+  // RECEIVES: projectIds = a list of project IDs
+  // GIVES BACK: a Map of projectId -> number of shortlist rows (0 when none).
+  // ---------------------------------------------------------------------------
+  static async countsByProject(projectIds) {
+    const counts = new Map(projectIds.map((id) => [id, 0]));
+    if (!projectIds.length) return counts;
+    // SQL: SELECT project_id, COUNT(*) FROM shortlist_item WHERE project_id IN (...) GROUP BY project_id
+    const rows = await ShortlistItem.findAll({
+      attributes: ['projectId', [sequelize.fn('COUNT', sequelize.col('id')), 'total']],
+      where: { projectId: projectIds },
+      group: ['projectId'],
+      raw: true,
+    });
+    for (const row of rows) counts.set(Number(row.projectId), Number(row.total));
+    return counts;
+  } // End of countsByProject.
+
+  // ---------------------------------------------------------------------------
+  // FUNCTION: countForOwnedProject
+  // Story #31: the shortlist count of ONE project, only if this designer owns it.
+  // GIVES BACK: the number, or null when the project is not theirs / not found.
+  // ---------------------------------------------------------------------------
+  static async countForOwnedProject(designerAccountId, projectId) {
+    const project = await InteriorDesignProject.findOne({ where: { id: projectId, designerAccountId }, attributes: ['id'] });
+    if (!project) return null;
+    return ShortlistItem.count({ where: { projectId: project.id } });
+  } // End of countForOwnedProject.
 } // End of the class.
 
 // -----------------------------------------------------------------------------
