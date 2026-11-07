@@ -12,7 +12,6 @@ import CreateUserAccountPg from './boundary/CreateUserAccountPg'; // #6
 import ViewUserAccountPg from './boundary/ViewUserAccountPg'; // #7
 import UpdateUserAccountPg from './boundary/UpdateUserAccountPg'; // #8
 import Dashboard from './pages/Dashboard';
-import ComingSoon from './pages/ComingSoon';
 import SearchCompanyPg from './boundary/SearchCompanyPg';
 import CreateCompanyPg from './boundary/CreateCompanyPg';
 import ViewCompanyPg from './boundary/ViewCompanyPg';
@@ -92,12 +91,10 @@ export default function App() {
 
         <Route element={<RequireRole role="Customer" />}>
           <Route path="/customer" element={<Dashboard role="Customer" />} />
-          <Route path="/customer/search" element={<ComingSoon title="Search IDPs" />} />
+          <Route path="/customer/search" element={<SearchCustomerIDPPg />} />
           <Route path="/customer/shortlist" element={<SearchShortlistPg />} />
           <Route path="/customer/shortlist/save" element={<SaveShortlistPg />} />
           <Route path="/customer/shortlist/:id" element={<ViewShortlistPg />} />
-          <Route path="/customer/search" element={<SearchCustomerIDPPg />} />
-          <Route path="/customer/shortlist" element={<ComingSoon title="My Shortlist" />} />
         </Route>
 
         <Route element={<RequireRole role="Platform Manager" />}>
