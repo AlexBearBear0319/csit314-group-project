@@ -18,7 +18,7 @@ const REQUIRED_COLUMNS = {
   user_profile: ['id', 'name', 'description', 'status', 'createdAt', 'updatedAt'],
   user_account: ['id', 'username', 'password', 'name', 'email', 'dob', 'photo', 'status', 'profileId', 'createdAt', 'updatedAt'],
   user_session: ['id', 'account_id', 'token_hash', 'csrf_token', 'expires_at', 'created_at', 'updated_at'],
-  interior_design_project: ['id', 'name', 'description', 'property_type', 'design_style', 'status', 'completion_date', 'designer_account_id', 'view_count', 'created_at', 'updated_at'],
+  interior_design_project: ['id', 'name', 'description', 'property_type', 'design_style', 'status', 'completion_date', 'designer_account_id', 'category_id', 'view_count', 'created_at', 'updated_at'],
   project_image: ['id', 'project_id', 'storage_path', 'file_name', 'content_type', 'size_bytes', 'alt_text', 'sort_order', 'created_at', 'updated_at'],
   idp_image_upload_intent: ['id', 'project_id', 'designer_account_id', 'storage_path', 'file_name', 'content_type', 'size_bytes', 'alt_text', 'expires_at', 'created_at', 'updated_at'],
   idp_image_cleanup_task: ['id', 'designer_account_id', 'storage_path', 'attempts', 'last_error', 'created_at', 'updated_at'],
@@ -96,6 +96,12 @@ router.use('/reports', authenticateSession, requireRole('Platform Manager'), req
 // Every Interior Designer action uses the account and role read from the
 // server-side session. No route accepts an owner ID from the browser.
 router.use('/designer', authenticateSession, requireRole('Interior Designer'), requireCsrf);
+
+router.get('/designer/categories', async (req, res) => {
+  const { IDPCategory } = require('../entity');
+  const categories = await IDPCategory.findAll({ attributes: ['id', 'name'], order: [['name', 'ASC']] });
+  return res.json(categories);
+});
 
 router.get('/designer/current-idps', IdpController.searchCurrentIdps);
 router.post('/designer/current-idps', IdpController.createCurrentIdp);

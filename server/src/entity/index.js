@@ -18,6 +18,8 @@ UserAccount.hasMany(UserSession, { foreignKey: 'accountId', onDelete: 'CASCADE' 
 UserSession.belongsTo(UserAccount, { foreignKey: 'accountId' });
 UserAccount.hasMany(InteriorDesignProject, { as: 'projects', foreignKey: 'designerAccountId', onDelete: 'CASCADE' });
 InteriorDesignProject.belongsTo(UserAccount, { as: 'designer', foreignKey: 'designerAccountId' });
+IDPCategory.hasMany(InteriorDesignProject, { as: 'projects', foreignKey: 'categoryId', onDelete: 'RESTRICT' });
+InteriorDesignProject.belongsTo(IDPCategory, { as: 'category', foreignKey: 'categoryId', onDelete: 'RESTRICT' });
 InteriorDesignProject.hasMany(ProjectImage, { as: 'images', foreignKey: 'projectId', onDelete: 'CASCADE' });
 ProjectImage.belongsTo(InteriorDesignProject, { as: 'project', foreignKey: 'projectId' });
 InteriorDesignProject.hasMany(IdpImageUploadIntent, { as: 'uploadIntents', foreignKey: 'projectId', onDelete: 'CASCADE' });

@@ -1,5 +1,6 @@
 const {
   sequelize,
+  IDPCategory,
   InteriorDesignProject,
   ProjectImage,
   IdpImageUploadIntent,
@@ -16,7 +17,7 @@ function isDateOnly(value) {
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
-function validateProject(body, status) {
+async function validateProject(body, status) {
   const values = {};
   const errors = {};
   for (const field of PROJECT_FIELDS) {
@@ -47,6 +48,17 @@ function validateProject(body, status) {
     values.completionDate = null;
   }
 
+  if (Object.hasOwn(body || {}, 'categoryId')) {
+    const categoryId = body.categoryId;
+    if (categoryId === null || categoryId === '') {
+      values.categoryId = null;
+    } else if (!/^[1-9][0-9]*$/.test(String(categoryId)) || Number(categoryId) > 2147483647
+      || !await IDPCategory.findByPk(Number(categoryId))) {
+      errors.categoryId = 'Choose an existing project category.';
+    } else {
+      values.categoryId = Number(categoryId);
+    }
+  }
   return { values, errors };
 }
 
@@ -81,6 +93,7 @@ function projectFields(project) {
     designStyle: project.designStyle,
     status: project.status,
     completionDate: project.completionDate,
+    categoryId: project.categoryId,
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
   };
@@ -145,7 +158,7 @@ async function retryCleanup(paths) {
 
 async function createIdp(req, res, next, status) {
   try {
-    const { values, errors } = validateProject(req.body, status);
+    const { values, errors } = await validateProject(req.body, status);
     if (Object.keys(errors).length) return sendValidationError(res, errors);
     const project = await InteriorDesignProject.createOwned({
       ...values,
@@ -204,7 +217,7 @@ async function viewIdp(req, res, next, status) {
 
 async function updateIdp(req, res, next, status) {
   try {
-    const { values, errors } = validateProject(req.body, status);
+    const { values, errors } = await validateProject(req.body, status);
     if (Object.keys(errors).length) return sendValidationError(res, errors);
     const project = await getOwnedProject(req.params.id, req, status);
     if (!project) return res.status(404).json({ message: 'Project not found.' });

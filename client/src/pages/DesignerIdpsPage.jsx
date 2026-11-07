@@ -16,6 +16,7 @@ const EMPTY_PROJECT = {
   propertyType: '',
   designStyle: '',
   completionDate: '',
+  categoryId: '',
   images: [],
 };
 
@@ -41,6 +42,8 @@ export default function DesignerIdpsPage({ status }) {
   const title = past ? 'Past projects' : 'Current projects';
   const basePath = `/designer/${status}-idps`;
   const [projects, setProjects] = useState([]);
+  const [categories, setCategories] = useState([]);
+  const [categoryError, setCategoryError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
   const [pageNumber, setPageNumber] = useState(1);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 9, total: 0, totalPages: 0 });
@@ -65,6 +68,14 @@ export default function DesignerIdpsPage({ status }) {
   const projectRestoreFocusRef = useRef(null);
   const listRequestIdRef = useRef(0);
   const projectRequestIdRef = useRef(0);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    api.get('/designer/categories', { signal: controller.signal })
+      .then(setCategories)
+      .catch(failure => { if (!controller.signal.aborted) setCategoryError(failure.message); });
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     // Search and page changes can overlap. Only the latest response may update
@@ -282,6 +293,7 @@ export default function DesignerIdpsPage({ status }) {
         description: editor.description,
         propertyType: editor.propertyType,
         designStyle: editor.designStyle,
+        categoryId: editor.categoryId || null,
         ...(past ? { completionDate: editor.completionDate } : {}),
       };
       // Save the project first: each image upload needs its saved project ID.
@@ -407,6 +419,10 @@ export default function DesignerIdpsPage({ status }) {
             <FormField id="project-name" name="name" label="Project name" value={editor.name} onChange={updateProjectField} required disabled={isSaving} />
             <FormField id="project-description" name="description" label="Description" type="textarea" value={editor.description || ''} onChange={updateProjectField} disabled={isSaving} />
             <FormField id="project-property-type" name="propertyType" label="Property type" value={editor.propertyType || ''} onChange={updateProjectField} disabled={isSaving} />
+            <Message type="error" text={categoryError} />
+            <FormField id="project-category" name="categoryId" label="Category" value={editor.categoryId || ''}
+              onChange={updateProjectField} disabled={isSaving || Boolean(categoryError)}
+              options={categories.map(category => ({ value: String(category.id), label: category.name }))} />
             <FormField id="project-design-style" name="designStyle" label="Design style" value={editor.designStyle || ''} onChange={updateProjectField} disabled={isSaving} />
             {past && (
               <FormField id="project-completion-date" name="completionDate" label="Completion date" type="date" value={editor.completionDate || ''} onChange={updateProjectField} required disabled={isSaving} />
