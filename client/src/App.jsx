@@ -31,6 +31,7 @@ import UpdateIDPCategoryPg from './boundary/UpdateIDPCategoryPg';
 import DeleteIDPCategoryPg from './boundary/DeleteIDPCategoryPg';
 import SearchShortlistPg from './boundary/SearchShortlistPg'; // #35
 import ViewShortlistPg from './boundary/ViewShortlistPg'; // #36
+import SaveShortlistPg from './boundary/SaveShortlistPg'; // #34
 import RequireRole from './components/RequireRole';
 import { homeForRole, useSession } from './session';
 
@@ -93,6 +94,7 @@ export default function App() {
           <Route path="/customer" element={<Dashboard role="Customer" />} />
           <Route path="/customer/search" element={<ComingSoon title="Search IDPs" />} />
           <Route path="/customer/shortlist" element={<SearchShortlistPg />} />
+          <Route path="/customer/shortlist/save" element={<SaveShortlistPg />} />
           <Route path="/customer/shortlist/:id" element={<ViewShortlistPg />} />
           <Route path="/customer/search" element={<SearchCustomerIDPPg />} />
           <Route path="/customer/shortlist" element={<ComingSoon title="My Shortlist" />} />
