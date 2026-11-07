@@ -18,9 +18,10 @@ import { beforeEach, expect, test, vi } from 'vitest';
 import { api } from '../src/api'; // the backend helper (replaced below)
 import SearchShortlistPg from '../src/boundary/SearchShortlistPg'; // the list page being tested
 import ViewShortlistPg from '../src/boundary/ViewShortlistPg'; // the details page being tested
+import SaveShortlistPg from '../src/boundary/SaveShortlistPg'; // the save page being tested
 
 // Replace the real backend helper with fake functions.
-vi.mock('../src/api', () => ({ api: { get: vi.fn() } }));
+vi.mock('../src/api', () => ({ api: { get: vi.fn(), post: vi.fn() } }));
 
 // One saved project, as the backend would send it in the list.
 const SAVED = { id: 7, name: 'Warm Kitchen', propertyType: 'Condo', designStyle: 'Modern', status: 'current', designerName: 'Dana Designer' };
@@ -35,6 +36,7 @@ function mount(address = '/customer/shortlist') {
     <MemoryRouter initialEntries={[address]}>
       <Routes>
         <Route path="/customer/shortlist" element={<SearchShortlistPg />} />
+        <Route path="/customer/shortlist/save" element={<SaveShortlistPg />} />
         <Route path="/customer/shortlist/:id" element={<ViewShortlistPg />} />
       </Routes>
     </MemoryRouter>
@@ -100,4 +102,78 @@ test('shows an error for a project that is not in the shortlist', async () => {
   api.get.mockRejectedValue(new Error('This project is not in your shortlist.')); // the fake backend refuses
   mount('/customer/shortlist/99'); // open the details page directly
   expect(await screen.findByRole('alert')).toHaveTextContent('This project is not in your shortlist.'); // the message is shown
+});
+
+// =============================================================================
+// SAVE PAGE TESTS (#34)
+// =============================================================================
+
+// Two projects, as the browse search would send them (one page of results).
+const OPEN = { id: 8, name: 'Calm Bedroom', propertyType: 'HDB', designStyle: 'Scandinavian', status: 'past' };
+
+// =============================================================================
+// FUNCTION: fakeBackend (helper)
+// WHAT IT DOES: makes the fake backend answer by address: the Customer's
+// shortlist, or one page of browse results.
+// RECEIVES: saved = the shortlist list; totalPages = how many result pages.
+// =============================================================================
+function fakeBackend(saved = [SAVED], totalPages = 1) {
+  api.get.mockImplementation(async (path) => (path.startsWith('/customer/shortlist?')
+    ? saved
+    : { projects: [SAVED, OPEN], page: 1, totalPages }));
+} // End of fakeBackend.
+
+// TEST: #34. My Shortlist has a button that opens the save page.
+test('opens the save page from My Shortlist', async () => {
+  fakeBackend(); // the fake backend answers both lists
+  const user = userEvent.setup(); // a fake user
+  mount(); // draw the list page
+  await user.click(await screen.findByRole('button', { name: 'Find projects to save' })); // click the button
+  expect(await screen.findByRole('heading', { name: 'Save to shortlist' })).toBeInTheDocument(); // the save page opened
+});
+
+// TEST: #34. Projects already saved show Saved; the others show Save.
+test('marks projects that are already saved', async () => {
+  fakeBackend(); // Warm Kitchen is already saved
+  mount('/customer/shortlist/save'); // open the save page
+  expect(await screen.findByRole('cell', { name: 'Calm Bedroom' })).toBeInTheDocument(); // the list is shown
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Saved' })).toBeDisabled()); // Warm Kitchen: Saved, greyed out
+  expect(screen.getAllByRole('button', { name: 'Save' })).toHaveLength(1); // only Calm Bedroom can be saved
+  expect(api.get).toHaveBeenCalledWith('/customer/idps?keyword=&page=1'); // it used the browse search
+});
+
+// TEST: #34. Save sends the project ID, shows a message, and the row becomes Saved.
+test('saves a project to the shortlist', async () => {
+  fakeBackend(); // Warm Kitchen is already saved
+  api.post.mockResolvedValue(OPEN); // the fake backend accepts the save
+  const user = userEvent.setup(); // a fake user
+  mount('/customer/shortlist/save'); // open the save page
+  await screen.findByRole('cell', { name: 'Calm Bedroom' }); // wait for the list
+  await waitFor(() => expect(screen.getByRole('button', { name: 'Saved' })).toBeInTheDocument()); // wait for the shortlist
+  await user.click(screen.getByRole('button', { name: 'Save' })); // click Save on Calm Bedroom
+  expect(api.post).toHaveBeenCalledWith('/customer/shortlist', { projectId: 8 }); // only the project ID is sent
+  expect(await screen.findByText('Calm Bedroom was saved to your shortlist.')).toBeInTheDocument(); // the green message
+  expect(screen.getAllByRole('button', { name: 'Saved' })).toHaveLength(2); // both rows now show Saved
+  expect(screen.queryByRole('button', { name: 'Save' })).not.toBeInTheDocument(); // no Save buttons are left
+});
+
+// TEST: #34. A project that is already saved shows the backend's message.
+test('shows the message when the project is already saved', async () => {
+  fakeBackend([]); // the shortlist looks empty on this page (for example, saved in another tab)
+  api.post.mockRejectedValue(Object.assign(new Error('This project is already in your shortlist.'), { status: 409 })); // the fake backend refuses
+  const user = userEvent.setup(); // a fake user
+  mount('/customer/shortlist/save'); // open the save page
+  await screen.findByRole('cell', { name: 'Warm Kitchen' }); // wait for the list
+  await user.click(screen.getAllByRole('button', { name: 'Save' })[0]); // click Save on Warm Kitchen
+  expect(await screen.findByRole('alert')).toHaveTextContent('This project is already in your shortlist.'); // the red message
+  expect(screen.getByRole('button', { name: 'Saved' })).toBeDisabled(); // the row now shows Saved
+});
+
+// TEST: #34. Next asks the backend for page 2.
+test('moves to the next page of projects', async () => {
+  fakeBackend([SAVED], 2); // there are 2 pages of results
+  const user = userEvent.setup(); // a fake user
+  mount('/customer/shortlist/save'); // open the save page
+  await user.click(await screen.findByRole('button', { name: 'Next' })); // click Next
+  await waitFor(() => expect(api.get).toHaveBeenCalledWith('/customer/idps?keyword=&page=2')); // page 2 was asked for
 });

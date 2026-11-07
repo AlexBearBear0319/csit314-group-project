@@ -7,6 +7,7 @@
 //   - a search bar                        (#35)
 //   - a table of saved projects           (#35)
 //   - View on each row                    -> ViewShortlistPg (#36)
+//   - a "Find projects to save" button    -> SaveShortlistPg (#34)
 //
 // Flow: page opens or Search clicked -> GET /api/customer/shortlist?keyword=...
 //   -> SearchShortlistC -> ShortlistItem entity -> list comes back -> table updates
@@ -20,6 +21,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom'; // change page from code
 import { api } from '../api'; // calls the backend
+import Button from '../components/Button'; // the shared button
 import Message from '../components/Message'; // red error box
 import ResultsTable from '../components/ResultsTable'; // a table with action buttons per row
 import SearchBar from '../components/SearchBar'; // a search box + Search button
@@ -106,8 +108,12 @@ export default function SearchShortlistPg() {
   // ---- What the page shows (JSX) ------------------------------------------------------
   return (
     <section className="grid min-w-0 gap-6">
-      {/* The page heading. */}
-      <h1 className="text-3xl tracking-tight text-ink sm:text-4xl">My Shortlist</h1>
+      {/* The page heading, with the button to find projects to save (#34) beside it. */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-3xl tracking-tight text-ink sm:text-4xl">My Shortlist</h1>
+        {/* Goes to SaveShortlistPg at /customer/shortlist/save. */}
+        <Button type="button" onClick={() => navigate('/customer/shortlist/save')}>Find projects to save</Button>
+      </div>
 
       {/* Red message box (nothing shown when error is ''). */}
       <Message type="error" text={error} />
