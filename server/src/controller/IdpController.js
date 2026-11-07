@@ -84,7 +84,7 @@ function projectFields(project) {
     designStyle: project.designStyle,
     status: project.status,
     completionDate: project.completionDate,
-    viewCount: project.viewCount || 0, // story #30
+    viewCount: project.viewCount || 0, // story #30: times customers viewed it
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
   };
@@ -96,7 +96,8 @@ async function renderProject(project) {
   ));
   const images = await Promise.all(orderedImages.map(renderImage));
 
-  const shortlistCounts = await ShortlistItem.countsByProject([project.id]); // story #31
+  // Story #31: how many customers shortlisted this project.
+  const shortlistCounts = await ShortlistItem.countsByProject([project.id]);
   return {
     ...projectFields(project),
     shortlistCount: shortlistCounts.get(project.id) || 0,
@@ -190,6 +191,7 @@ async function searchIdps(req, res, next, status) {
       page,
       sort,
     });
+    // Story #31: get the shortlist count of every project on this page in one go.
     const shortlistCounts = await ShortlistItem.countsByProject(result.projects.map((project) => project.id));
     return res.json({
       projects: await Promise.all(result.projects.map((project) => renderProjectSummary(project, shortlistCounts))),

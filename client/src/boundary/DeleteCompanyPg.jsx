@@ -4,6 +4,12 @@ import ConfirmAction from '../components/ConfirmAction';
 export default function DeleteCompanyPg({company}) {
   const navigate=useNavigate();
   function displaySuccess(){navigate('/designer/company',{replace:true,state:{message:'Company deleted.'}});}
-  async function deleteCompany(){await api.del('/companies/mine');displaySuccess();}
+  // displayError: pass the message to the confirmation dialog, which shows it.
+  function displayError(failure){throw failure;}
+  async function deleteCompany(){
+    try{await api.del('/companies/mine');}
+    catch(failure){displayError(failure);return;}
+    displaySuccess();
+  }
   return <ConfirmAction title="Delete company" description={'Delete '+company.name+'?'} label="Delete company" onConfirm={deleteCompany}/>;
 }

@@ -1,11 +1,11 @@
 // =============================================================================
 // TESTS: idpStats.test.js
-// Interior Designer stories #30 (view IDP view count) and #31 (view IDP
-// shortlist count). Written BEFORE the code (TDD): run first to see red.
+// Stories #30 (view count) and #31 (shortlist count) for Interior Designers.
+// I wrote these first (TDD) and ran them to see them fail before writing the code.
 //
-//   npx jest tests/idpStats.test.js
+//   cd server && npx jest tests/idpStats.test.js
 //
-// Uses the temporary in-memory database, never the real Supabase one.
+// The tests use a temporary in-memory database, never the real Supabase one.
 // =============================================================================
 
 const { sequelize, UserAccount, UserProfile, InteriorDesignProject, ShortlistItem } = require('../src/entity');
@@ -18,6 +18,7 @@ let customerTwo;
 let currentIdp;
 let pastIdp;
 
+// Before every test: empty database, 2 designers, 2 customers and 2 projects.
 beforeEach(async () => {
   await sequelize.sync({ force: true });
   designer = await featureSession('Interior Designer', 'designer.one');

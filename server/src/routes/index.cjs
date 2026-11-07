@@ -100,6 +100,7 @@ router.use('/reports', authenticateSession, requireRole('Platform Manager'), req
 // server-side session. No route accepts an owner ID from the browser.
 router.use('/designer', authenticateSession, requireRole('Interior Designer'), requireCsrf);
 
+// Stories #30 and #31: view count and shortlist count of an IDP.
 router.use('/designer/idps', require('./designerIdpStats'));
 
 router.get('/designer/current-idps', IdpController.searchCurrentIdps);

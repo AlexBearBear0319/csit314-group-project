@@ -660,6 +660,7 @@ export default function DesignerIdpsPage({ status }) {
                         { key: 'propertyType', label: 'Property type' },
                         { key: 'designStyle', label: 'Design style' },
                         ...(past ? [{ key: 'completionDate', label: 'Completion date' }] : []),
+                        // Stories #30 and #31
                         { key: 'viewCount', label: 'Times viewed' },
                         { key: 'shortlistCount', label: 'Times shortlisted' },
                       ]}

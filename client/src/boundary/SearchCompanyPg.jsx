@@ -8,6 +8,14 @@ import useRecordSearch from '../hooks/useRecordSearch';
 export default function SearchCompanyPg() {
   const navigate=useNavigate(), location=useLocation();
   const {keyword,rows,error,loading,search,retry}=useRecordSearch('/companies');
+  // displaySuccess: show the matching companies in the table.
+  function displaySuccess(){
+    return <ResultsTable ariaLabel="Company information" rows={rows}
+      columns={[{key:'name',label:'Company name'},{key:'description',label:'Description'}]}
+      actions={[{label:'View',onClick:()=>navigate('/designer/company/mine')},{label:'Update',onClick:()=>navigate('/designer/company/mine/edit')}]}/>;
+  }
+  // displayError: show the load error with a Try again button.
+  function displayError(){return <RecordLoadState loading={false} error={error} onRetry={retry}/>;}
   return <section className="grid min-w-0 gap-6" aria-busy={loading}>
     <div className="flex flex-wrap items-center justify-between gap-4">
       <h1 className="font-display text-4xl text-ink">Company Information</h1>
@@ -15,9 +23,8 @@ export default function SearchCompanyPg() {
     </div>
     <SearchBar key={keyword} initialKeyword={keyword} placeholder="Search company information" onSearch={search}/>
     <Message type="success" text={location.state?.message}/>
-    <RecordLoadState loading={loading} error={error} onRetry={retry}/>
-    {!loading && !error && <ResultsTable ariaLabel="Company information" rows={rows}
-      columns={[{key:'name',label:'Company name'},{key:'description',label:'Description'}]}
-      actions={[{label:'View',onClick:()=>navigate('/designer/company/mine')},{label:'Update',onClick:()=>navigate('/designer/company/mine/edit')}]}/>}
+    {loading && <RecordLoadState loading error="" />}
+    {error && displayError()}
+    {!loading && !error && displaySuccess()}
   </section>;
 }

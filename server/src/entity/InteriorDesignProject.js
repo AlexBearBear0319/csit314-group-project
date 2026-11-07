@@ -27,8 +27,10 @@ class InteriorDesignProject extends Model {
     });
   }
 
-  // Story #30: the view count of ONE project, only if this designer owns it
-  // (current or past). Returns the number, or null when it is not theirs.
+  // Story #30: read the view count of one project.
+  // The where clause includes designerAccountId, so a designer can only read
+  // their own projects (current or past). Returns the number, or null if the
+  // project does not exist or belongs to someone else.
   static async viewCountOwned(designerAccountId, projectId) {
     const project = await InteriorDesignProject.findOne({
       where: { id: projectId, designerAccountId },

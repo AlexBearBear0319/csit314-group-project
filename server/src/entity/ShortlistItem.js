@@ -143,11 +143,13 @@ class ShortlistItem extends Model {
 
   // ---------------------------------------------------------------------------
   // FUNCTION: countsByProject
-  // Story #31: how many Customers saved each project.
-  // RECEIVES: projectIds = a list of project IDs
-  // GIVES BACK: a Map of projectId -> number of shortlist rows (0 when none).
+  // Story #31: count how many customers saved each of these projects.
+  // One query for the whole list, so a page of 9 projects does not need 9 queries.
+  // RECEIVES: projectIds = a list of project ids
+  // GIVES BACK: a Map of projectId -> count. A project nobody saved has 0.
   // ---------------------------------------------------------------------------
   static async countsByProject(projectIds) {
+    // Start every project at 0, then fill in the ones that have rows.
     const counts = new Map(projectIds.map((id) => [id, 0]));
     if (!projectIds.length) return counts;
     // SQL: SELECT project_id, COUNT(*) FROM shortlist_item WHERE project_id IN (...) GROUP BY project_id
@@ -163,10 +165,11 @@ class ShortlistItem extends Model {
 
   // ---------------------------------------------------------------------------
   // FUNCTION: countForOwnedProject
-  // Story #31: the shortlist count of ONE project, only if this designer owns it.
-  // GIVES BACK: the number, or null when the project is not theirs / not found.
+  // Story #31: the shortlist count of one project, for the designer who owns it.
+  // GIVES BACK: the count, or null if the project is not found or not theirs.
   // ---------------------------------------------------------------------------
   static async countForOwnedProject(designerAccountId, projectId) {
+    // Check ownership first, so a designer cannot read another designer's numbers.
     const project = await InteriorDesignProject.findOne({ where: { id: projectId, designerAccountId }, attributes: ['id'] });
     if (!project) return null;
     return ShortlistItem.count({ where: { projectId: project.id } });
