@@ -5,6 +5,7 @@ import Button from '../components/Button';
 import Message from '../components/Message';
 import StudioMotion from '../components/StudioMotion';
 import ProjectPreviewDialog from '../components/ProjectPreviewDialog';
+import RecentProjectCard from '../components/RecentProjectCard';
 
 function Arrow() { return <span aria-hidden="true">↗</span>; }
 
@@ -20,7 +21,8 @@ export default function DesignerDashboard() {
     // collections together; do not count only the visible cards.
     const controller = new AbortController();
     Promise.all(['current', 'past'].map(async (status) => {
-      const result = await api.get(`/designer/${status}-idps?page=1`, { signal: controller.signal });
+      // Collection pages default to FIFO. Recent work must use edit time.
+      const result = await api.get(`/designer/${status}-idps?page=1&sort=recent`, { signal: controller.signal });
       return { ...result, projects: result.projects.map((project) => ({ ...project, status })) };
     })).then(([current, past]) => {
       if (controller.signal.aborted) return;
@@ -77,15 +79,7 @@ export default function DesignerDashboard() {
         {!data && !error && <p role="status" className="py-8 text-muted">Loading projects.</p>}
         {data && data.recent.length === 0 && <div className="studio-empty"><p>No projects yet.</p><Link to="/designer/current-idps">Add a project <Arrow /></Link></div>}
         {data && <div className="studio-project-grid">{data.recent.map((project, index) => (
-          <button key={project.id} type="button" className="studio-project-card" onClick={() => showProject(project)} aria-label={`View ${project.name}`}>
-            <span className="studio-project-cover">
-              <svg viewBox="0 0 320 240" fill="none" aria-hidden="true"><path d="M80 210V103a80 80 0 0 1 160 0v107ZM160 25v185M80 130h160" stroke="currentColor" /><path d="m40 240 120-30 120 30M80 210h160" stroke="currentColor" /></svg>
-              {project.images?.[0]?.url && <img src={project.images[0].url} alt="" loading="lazy" onError={(event) => { event.currentTarget.hidden = true; }} />}
-              <span className="studio-project-tag">{project.status === 'past' ? 'Past' : 'Current'}</span>
-              <span className="studio-project-open" aria-hidden="true">↗</span>
-            </span>
-            <span className="studio-project-caption"><span className="studio-index">0{index + 1}</span><span className="min-w-0"><span className="studio-project-name">{project.name}</span><span className="studio-project-style">{[project.propertyType, project.designStyle].filter(Boolean).join(' · ')}</span></span></span>
-          </button>
+          <RecentProjectCard key={project.id} project={project} index={index} onView={showProject} />
         ))}</div>}
       </section>
       <ProjectPreviewDialog project={view?.project} loading={view?.loading} error={view?.error} onClose={closeProject} />

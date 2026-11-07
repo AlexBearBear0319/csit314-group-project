@@ -10,6 +10,7 @@ const ProjectImage = require('./ProjectImage');
 const Company = require('./Company');
 const IdpImageUploadIntent = require('./IdpImageUploadIntent');
 const IdpImageCleanupTask = require('./IdpImageCleanupTask');
+const ShortlistItem = require('./ShortlistItem'); // Customer shortlist stories #34-36
 
 UserAccount.hasOne(Company, { as: 'company', foreignKey: 'designerAccountId', onDelete: 'CASCADE' });
 Company.belongsTo(UserAccount, { as: 'designer', foreignKey: 'designerAccountId' });
@@ -36,4 +37,5 @@ module.exports = {
   ProjectImage,
   IdpImageUploadIntent,
   IdpImageCleanupTask,
+  ShortlistItem, // Customer shortlist stories #34-36
 };

@@ -11,6 +11,7 @@ export default function FormField({
   required = false,
   disabled = false,
   options,
+  includeEmptyOption = true,
   hint,
   error,
   autoComplete,
@@ -42,7 +43,7 @@ export default function FormField({
       </label>
       {options ? (
         <select {...sharedProps} value={value ?? ''} className={CONTROL_CLASS}>
-          <option value="" />
+          {includeEmptyOption && <option value="" />}
           {options.map((option) => (
             <option key={option.value} value={option.value}>
               {option.label}

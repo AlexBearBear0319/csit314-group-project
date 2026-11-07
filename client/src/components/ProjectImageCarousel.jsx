@@ -1,24 +1,14 @@
 import { useRef, useState } from 'react';
+import useProjectImages from '../useProjectImages';
+import ProjectPhoto from './ProjectPhoto';
 
-function CarouselImage({ image, alt }) {
-  // The parent keys this component by image. Each new photo gets a fresh
-  // loading and error state, even when the previous photo failed.
-  const [failed, setFailed] = useState(false);
-  const [loaded, setLoaded] = useState(false);
-  if (!image.url || failed) return <div className="grid size-full place-items-center p-5 text-sm text-muted" role="status">This photo is unavailable.</div>;
-  return <>
-    {!loaded && <span className="absolute inset-0 grid place-items-center text-sm text-muted" role="status">Loading photo.</span>}
-    <img src={image.url} alt={alt} className="carousel-photo size-full object-contain"
-      onLoad={() => setLoaded(true)} onError={() => setFailed(true)} style={{ opacity: loaded ? 1 : 0 }} />
-  </>;
-}
-
-export default function ProjectImageCarousel({ images = [], projectName, initialIndex = 0 }) {
+export default function ProjectImageCarousel({ images, projectName, projectId, status, initialIndex = 0 }) {
+  const photos = useProjectImages({ images, projectId, status });
   const [activeIndex, setActiveIndex] = useState(initialIndex);
   const touchStartRef = useRef(null);
-  const imageCount = images.length;
+  const imageCount = photos.images.length;
   const safeIndex = Math.min(activeIndex, Math.max(0, imageCount - 1));
-  const image = images[safeIndex];
+  const image = photos.images[safeIndex];
 
   if (!imageCount) return null;
 
@@ -66,7 +56,11 @@ export default function ProjectImageCarousel({ images = [], projectName, initial
           onTouchEnd={handleTouchEnd}
           onTouchCancel={() => { touchStartRef.current = null; }}
         >
-          <CarouselImage key={image.id || image.url || safeIndex} image={image} alt={image.altText || `${projectName} photo ${safeIndex + 1}`} />
+          {/* URLs can change while the ID stays the same. Reset loading/error
+              state after each refresh, including a retry of an identical URL. */}
+          <ProjectPhoto key={`${image.id}:${image.url}:${photos.revision}`} image={image}
+            alt={image.altText || `${projectName} photo ${safeIndex + 1}`} refreshing={photos.refreshing}
+            onUnavailable={() => photos.refreshImages()} onRetry={photos.canRefresh ? () => photos.refreshImages(true) : undefined} />
         </div>
           {imageCount > 1 && (
             <div className="flex min-w-0 items-center gap-1 border-y border-border bg-surface p-1 text-ink">
@@ -80,7 +74,7 @@ export default function ProjectImageCarousel({ images = [], projectName, initial
               </button>
 
               <div className="flex min-w-0 flex-1 items-center justify-center gap-0.5 overflow-x-auto" role="group" aria-label="Choose a photo">
-                {images.map((item, index) => (
+                {photos.images.map((item, index) => (
                   <button
                     key={item.id || `${item.fileName}-${index}`}
                     type="button"

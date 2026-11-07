@@ -51,15 +51,19 @@ import { statusLabel } from './userAccountShared'; // turns 'active' into 'Activ
 // It is outside the function because it never changes, so it does not need
 // to be rebuilt on every redraw.
 const COLUMNS = [
-  { key: 'username', label: 'User ID' },
-  { key: 'name', label: 'Name' },
-  { key: 'email', label: 'Email' },
-  { key: 'profileName', label: 'User profile' },
-  { key: 'status', label: 'Status' },
+  { key: 'username', label: 'User ID' }, // column 1
+  { key: 'name', label: 'Name' }, // column 2
+  { key: 'email', label: 'Email' }, // column 3
+  { key: 'profileName', label: 'User profile' }, // column 4
+  { key: 'status', label: 'Status' }, // column 5
 ];
 
+// =============================================================================
+// FUNCTION: SearchUserAccountPg (the page itself)
+// WHAT IT DOES: draws the User Accounts page and holds all its smaller functions.
 // "export default" makes this the main thing this file gives to others.
 // App.jsx imports it and shows it at /admin/accounts.
+// =============================================================================
 export default function SearchUserAccountPg() {
   // navigate(address) moves to another page.
   const navigate = useNavigate();
@@ -79,26 +83,35 @@ export default function SearchUserAccountPg() {
   const [success, setSuccess] = useState(location.state?.message || '');
   const [suspendTarget, setSuspendTarget] = useState(null); // the account in the Suspend pop-up; null = pop-up closed
 
-  // ---- displaySuccess / displayError (names from Mr Chew's design) ------------
+  // ---------------------------------------------------------------------------
+  // FUNCTION: displaySuccess (name from Mr Chew's design)
+  // WHAT IT DOES: puts the loaded accounts into the table.
   // useCallback(fn, []) gives back the SAME function on every redraw.
   // Without it, a new function would be made each redraw, and the useEffect
   // below (which lists these functions in its [...]) would think something
   // changed and reload the list forever. [] = nothing it depends on changes.
+  // ---------------------------------------------------------------------------
   const displaySuccess = useCallback((list) => {
     setAccounts(list); // put the accounts in the table
     setLoading(false); // hide "Loading accounts..."
   }, []);
 
+  // ---------------------------------------------------------------------------
+  // FUNCTION: displayError (name from Mr Chew's design)
+  // WHAT IT DOES: shows a red message when the list could not load.
+  // ---------------------------------------------------------------------------
   const displayError = useCallback((message) => {
     // || gives a fallback message if the backend did not send one.
     setError(message || 'The accounts could not be loaded. Try again.');
-    setLoading(false);
+    setLoading(false); // hide "Loading accounts..."
   }, []);
 
-  // ---- Loading the list from the backend ----------------------------------------
+  // ---------------------------------------------------------------------------
+  // LOADING THE LIST FROM THE BACKEND
   // useEffect(code, [a, b]) runs the code after the page draws, and runs it
   // again whenever a or b changes. Here: when the page opens, and whenever
   // keyword or refreshKey changes.
+  // ---------------------------------------------------------------------------
   useEffect(() => {
     // "active" stops an old, slow reply from overwriting a newer one. When the
     // effect reruns (e.g. a new search), React first calls the cleanup function
@@ -117,10 +130,14 @@ export default function SearchUserAccountPg() {
     return () => { active = false; };
   }, [keyword, refreshKey, displaySuccess, displayError]);
 
-  // ---- searchAccounts: runs when Search is clicked --------------------------------
+  // ---------------------------------------------------------------------------
+  // FUNCTION: searchAccounts
+  // WHAT IT DOES: runs when Search is clicked.
   // It does not call the backend itself. It changes keyword, and the useEffect
   // above notices and does the loading. refreshKey changes too, so searching
   // the same word twice still reloads.
+  // RECEIVES: text = the words typed in the search box.
+  // ---------------------------------------------------------------------------
   function searchAccounts(text) {
     setLoading(true); // show "Loading accounts..."
     setError(''); // clear any old error
@@ -128,31 +145,44 @@ export default function SearchUserAccountPg() {
     // (key) => key + 1 means "take the current value and add 1". This form is
     // safer than setRefreshKey(refreshKey + 1) when changes happen quickly.
     setRefreshKey((key) => key + 1);
-  }
+  } // End of searchAccounts.
 
-  // ---- afterSuspend: the Suspend pop-up calls this when it succeeds ---------------
-  // updated = the account the backend sent back, now with status 'suspended'.
+  // ---------------------------------------------------------------------------
+  // FUNCTION: afterSuspend
+  // WHAT IT DOES: the Suspend pop-up calls this when it succeeds.
+  // RECEIVES: updated = the account the backend sent back, now with status
+  //           'suspended'.
+  // ---------------------------------------------------------------------------
   function afterSuspend(updated) {
     setSuspendTarget(null); // close the pop-up
     // `...${x}...` is a template string: it puts the value of x into the text.
     setSuccess(`${updated.name}'s account is suspended.`);
     setRefreshKey((key) => key + 1); // reload the list so the status updates
-  }
+  } // End of afterSuspend.
 
-  // ---- reactivateAccount: Reactivate clicked on a suspended row (#8, alternative flow) ----
+  // ---------------------------------------------------------------------------
+  // FUNCTION: reactivateAccount
+  // WHAT IT DOES: runs when Reactivate is clicked on a suspended row (#8,
+  // alternative flow).
   // PUT /api/user-accounts/5 with { status: 'active' } -> UpdateUserAccountC.
   // No confirm pop-up: reactivating is easy to undo (just suspend again).
+  // RECEIVES: row = the table row that was clicked.
+  // ---------------------------------------------------------------------------
   async function reactivateAccount(row) {
     setError(''); // clear old messages
-    setSuccess('');
+    setSuccess(''); // clear old messages
+    // "try" means: run this, and if anything fails, jump to "catch".
     try {
+      // Ask the backend to set the status to active, and wait for the reply.
       const updated = await api.put(`/user-accounts/${row.id}`, { status: 'active' });
+      // Show the green message with the person's name.
       setSuccess(`${updated.name}'s account is reactivated. They can log in again.`);
       setRefreshKey((key) => key + 1); // reload the list so the status updates
     } catch (err) {
+      // It failed, so show the red message.
       setError(err.message || 'The account could not be reactivated. Try again.');
     }
-  }
+  } // End of reactivateAccount.
 
   // ---- Data for the table -----------------------------------------------------------
   // ResultsTable shows row[column.key] as plain text, so build display rows:
@@ -163,9 +193,9 @@ export default function SearchUserAccountPg() {
   // so the buttons below can check it. rawStatus is not a column, so it is
   // never shown in the table.
   const rows = accounts.map((account) => ({
-    ...account,
-    status: statusLabel(account.status),
-    rawStatus: account.status,
+    ...account, // copy every field of the account
+    status: statusLabel(account.status), // the nice text to show
+    rawStatus: account.status, // the original value, for the buttons
   }));
 
   // The buttons on each row. ResultsTable draws one button per entry and calls
@@ -180,9 +210,9 @@ export default function SearchUserAccountPg() {
     { label: 'Edit', onClick: (row) => navigate(`/admin/accounts/${row.id}/edit`) },
     {
       // Suspend (#9): only on active accounts. Opens the pop-up.
-      label: 'Suspend',
-      variant: 'outline-danger',
-      show: (row) => row.rawStatus === 'active',
+      label: 'Suspend', // the button text
+      variant: 'outline-danger', // a red outline
+      show: (row) => row.rawStatus === 'active', // only on active accounts
       // .find looks through the original list for the account with the same
       // id, to give the pop-up the account exactly as the backend sent it.
       // (Suspending your own account is refused by the backend, and its
@@ -191,10 +221,10 @@ export default function SearchUserAccountPg() {
     },
     {
       // Reactivate (#8, alternative flow): only on suspended accounts.
-      label: 'Reactivate',
-      variant: 'outline-primary',
-      show: (row) => row.rawStatus === 'suspended',
-      onClick: reactivateAccount,
+      label: 'Reactivate', // the button text
+      variant: 'outline-primary', // a green outline
+      show: (row) => row.rawStatus === 'suspended', // only on suspended accounts
+      onClick: reactivateAccount, // run the function above when clicked
     },
   ];
 
@@ -208,6 +238,7 @@ export default function SearchUserAccountPg() {
       {/* Top row: page heading on the left, Create button on the right.
           "flex ... justify-between" puts them at opposite ends. */}
       <div className="flex flex-wrap items-center justify-between gap-4">
+        {/* The page heading. */}
         <h1 className="text-3xl tracking-tight text-ink sm:text-4xl">User accounts</h1>
         {/* () => navigate(...) is a function that runs on click. Writing
             onClick={navigate(...)} without "() =>" would run it immediately. */}
@@ -231,10 +262,10 @@ export default function SearchUserAccountPg() {
       {/* The Suspend pop-up. It is always on the page but only opens when
           suspendTarget is an account (see SuspendUserAccountPg.jsx). */}
       <SuspendUserAccountPg
-        account={suspendTarget}
-        onDone={afterSuspend}
-        onCancel={() => setSuspendTarget(null)}
+        account={suspendTarget} // the account to suspend, or null when closed
+        onDone={afterSuspend} // run this after a successful suspend
+        onCancel={() => setSuspendTarget(null)} // close the pop-up on Cancel
       />
     </section>
   );
-}
+} // End of SearchUserAccountPg.

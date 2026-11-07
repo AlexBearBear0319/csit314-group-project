@@ -89,6 +89,9 @@ router.use('/user-accounts', authenticateSession, requireRole('User Admin'), req
 router.use('/user-profiles', authenticateSession, requireRole('User Admin'), requireCsrf, require('./userProfiles'));
 router.use('/idp-categories', authenticateSession, requireRole('Platform Manager'), requireCsrf, require('./idpCategories'));
 
+// Customer shortlist stories #34-36 (routes are in ./shortlist.js). Only a
+// logged-in Customer gets past these 3 checks.
+router.use('/customer/shortlist', authenticateSession, requireRole('Customer'), requireCsrf, require('./shortlist'));
 router.use('/companies', authenticateSession, requireRole('Interior Designer'), requireCsrf, require('./companies'));
 router.use('/customer/idps', authenticateSession, requireRole('Customer'), requireCsrf, require('./customerIdps'));
 router.use('/reports', authenticateSession, requireRole('Platform Manager'), require('./reports'));
@@ -102,6 +105,7 @@ router.get('/designer/categories', async (req, res) => {
   const categories = await IDPCategory.findAll({ attributes: ['id', 'name'], order: [['name', 'ASC']] });
   return res.json(categories);
 });
+router.use('/designer/idps', require('./designerIdpStats'));
 
 router.get('/designer/current-idps', IdpController.searchCurrentIdps);
 router.post('/designer/current-idps', IdpController.createCurrentIdp);

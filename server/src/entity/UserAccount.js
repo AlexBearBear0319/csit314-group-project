@@ -73,44 +73,61 @@ class UserAccount extends Model {
   // turns these into SQL for us.
   // ===========================================================================
 
-  // Builds a SAFE copy of an account to send to the browser.
+  // ---------------------------------------------------------------------------
+  // FUNCTION: publicFields
+  // WHAT IT DOES: builds a SAFE copy of an account to send to the browser.
   // The password hash is deliberately left out, so it can never leak.
   // profileName comes from the linked UserProfile row (loaded with "include").
+  // RECEIVES: account = one row from the database.
+  // GIVES BACK: the safe copy.
+  // ---------------------------------------------------------------------------
   static publicFields(account) {
     return {
-      id: account.id,
-      username: account.username,
-      name: account.name,
-      email: account.email,
+      id: account.id, // the account's ID number
+      username: account.username, // the login user ID
+      name: account.name, // the person's name
+      email: account.email, // the email
       dob: account.dob || null, // || null: send null rather than undefined if empty
-      photo: account.photo || null,
+      photo: account.photo || null, // the photo's web address, or null if none
       status: account.status, // 'active' or 'suspended'
-      profileId: account.profileId,
+      profileId: account.profileId, // the ID of the linked profile (role)
       // a ? b : c means: if a then b, else c. Guards against a missing profile.
       profileName: account.UserProfile ? account.UserProfile.name : null,
     };
-  }
+  } // End of publicFields.
 
-  // Finds one account by its ID AND loads its profile in the same query.
+  // ---------------------------------------------------------------------------
+  // FUNCTION: findWithProfile
+  // WHAT IT DOES: finds one account by its ID AND loads its profile in the same
+  // query.
   // SQL: SELECT * FROM user_account JOIN user_profile ... WHERE user_account.id = ?
-  // Returns the row, or null if there is none.
+  // GIVES BACK: the row, or null if there is none.
+  // ---------------------------------------------------------------------------
   static async findWithProfile(id) {
+    // findByPk = find by primary key (the ID). include = also load the profile.
     return UserAccount.findByPk(id, { include: UserProfile });
-  }
+  } // End of findWithProfile.
 
-  // Checks whether another account already uses this user ID or email.
+  // ---------------------------------------------------------------------------
+  // FUNCTION: findDuplicates
+  // WHAT IT DOES: checks whether another account already uses this user ID or
+  // email.
+  // RECEIVES:
   //   { username, email } = "destructuring": takes those two fields out of the
   //                         object passed in. Either may be missing.
   //   ignoreId            = when updating, skip the account being updated, so
   //                         saving your own unchanged email is not a "conflict".
-  // Returns e.g. { username: 'This user ID is already in use.' }, or {} if all clear.
+  // GIVES BACK: e.g. { username: 'This user ID is already in use.' }, or {} if
+  // all clear.
+  // ---------------------------------------------------------------------------
   static async findDuplicates({ username, email }, ignoreId = null) {
-    const errors = {};
+    const errors = {}; // start with no problems found
 
     // Extra condition "id is not ignoreId". Op.ne = "not equal". When there
     // is no ignoreId (Create), use {} which means "no extra condition".
     const notSelf = ignoreId ? { id: { [Op.ne]: ignoreId } } : {};
 
+    // Only check the user ID if one was given.
     if (username) {
       // SQL: WHERE LOWER(TRIM(username)) = 'kaz.test' AND id <> ignoreId
       // LOWER + TRIM so "Kaz.Test " counts as the same as "kaz.test",
@@ -118,21 +135,26 @@ class UserAccount extends Model {
       const taken = await UserAccount.findOne({
         where: { [Op.and]: [where(fn('LOWER', fn('TRIM', col('username'))), username), notSelf] },
       });
+      // If another account has it, record the problem.
       if (taken) errors.username = 'This user ID is already in use.';
     }
 
+    // Only check the email if one was given.
     if (email) {
       // Same check for email.
       const taken = await UserAccount.findOne({
         where: { [Op.and]: [where(fn('LOWER', fn('TRIM', col('email'))), email), notSelf] },
       });
+      // If another account has it, record the problem.
       if (taken) errors.email = 'This email is already in use.';
     }
 
+    // Hand back the problems found (empty if none).
     return errors;
-  }
+  } // End of findDuplicates.
 
   // ---------------------------------------------------------------------------
+  // FUNCTION: profileOptions
   // Story #6 (part): the profiles a User Admin can give an account.
   // The Create and Update forms show these in a dropdown. Suspended profiles
   // are left out, because nobody with a suspended profile can log in.
@@ -140,16 +162,18 @@ class UserAccount extends Model {
   // SQL: SELECT id, name FROM user_profile WHERE status = 'active' ORDER BY name
   // ---------------------------------------------------------------------------
   static async profileOptions() {
+    // Read the profiles from the database.
     const profiles = await UserProfile.findAll({
-      where: { status: 'active' },
+      where: { status: 'active' }, // only active profiles
       attributes: ['id', 'name'], // only read the 2 columns we need
-      order: [['name', 'ASC']],
+      order: [['name', 'ASC']], // sort A-Z by name
     });
     // Turn each database row into a plain { id, name } object.
     return profiles.map((profile) => ({ id: profile.id, name: profile.name }));
-  }
+  } // End of profileOptions.
 
   // ---------------------------------------------------------------------------
+  // FUNCTION: createAccount
   // Story #6: Create user account.
   // values = checked fields from CreateUserAccountC. values.password is still
   //          plain text here; it is scrambled (hashed) before saving.
@@ -174,18 +198,22 @@ class UserAccount extends Model {
     // 4. Read it back with its profile, so the reply includes profileName,
     //    and send only the safe fields.
     return { account: UserAccount.publicFields(await UserAccount.findWithProfile(created.id)) };
-  }
+  } // End of createAccount.
 
   // ---------------------------------------------------------------------------
+  // FUNCTION: viewAccount
   // Story #7: View user account.
   // Returns the account's safe fields, or null if no account has this ID.
   // ---------------------------------------------------------------------------
   static async viewAccount(id) {
+    // Find the account and its profile.
     const account = await UserAccount.findWithProfile(id);
+    // If it was found, hand back the safe copy. If not, hand back null.
     return account ? UserAccount.publicFields(account) : null;
-  }
+  } // End of viewAccount.
 
   // ---------------------------------------------------------------------------
+  // FUNCTION: updateAccount
   // Story #8: Update user account.
   // values = only the fields to change (already checked by UpdateUserAccountC).
   //          values.status can only be 'active' (reactivate a suspended account).
@@ -195,11 +223,11 @@ class UserAccount extends Model {
   static async updateAccount(id, values) {
     // 1. Find the account. findByPk = find by primary key (the ID).
     const account = await UserAccount.findByPk(id);
-    if (!account) return null;
+    if (!account) return null; // no such account, so stop
 
     // 2. Check duplicates, ignoring this account itself.
     const conflict = await UserAccount.findDuplicates(values, account.id);
-    if (Object.keys(conflict).length) return { conflict };
+    if (Object.keys(conflict).length) return { conflict }; // already in use, so stop
 
     // 3. Copy the changes. If a new password was sent, hash it first.
     //    Never store a plain-text password.
@@ -212,25 +240,29 @@ class UserAccount extends Model {
 
     // 5. Read it back with its profile (the profile may have changed).
     return { account: UserAccount.publicFields(await UserAccount.findWithProfile(account.id)) };
-  }
+  } // End of updateAccount.
 
   // ---------------------------------------------------------------------------
+  // FUNCTION: suspendAccount
   // Story #9: Suspend user account.
   // Sets status to 'suspended'. login() and authenticateSession both refuse
   // suspended accounts, so the user is blocked from then on.
   // Returns the account's safe fields, or null if no account has this ID.
   // ---------------------------------------------------------------------------
   static async suspendAccount(id) {
+    // Find the account by its ID.
     const account = await UserAccount.findByPk(id);
-    if (!account) return null;
+    if (!account) return null; // no such account, so stop
 
     // SQL: UPDATE user_account SET status = 'suspended' WHERE id = ?
     await account.update({ status: 'suspended' });
 
+    // Read it back with its profile and hand back the safe copy.
     return UserAccount.publicFields(await UserAccount.findWithProfile(account.id));
-  }
+  } // End of suspendAccount.
 
   // ---------------------------------------------------------------------------
+  // FUNCTION: searchAccounts
   // Story #10: Search user accounts.
   // Finds accounts whose user ID, name or email CONTAINS the keyword,
   // ignoring capitals. An empty keyword lists every account.
@@ -243,6 +275,7 @@ class UserAccount extends Model {
     // Query settings: load each account's profile, sort by ID, smallest first (oldest first).
     const options = { include: UserProfile, order: [['id', 'ASC']] };
 
+    // Only add a filter if there is search text.
     if (text) {
       // % means "any characters" in SQL LIKE. '%kaz%' matches anything containing "kaz".
       const pattern = `%${text}%`;
@@ -265,8 +298,8 @@ class UserAccount extends Model {
 
     // Turn every row into its safe version (no passwords).
     return accounts.map((account) => UserAccount.publicFields(account));
-  }
-}
+  } // End of searchAccounts.
+} // End of the UserAccount class.
 
 function canonicalRole(name) {
   const roles = {
@@ -288,11 +321,11 @@ function canonicalRole(name) {
 // -----------------------------------------------------------------------------
 UserAccount.init(
   {
-    username: { type: DataTypes.STRING, allowNull: false, unique: true },
+    username: { type: DataTypes.STRING, allowNull: false, unique: true }, // the login user ID; required; no two the same
     password: { type: DataTypes.STRING, allowNull: false }, // stored HASHED with bcrypt, never plain text
-    name: { type: DataTypes.STRING, allowNull: false },
-    email: { type: DataTypes.STRING, allowNull: false },
-    dob: { type: DataTypes.DATEONLY },
+    name: { type: DataTypes.STRING, allowNull: false }, // the person's name; required
+    email: { type: DataTypes.STRING, allowNull: false }, // the email; required
+    dob: { type: DataTypes.DATEONLY }, // date of birth; optional
     photo: { type: DataTypes.STRING }, // image URL
     status: { type: DataTypes.STRING, allowNull: false, defaultValue: 'active' }, // active | suspended
   },

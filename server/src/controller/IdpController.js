@@ -5,10 +5,13 @@ const {
   ProjectImage,
   IdpImageUploadIntent,
   IdpImageCleanupTask,
+  ShortlistItem,
 } = require('../entity');
 const { createSignedReadUrl, removeObjects } = require('../storage/IdpImageStorage');
 const IDP_PAGE_SIZE = InteriorDesignProject.IDP_PAGE_SIZE || 9;
 
+// Creation dates belong to the server. Keep them out of this request allowlist
+// for both create and update. A past project's completion date stays editable.
 const PROJECT_FIELDS = ['name', 'description', 'propertyType', 'designStyle'];
 
 function isDateOnly(value) {
@@ -94,6 +97,7 @@ function projectFields(project) {
     status: project.status,
     completionDate: project.completionDate,
     categoryId: project.categoryId,
+    viewCount: project.viewCount || 0, // story #30
     createdAt: project.createdAt,
     updatedAt: project.updatedAt,
   };
@@ -105,18 +109,20 @@ async function renderProject(project) {
   ));
   const images = await Promise.all(orderedImages.map(renderImage));
 
+  const shortlistCounts = await ShortlistItem.countsByProject([project.id]); // story #31
   return {
     ...projectFields(project),
+    shortlistCount: shortlistCounts.get(project.id) || 0,
     imageCount: images.length,
     images,
   };
 }
 
-async function renderProjectSummary(project) {
+async function renderProjectSummary(project, shortlistCounts = new Map()) {
   // Cards need only three signed previews. The detail route loads all images
   // when the user opens the project.
   const images = await Promise.all((project.previewImages || []).map(renderImage));
-  return { ...projectFields(project), imageCount: project.imageCount || 0, images };
+  return { ...projectFields(project), shortlistCount: shortlistCounts.get(project.id) || 0, imageCount: project.imageCount || 0, images };
 }
 
 async function getOwnedProject(id, req, status, transaction) {
@@ -176,6 +182,11 @@ async function searchIdps(req, res, next, status) {
   try {
     const query = String(req.query.q || '').trim();
     if (query.length > 160) return res.status(422).json({ message: 'Use 160 characters or less for search.' });
+    const sort = req.query.sort === undefined ? 'oldest' : req.query.sort;
+    if (Object.keys(req.query).some((key) => key.startsWith('sort['))
+      || typeof sort !== 'string' || !InteriorDesignProject.IDP_SORT_VALUES.includes(sort)) {
+      return res.status(422).json({ message: 'Choose a valid project sort order.' });
+    }
     const pageValue = req.query.page === undefined ? '1' : req.query.page;
     if (typeof pageValue !== 'string' || !/^[1-9]\d*$/.test(pageValue) || Number(pageValue) > 1000000) {
       return res.status(422).json({ message: 'Enter a valid page number.' });
@@ -190,9 +201,11 @@ async function searchIdps(req, res, next, status) {
       status,
       query,
       page,
+      sort,
     });
+    const shortlistCounts = await ShortlistItem.countsByProject(result.projects.map((project) => project.id));
     return res.json({
-      projects: await Promise.all(result.projects.map(renderProjectSummary)),
+      projects: await Promise.all(result.projects.map((project) => renderProjectSummary(project, shortlistCounts))),
       pagination: {
         page,
         pageSize: IDP_PAGE_SIZE,

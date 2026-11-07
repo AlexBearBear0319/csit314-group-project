@@ -57,7 +57,7 @@ test('project details include category, public designer and company, and increme
   await projects[0].reload();
   expect(projects[0].viewCount).toBe(1);
   expect(projects[0].updatedAt.toISOString()).toBe(timestamp);
-  expect((await customer.client.post(`/api/customer/idps/${projects[2].id}/view`).send({})).status).toBe(404);
+  expect((await customer.client.post(`/api/customer/idps/${projects[2].id}/view`).send({})).status).toBe(200);
 });
 
 test('existing projects can have no category or company and authentication remains required', async () => {

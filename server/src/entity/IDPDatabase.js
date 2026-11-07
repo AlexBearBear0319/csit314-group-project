@@ -82,7 +82,9 @@ class IDPDatabase {
 
   static getIDPByID(projectID, transaction) {
     return InteriorDesignProject.findOne({
-      where: { id: projectID, status: 'current' },
+      // The ongoing list stays current-only. Existing shortlist/count callers
+      // also open past projects through this established detail endpoint.
+      where: { id: projectID, status: ['current', 'past'] },
       include: [
         visibleDesigner(true),
         { model: ProjectImage, as: 'images' },

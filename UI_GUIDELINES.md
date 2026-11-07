@@ -114,8 +114,8 @@ The routes below are in `client/src/App.jsx`.
 | `/admin/profiles` | Existing title placeholder. | User profile create, view, update, delete, and search. |
 | `/designer` | Design studio with saved project totals, recent projects and a material study. | Interior Designer home. Uses the current and past project APIs. |
 | `/designer/company` | Existing title placeholder. | Company information create, view, update, delete, and search. |
-| `/designer/current-idps` | Folder gallery with search, forms, photo upload and a project dialog. | Current IDP create, view, update, delete, and search. View and shortlist counts are not implemented. |
-| `/designer/past-idps` | Folder gallery with search, forms, photo upload and a project dialog. | Past IDP create, view, update, delete, and search. |
+| `/designer/current-idps` | Folder gallery with search, server sorting, numbered pages, forms, photo upload and a project dialog. | Current IDP create, view, update, delete, and search. View and shortlist counts are not implemented. |
+| `/designer/past-idps` | Folder gallery with search, server sorting, numbered pages, forms, photo upload and a project dialog. | Past IDP create, view, update, delete, and search. |
 | `/customer` | Existing role dashboard with a page heading. | Customer home. No dashboard data is defined in the stories. |
 | `/customer/search` | Existing title placeholder. | Search, view, and save IDPs. |
 | `/customer/shortlist` | Existing title placeholder. | Search and view a shortlist. The stories use both saved IDPs and shortlisted designers. See `To confirm` below. |
@@ -154,6 +154,8 @@ Use `FormField` for a labelled input, select, text area, or file input. Use `For
 - Show an error beside the field. Set `aria-invalid` and link the error with `aria-describedby`.
 - Keep the value after a validation error.
 - Do not clear a form when save fails.
+- For project use cases #22 and #27, the user confirmed on 30 October 2026 that only the creation date stays fixed. Do not provide a creation-date input or accept a client-supplied creation timestamp. Keep the past project's completion-date input editable and validate it as a real calendar date on the server.
+- Map server field errors to the affected controls. Focus the first invalid control. Keep draft text after a rejected write. If some image steps succeed before a failure, update saved image data and keep only unfinished upload steps for retry. Show success only when all selected steps finish.
 - Disable fields while the form is locked or saving.
 - Show a loading state on the submit button while saving.
 - Ask only for values that the story or client confirms.
@@ -170,17 +172,25 @@ Use `ResultsTable` with its current `columns`, `rows`, and `actions` props. Keep
 
 Current and past IDPs use the shared project folder card. Show the project name, property type, design style, and image count. Past IDPs also show the completion date. Use a 1.35:1 folder and saved project photos. Use a plain folder when a project has no photo preview. Use a frosted front panel over the photo sheets. Assemble the folder as it enters view. Let the panel lean toward the pointer. On hover or keyboard focus, lift the sheets. When the folder opens, fan out its photo sheets as buttons. Add demo records only when the user asks. Mark them with `[Demo]` and keep existing records.
 
-Show three project cards per row on wide screens, two on tablet screens, and one on phone screens. Load nine projects per page from the API. Return the total and page count. Load preview images for the selected page and load the full gallery when a user opens a project. Keep the sort order stable. Search starts at page 1. After a delete on the last page, show the previous page when it has projects.
+Show three project cards per row on wide screens, two on tablet screens, and one on phone screens. Load nine projects per page from the API. Return the total and page count. Load preview images for the selected page and load the full gallery when a user opens a project.
+
+Default both collections to FIFO: creation date ascending, then ID ascending. Offer Oldest first, Newest first, Name A–Z and Name Z–A. State that oldest/newest use creation date in the option labels. Apply search and sort on the server before pagination. Use an ID tie-breaker for every order. Name sorting ignores letter case. Search and sort changes start at page 1. CRUD reloads and retry keep the selected search, sort and page. After a delete empties the last page, show the last valid page.
+
+Keep Previous and Next with disabled bounds and the page count. Add numbered page buttons with `aria-current="page"` on the current page. Show the first page, last page and current page's neighbours. Use gaps for omitted ranges and keep controls within a 320px page. After a page change, focus the results heading. Do not take focus from an open form.
+
+Distinguish loading, a failed read, an empty collection and a search with no matches. A failed read must hide old cards and show an error with Try again. Clear the read error after a successful retry. Cancel old reads when the selection changes, and ignore any late result.
 
 Give each folder an accessible open and close action. Add photos opens the project editor. Keep View project visible and open project details in a modal dialog. Keep Open/Close folder, View, Edit, and Delete in a keyboard-accessible More menu. A photo sheet opens the viewer at that photo. Do not hide an action on hover. Support Enter, Space, Escape, and arrow keys in the menu. Keep a visible focus ring and usable touch targets. Respect reduced motion.
 
 Use `DetailsView` for a label and value list. Keep each field name visible. In the project dialog, keep the image at its source ratio and fit it inside the viewer; do not crop it. Limit the image area to 52% of the viewport height or 32rem. For a gallery, keep the image order and do not advance automatically. Put arrows and photo dots below the image with 44px controls. Support phone swipes and left/right arrow keys. Wrap in both directions. Show the photo position, loading state, and a clear error if an image fails. Return focus to the control that opened the dialog. Keep key content in view. For multiple uploads, keep each selected image visible and show which image is uploading. Do not add project metrics or company facts without a source.
 
+Keep photo links private. If a link is missing or a photo fails to load, request fresh links through the authenticated project detail API. Limit automatic recovery to one request per project view every five minutes. Share an active refresh within that view. Show Refreshing photo(s) while it runs and Retry photo(s) after a persistent failure. A retry must reset image loading/error state even when the image ID or URL is unchanged. Cancel refreshes when their view closes. Use this recovery for folders, detail carousels and recent-project thumbnails.
+
 ### Designer studio
 
 Use cream, olive and warm material colours with Lora headings. Use simple architectural lines for empty image covers. Do not make a concept illustration look like a saved client photo.
 
-Read project totals from API pagination. Show at most four recent projects from the first page of each collection. Open a project in a dialog. Keep errors separate from an empty collection, and provide a retry action when loading fails.
+Read project totals from API pagination. Request `sort=recent` explicitly for dashboard reads: edit time descending, then ID descending. Show at most four recent projects from the first page of each collection. The collection pages' FIFO default must not change which projects count as recent. Open a project in a dialog. Keep errors separate from an empty collection, and provide a retry action when loading fails.
 
 Use the Remotion player for the room study. The animation shows structure, furniture, then small details. Start with the finished room. Play starts one reveal; Pause stops it; Play at the end replays it. Do not loop or advance project photos automatically. Keep the three material choices available with or without motion. When reduced motion is on, show the finished still and hide the playback control. Keep the player in the designer route so other roles do not load it.
 
@@ -238,4 +248,4 @@ import ResultsTable from './components/ResultsTable';
 
 ## Sources
 
-The page map and open items use [`Project Specification.pdf`](../Project%20Specification.pdf) and [`User_stories.docx`](../User_stories.docx). Ask the client when a source does not define a detail.
+The page map and open items use [`Project Specification.pdf`](../Project%20Specification.pdf), [`User_stories.docx`](../User_stories.docx), and the current [CSIT314 Software Development Methodology use cases #20–29](https://docs.google.com/document/d/1LCz1gytxAVCVnetGHFwgSOnSOo6z1IXAum7QIdvXE4s/edit?tab=t.0). Ask the client when a source does not define a detail.
