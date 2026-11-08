@@ -46,7 +46,7 @@ export default function DesignerIdpsPage({ status }) {
   const [categories, setCategories] = useState([]);
   const [categoryError, setCategoryError] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
-  const [sort, setSort] = useState('oldest');
+  const [sort, setSort] = useState('newest'); // the list opens with the newest project first
   const [pageNumber, setPageNumber] = useState(1);
   const [pagination, setPagination] = useState({ page: 1, pageSize: 9, total: 0, totalPages: 0 });
   const [refreshKey, setRefreshKey] = useState(0);
@@ -593,11 +593,12 @@ export default function DesignerIdpsPage({ status }) {
             placeholder="Search by project name, property type or design style"
             initialValue={searchQuery}
             onSearch={handleSearch}
+            onClear={() => handleSearch('')}
           />
           <div className="w-full sm:max-w-xs">
             <FormField id="project-sort" name="sort" label="Sort by" value={sort} onChange={changeSort} includeEmptyOption={false} options={[
-              { value: 'oldest', label: 'Oldest first (creation date)' },
               { value: 'newest', label: 'Newest first (creation date)' },
+              { value: 'oldest', label: 'Oldest first (creation date)' },
               { value: 'name-asc', label: 'Name A–Z' },
               { value: 'name-desc', label: 'Name Z–A' },
             ]} />

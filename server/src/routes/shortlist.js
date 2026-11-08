@@ -36,9 +36,18 @@ const view = new ViewShortlistC();
 //   req = what the browser sent. res = how we reply.
 // =============================================================================
 
-// ---- ROUTE: #35 Search -------------------------------------------------------
-// GET /api/customer/shortlist?keyword=kitchen. The keyword is optional.
-router.get('/', async (req, res) => res.json(await search.searchSaved(req.auth.accountId, req.query.keyword)));
+// ---- ROUTE: View my shortlist and Search my shortlist -------------------------
+// GET /api/customer/shortlist            -> everything saved
+// GET /api/customer/shortlist?keyword=kitchen -> only the matches
+// With ?keyword= in the address the Customer is searching. Without it they are
+// opening My Shortlist, so they get everything they saved.
+router.get('/', async (req, res) => {
+  const searching = Object.hasOwn(req.query, 'keyword');
+  const list = searching
+    ? await search.searchSaved(req.auth.accountId, req.query.keyword)
+    : await view.viewShortlist(req.auth.accountId);
+  return res.json(list);
+});
 
 // ---- ROUTE: #34 Save ---------------------------------------------------------
 // POST /api/customer/shortlist   body: { projectId }

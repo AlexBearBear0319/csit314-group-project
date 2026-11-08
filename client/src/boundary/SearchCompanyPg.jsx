@@ -21,7 +21,7 @@ export default function SearchCompanyPg() {
       <h1 className="font-display text-4xl text-ink">Company Information</h1>
       <Button type="button" onClick={()=>navigate('/designer/company/create')}>Create company</Button>
     </div>
-    <SearchBar key={keyword} initialKeyword={keyword} placeholder="Search company information" onSearch={search}/>
+    <SearchBar key={keyword} initialKeyword={keyword} placeholder="Search company information" onSearch={search} onClear={()=>search('')}/>
     <Message type="success" text={location.state?.message}/>
     {loading && <RecordLoadState loading error="" />}
     {error && displayError()}

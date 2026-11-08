@@ -35,7 +35,7 @@ function visibleDesigner(includeCompany = false) {
 // projectID, designerID, statusID and projectName map to id, designerAccountId,
 // status and name. ProjectImage contains the diagram's projectImages.
 class IDPDatabase {
-  static async retrieveMatchingIDP({ keyword = '', propertyType = '', designStyle = '', page = 1, sort = 'fifo' }) {
+  static async retrieveMatchingIDP({ keyword = '', propertyType = '', designStyle = '', page = 1, sort = 'date' }) {
     const condition = { status: 'current' };
     const term = keyword.trim().toLowerCase();
     if (term) {
@@ -46,6 +46,7 @@ class IDPDatabase {
     if (propertyType) condition.propertyType = propertyType;
     if (designStyle) condition.designStyle = designStyle;
 
+    // 'date' is newest first and is what Customers see unless they change it.
     const orders = {
       fifo: [['createdAt', 'ASC'], ['id', 'ASC']],
       date: [['createdAt', 'DESC'], ['id', 'DESC']],

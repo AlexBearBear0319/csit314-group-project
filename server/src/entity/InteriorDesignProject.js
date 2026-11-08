@@ -39,7 +39,8 @@ class InteriorDesignProject extends Model {
     return project ? project.viewCount : null;
   }
 
-  static async listOwned({ designerAccountId, status, query, page = 1, sort = 'oldest' }) {
+  // A designer's list opens with the newest project at the top unless they pick another order.
+  static async listOwned({ designerAccountId, status, query, page = 1, sort = 'newest' }) {
     const whereClause = { designerAccountId, status };
     const term = String(query || '').trim().toLowerCase();
 
@@ -61,7 +62,7 @@ class InteriorDesignProject extends Model {
 
     const { count, rows } = await InteriorDesignProject.findAndCountAll({
       where: whereClause,
-      order: Object.hasOwn(IDP_SORT_ORDERS, sort) ? IDP_SORT_ORDERS[sort] : IDP_SORT_ORDERS.oldest,
+      order: Object.hasOwn(IDP_SORT_ORDERS, sort) ? IDP_SORT_ORDERS[sort] : IDP_SORT_ORDERS.newest,
       limit: IDP_PAGE_SIZE,
       offset: (page - 1) * IDP_PAGE_SIZE,
     });

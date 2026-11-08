@@ -48,6 +48,9 @@ function summaryFields(item) {
     completionDate: project.completionDate, // when a past project finished
     // ?. means: read .name only if a designer was found. || null covers the rest.
     designerName: project.designer?.name || null,
+    // Only the pop-up asks for these two. In the list they are simply null.
+    categoryName: project.category?.name || null,
+    companyName: project.designer?.company?.name || null,
     savedAt: item.createdAt, // when the Customer saved it
   };
 } // End of summaryFields.
@@ -83,6 +86,21 @@ class ShortlistItem extends Model {
   } // End of saveProject.
 
   // ---------------------------------------------------------------------------
+  // FUNCTION: viewShortlist
+  // Story: "view my shortlist so that I can see all the IDPs I have saved".
+  // RECEIVES: customerAccountId = the logged-in Customer's account ID
+  // GIVES BACK: every project this Customer saved, the latest save at the top.
+  // ---------------------------------------------------------------------------
+  static async viewShortlist(customerAccountId) {
+    const items = await ShortlistItem.findAll({
+      where: { customerAccountId }, // only this Customer's rows
+      include: [{ association: 'project', required: true, include: [{ association: 'designer', attributes: ['name'] }] }], // also load the project and designer name
+      order: [['createdAt', 'DESC'], ['id', 'DESC']], // latest save first; the ID settles a tie
+    });
+    return items.map(summaryFields);
+  } // End of viewShortlist.
+
+  // ---------------------------------------------------------------------------
   // FUNCTION: searchSaved
   // Story #35: Search shortlisted IDPs.
   // Finds this Customer's saved projects whose name, property type or design
@@ -92,14 +110,8 @@ class ShortlistItem extends Model {
   // GIVES BACK: a list of safe project copies, newest save first.
   // ---------------------------------------------------------------------------
   static async searchSaved(customerAccountId, keyword) {
-    // Read every project this Customer saved, with its designer.
-    const items = await ShortlistItem.findAll({
-      where: { customerAccountId }, // only this Customer's rows
-      include: [{ association: 'project', required: true, include: [{ association: 'designer', attributes: ['name'] }] }], // also load the project and designer name
-      order: [['createdAt', 'DESC'], ['id', 'DESC']], // newest save first
-    });
-    // Turn the rows into safe copies.
-    const projects = items.map(summaryFields);
+    // Start from the whole shortlist, then keep only what matches.
+    const projects = await ShortlistItem.viewShortlist(customerAccountId);
 
     // Remove spaces at the ends of the keyword and make it lowercase.
     const term = String(keyword || '').trim().toLowerCase();
@@ -124,7 +136,16 @@ class ShortlistItem extends Model {
     // Find the row for this Customer and this project.
     const item = await ShortlistItem.findOne({
       where: { customerAccountId, projectId }, // both must match
-      include: [{ association: 'project', required: true, include: [{ association: 'designer', attributes: ['name'] }] }], // also load the project and designer name
+      // Also load what the pop-up shows: the category, the designer and their company.
+      // required: false keeps the project even if it has no category or company.
+      include: [{
+        association: 'project',
+        required: true,
+        include: [
+          { association: 'category', attributes: ['name'], required: false },
+          { association: 'designer', attributes: ['name'], include: [{ association: 'company', attributes: ['name'], required: false }] },
+        ],
+      }],
     });
     // If it was found, hand back the safe copy. If not, hand back null.
     return item ? summaryFields(item) : null;

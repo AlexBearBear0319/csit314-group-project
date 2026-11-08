@@ -107,7 +107,7 @@ test('a list failure hides old cards and retries the same search, sort and page'
   items = Array.from({ length: 18 }, (_, index) => project(index + 1));
   mount();
   await screen.findByRole('heading', { name: 'Room 1' });
-  await user.selectOptions(screen.getByLabelText('Sort by'), 'newest');
+  await user.selectOptions(screen.getByLabelText('Sort by'), 'oldest');
   await screen.findByRole('heading', { name: 'Room 1' });
   await user.type(screen.getByRole('textbox', { name: 'Search' }), 'Room');
   await user.click(screen.getByRole('button', { name: 'Search', exact: true }));
@@ -123,7 +123,7 @@ test('a list failure hides old cards and retries the same search, sort and page'
   expect(screen.queryByText('Connection lost.')).not.toBeInTheDocument();
   expect(requests.at(-1).searchParams.get('page')).toBe('2');
   expect(requests.at(-1).searchParams.get('q')).toBe('Room');
-  expect(requests.at(-1).searchParams.get('sort')).toBe('newest');
+  expect(requests.at(-1).searchParams.get('sort')).toBe('oldest');
 });
 
 test('an empty collection differs from a search with no matches', async () => {
@@ -166,7 +166,7 @@ test('an older response cannot replace the selected sort results', async () => {
   api.get.mockImplementationOnce((_path, { signal }) => new Promise((resolve) => { resolveOld = { resolve, signal }; }));
   mount();
   await waitFor(() => expect(api.get).toHaveBeenCalled());
-  await user.selectOptions(screen.getByLabelText('Sort by'), 'newest');
+  await user.selectOptions(screen.getByLabelText('Sort by'), 'oldest');
   await screen.findByRole('heading', { name: 'Room 1' });
   expect(resolveOld.signal.aborted).toBe(true);
   await act(async () => resolveOld.resolve({ projects: [project(99)], pagination: { page: 1, total: 1, totalPages: 1, pageSize: 9 } }));

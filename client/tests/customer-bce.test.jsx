@@ -13,6 +13,7 @@ beforeEach(() => {
   vi.resetAllMocks();
   api.get.mockImplementation(async path => {
     if (path.endsWith('/filters')) return { propertyTypes: ['Apartment'], designStyles: ['Modern'] };
+    if (path === '/customer/shortlist') return [];
     return { projects: [project], page: 1, total: 1, totalPages: 1, pageSize: 9 };
   });
   api.post.mockResolvedValue({ ...project, categoryName: 'Residential', designerName: 'Test Designer', companyName: 'Design Studio', images: [] });
@@ -63,4 +64,66 @@ test('opening details displays category and designer information and Close resto
   await user.click(within(dialog).getByRole('button', { name: 'Close project view' }));
   expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
   expect(screen.getByRole('heading', { name: project.name })).toBeVisible();
+});
+
+test('the list opens newest first when no sort is chosen', async () => {
+  mount();
+  await screen.findByRole('heading', { name: project.name });
+  const path = api.get.mock.calls.map(call => call[0]).find(value => value.startsWith('/customer/idps?'));
+  expect(new URL(path, 'http://test').searchParams.get('sort')).toBe('date');
+  expect(screen.getByLabelText('Sort projects')).toHaveValue('date');
+});
+
+test('Clear filters empties the keyword and both filters and shows every project', async () => {
+  const user = userEvent.setup();
+  mount();
+  await screen.findByRole('heading', { name: project.name });
+  await user.selectOptions(screen.getByLabelText('Property type'), 'Apartment');
+  await user.selectOptions(screen.getByLabelText('Design style'), 'Modern');
+  await user.type(screen.getByRole('textbox', { name: 'Search' }), 'Modern');
+  await user.click(screen.getByRole('button', { name: 'Search', exact: true }));
+  await screen.findByRole('heading', { name: project.name });
+  await user.click(screen.getByRole('button', { name: 'Clear filters' }));
+  await waitFor(() => {
+    const query = new URL(api.get.mock.calls.at(-1)[0], 'http://test').searchParams;
+    expect(query.has('keyword')).toBe(false);
+    expect(query.has('propertyType')).toBe(false);
+    expect(query.has('designStyle')).toBe(false);
+  });
+  expect(screen.getByLabelText('Property type')).toHaveValue('');
+  expect(screen.getByLabelText('Design style')).toHaveValue('');
+  expect(screen.getByRole('textbox', { name: 'Search' })).toHaveValue('');
+});
+
+test('every project card can be saved, and the card shows Saved afterwards', async () => {
+  api.post.mockResolvedValue(project);
+  const user = userEvent.setup();
+  mount();
+  await user.click(await screen.findByRole('button', { name: 'Save Modern apartment to shortlist' }));
+  expect(api.post).toHaveBeenCalledWith('/customer/shortlist', { projectId: 12 });
+  expect(await screen.findByRole('button', { name: 'Modern apartment is saved to your shortlist' })).toBeDisabled();
+});
+
+test('a project that is already in the shortlist opens as Saved', async () => {
+  api.get.mockImplementation(async path => {
+    if (path.endsWith('/filters')) return { propertyTypes: [], designStyles: [] };
+    if (path === '/customer/shortlist') return [project];
+    return { projects: [project], page: 1, total: 1, totalPages: 1, pageSize: 9 };
+  });
+  mount();
+  expect(await screen.findByRole('button', { name: 'Modern apartment is saved to your shortlist' })).toBeDisabled();
+});
+
+test('saving inside the pop-up also marks the card behind it', async () => {
+  const user = userEvent.setup();
+  mount();
+  await user.click(await screen.findByRole('button', { name: 'View project' }));
+  const dialog = await screen.findByRole('dialog', { name: project.name });
+  await within(dialog).findByText('Residential');
+  api.post.mockResolvedValue(project);
+  await user.click(within(dialog).getByRole('button', { name: 'Save Modern apartment to shortlist' }));
+  expect(api.post).toHaveBeenCalledWith('/customer/shortlist', { projectId: 12 });
+  expect(await within(dialog).findByRole('button', { name: 'Modern apartment is saved to your shortlist' })).toBeDisabled();
+  await user.click(within(dialog).getByRole('button', { name: 'Close project view' }));
+  expect(screen.getByRole('button', { name: 'Modern apartment is saved to your shortlist' })).toBeDisabled();
 });

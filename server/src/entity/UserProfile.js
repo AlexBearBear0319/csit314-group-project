@@ -28,7 +28,8 @@ class UserProfile extends Model {
   }
 
   static async searchProfiles(keyword = '') {
-    const profiles = await this.findAll({ order: [['name', 'ASC'], ['id', 'ASC']] });
+    // Newest profile first. IDs only ever go up, so the biggest ID is the newest.
+    const profiles = await this.findAll({ order: [['id', 'DESC']] });
     const term = keyword.trim().toLowerCase();
     // Role lists are small. Literal matching keeps wildcard and case behaviour
     // identical in the SQLite tests and PostgreSQL production database.

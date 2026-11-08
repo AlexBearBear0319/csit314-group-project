@@ -19,7 +19,7 @@
 
 const request = require('supertest'); // to send fake requests
 const app = require('../src/app'); // the backend itself
-const { sequelize, UserAccount, UserProfile, InteriorDesignProject, ProjectImage } = require('../src/entity'); // database classes
+const { sequelize, UserAccount, UserProfile, InteriorDesignProject, ProjectImage, IDPCategory, Company } = require('../src/entity'); // database classes
 const { featureSession, ORIGIN } = require('./helpers/featureSession'); // logs in a test user
 
 // "let" variables that every test can use. beforeEach fills them in.
@@ -245,3 +245,33 @@ describe('#36 View shortlisted IDP', () => {
     expect(res.body).toEqual([]); // it is gone
   });
 }); // End of #36 View.
+
+// =============================================================================
+// TEST GROUP: View my shortlist
+// "As a Customer, I want to view my shortlist so that I can see all the IDPs I
+// have saved."
+// =============================================================================
+describe('View my shortlist', () => {
+  test('lists everything I saved, with my latest save at the top', async () => {
+    await customer.client.post('/api/customer/shortlist').send({ projectId: kitchen.id }).expect(201);
+    await customer.client.post('/api/customer/shortlist').send({ projectId: bedroom.id }).expect(201);
+    const res = await customer.client.get('/api/customer/shortlist').expect(200);
+    expect(res.body.map((item) => item.name)).toEqual(['Quiet Bedroom', 'Warm Kitchen']);
+  });
+
+  test('never shows another Customer what they saved', async () => {
+    const other = await featureSession('Customer', 'customer.two');
+    await other.client.post('/api/customer/shortlist').send({ projectId: kitchen.id }).expect(201);
+    const res = await customer.client.get('/api/customer/shortlist').expect(200);
+    expect(res.body).toEqual([]);
+  });
+
+  test('the details of a saved project include its category and company for the pop-up', async () => {
+    const category = await IDPCategory.create({ name: 'Residential' });
+    await Company.create({ name: 'Dana Studio', designerAccountId: designer.id });
+    await kitchen.update({ categoryId: category.id });
+    await customer.client.post('/api/customer/shortlist').send({ projectId: kitchen.id }).expect(201);
+    const res = await customer.client.get(`/api/customer/shortlist/${kitchen.id}`).expect(200);
+    expect(res.body).toMatchObject({ categoryName: 'Residential', companyName: 'Dana Studio', designerName: 'Dana Designer' });
+  });
+});

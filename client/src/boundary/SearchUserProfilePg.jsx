@@ -30,7 +30,7 @@ export default function SearchUserProfilePg() {
       <h1 className="font-display text-4xl text-ink">User Profiles</h1>
       <Button type="button" onClick={() => navigate(`/admin/profiles/create${location.search}`)}>Create profile</Button>
     </div>
-    <SearchBar key={keyword} initialKeyword={keyword} placeholder="Search user profiles" onSearch={search} />
+    <SearchBar key={keyword} initialKeyword={keyword} placeholder="Search user profiles" onSearch={search} onClear={() => search('')} />
     <Message type={message.type} text={message.text} />
     <RecordLoadState loading={loading} error={error} onRetry={retry} />
     {!loading && !error && <ResultsTable ariaLabel="User profiles" rows={rows}

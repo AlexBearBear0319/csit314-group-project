@@ -266,14 +266,15 @@ class UserAccount extends Model {
   // Story #10: Search user accounts.
   // Finds accounts whose user ID, name or email CONTAINS the keyword,
   // ignoring capitals. An empty keyword lists every account.
-  // Returns a list (array) of safe account objects, oldest first.
+  // Returns a list (array) of safe account objects, newest first.
   // ---------------------------------------------------------------------------
   static async searchAccounts(keyword) {
     // String(...) turns anything into text. || '' handles undefined/null.
     const text = String(keyword || '').trim().toLowerCase();
 
-    // Query settings: load each account's profile, sort by ID, smallest first (oldest first).
-    const options = { include: UserProfile, order: [['id', 'ASC']] };
+    // Query settings: load each account's profile. IDs only ever go up, so the
+    // biggest ID is the newest account and it goes to the top.
+    const options = { include: UserProfile, order: [['id', 'DESC']] };
 
     // Only add a filter if there is search text.
     if (text) {

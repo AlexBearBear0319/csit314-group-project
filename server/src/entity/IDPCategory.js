@@ -22,7 +22,8 @@ class IDPCategory extends Model {
   }
 
   static async searchCategories(keyword = '') {
-    const categories = await this.findAll({ order: [['name', 'ASC'], ['id', 'ASC']] });
+    // Newest category first. IDs only ever go up, so the biggest ID is the newest.
+    const categories = await this.findAll({ order: [['id', 'DESC']] });
     const term = keyword.trim().toLowerCase();
     // Literal matching keeps % and _ as user text in both SQLite and Postgres.
     return categories.filter((category) =>

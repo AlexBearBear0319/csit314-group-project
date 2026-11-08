@@ -41,6 +41,12 @@ async function renderImage(image) {
 
 // Start of the class for story #36.
 class ViewShortlistC {
+  // Story: "view my shortlist so that I can see all the IDPs I have saved".
+  // Gets the whole list for the logged-in Customer, latest save first.
+  async viewShortlist(customerAccountId) {
+    return ShortlistItem.viewShortlist(customerAccountId);
+  } // End of viewShortlist.
+
   // ---------------------------------------------------------------------------
   // FUNCTION: viewSaved
   // WHAT IT DOES: finds one project in the logged-in Customer's shortlist.

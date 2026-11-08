@@ -16,7 +16,7 @@ export default function SearchIDPCategoryPg() {
       <h1 className="font-display text-4xl text-ink">IDP Categories</h1>
       <Button type="button" onClick={() => navigate(`/manager/categories/create${location.search}`)}>Create category</Button>
     </div>
-    <SearchBar key={keyword} initialKeyword={keyword} placeholder="Search IDP categories" onSearch={search} />
+    <SearchBar key={keyword} initialKeyword={keyword} placeholder="Search IDP categories" onSearch={search} onClear={() => search('')} />
     <Message type="success" text={location.state?.message} />
     <RecordLoadState loading={loading} error={error} onRetry={retry} />
     {!loading && !error && <ResultsTable ariaLabel="IDP categories" rows={rows}

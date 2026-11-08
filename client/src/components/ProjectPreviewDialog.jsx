@@ -3,7 +3,10 @@ import Button from './Button';
 import DetailsView from './DetailsView';
 import ProjectImageCarousel from './ProjectImageCarousel';
 
-export default function ProjectPreviewDialog({ project, loading, error, onClose, showDesigner = false }) {
+// The pop-up that shows one project's photos and details.
+//   showDesigner = also show the category, designer and company (Customer pages)
+//   actions      = optional buttons to show under the details, such as Save
+export default function ProjectPreviewDialog({ project, loading, error, onClose, showDesigner = false, actions = null }) {
   const dialogRef = useRef(null);
   const projectId = project?.id;
   useEffect(() => {
@@ -33,16 +36,19 @@ export default function ProjectPreviewDialog({ project, loading, error, onClose,
         {loading ? <p className="p-8 text-muted" role="status">Loading project.</p> : error ? <p className="p-8 text-danger" role="alert">{error}</p> :
           <div className={`grid gap-5 p-4 sm:p-6 ${project.images?.length ? 'lg:grid-cols-[minmax(0,1.6fr)_minmax(17rem,0.8fr)]' : ''}`}>
             <ProjectImageCarousel key={project.id} images={project.images} projectId={showDesigner ? undefined : project.id} status={project.status} projectName={project.name} />
-            <DetailsView item={showDesigner ? { ...project, categoryName: project.categoryName || 'Unassigned', companyName: project.companyName || 'Not provided' } : project} fields={[
-              { key: 'description', label: 'Description' }, { key: 'propertyType', label: 'Property type' },
-              { key: 'designStyle', label: 'Design style' },
-              ...(showDesigner ? [
-                { key: 'categoryName', label: 'Category' },
-                { key: 'designerName', label: 'Interior designer' },
-                { key: 'companyName', label: 'Company' },
-              ] : []),
-              ...(project.status === 'past' ? [{ key: 'completionDate', label: 'Completion date' }] : []),
-            ]} />
+            <div className="grid content-start gap-4">
+              <DetailsView item={showDesigner ? { ...project, categoryName: project.categoryName || 'Unassigned', companyName: project.companyName || 'Not provided' } : project} fields={[
+                { key: 'description', label: 'Description' }, { key: 'propertyType', label: 'Property type' },
+                { key: 'designStyle', label: 'Design style' },
+                ...(showDesigner ? [
+                  { key: 'categoryName', label: 'Category' },
+                  { key: 'designerName', label: 'Interior designer' },
+                  { key: 'companyName', label: 'Company' },
+                ] : []),
+                ...(project.status === 'past' ? [{ key: 'completionDate', label: 'Completion date' }] : []),
+              ]} />
+              {actions}
+            </div>
           </div>}
       </div>}
     </dialog>

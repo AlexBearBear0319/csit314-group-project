@@ -1,124 +1,129 @@
 // =============================================================================
-// BOUNDARY: ViewShortlistPg  (user story #36: Customer views a shortlisted IDP)
-// Methods from the design: viewSaved(), displaySuccess(), displayError()
+// BOUNDARY: ViewShortlistPg
+// Story: "As a Customer, I want to view my shortlist so that I can see all the
+// IDPs I have saved."
+// Methods from the design: viewShortlist(), viewSaved(), displaySuccess(), displayError()
 //
-// Address: /customer/shortlist/:id   e.g. /customer/shortlist/5
+// Address: /customer/shortlist  ("My Shortlist" in the Customer menu)
+// The page opens with everything the Customer saved, latest save at the top.
+// View on a row opens the same pop-up that Search IDPs uses.
 //
-// Flow: page opens -> GET /api/customer/shortlist/5
-//   -> ViewShortlistC -> ShortlistItem entity -> project comes back -> details shown
-//
-// (How React pages work is explained at the top of SearchUserAccountPg.jsx.)
+// Flow: page opens -> GET /api/customer/shortlist
+//   -> ViewShortlistC -> ShortlistItem entity -> table is filled
 // =============================================================================
 
-// ---- Imports ----------------------------------------------------------------
-// useCallback = keep the same function between redraws. useEffect = run code
-// after drawing. useState = memory.
-import { useCallback, useEffect, useState } from 'react';
-// Link = a clickable link to another page. useParams = read :id from the address.
-import { Link, useParams } from 'react-router-dom';
-import { api } from '../api'; // calls the backend
-import DetailsView from '../components/DetailsView'; // label: value list for one item
-import Message from '../components/Message'; // red error box
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { api } from '../api';
+import Button from '../components/Button';
+import Message from '../components/Message';
+import ProjectPreviewDialog from '../components/ProjectPreviewDialog';
+import ResultsTable from '../components/ResultsTable';
+import SearchShortlistPg from './SearchShortlistPg';
 import { statusLabel } from './userAccountShared'; // turns 'current' into 'Current'
 
-// The details to show, top to bottom. key = field, label = text on the left.
-const FIELDS = [
-  { key: 'description', label: 'Description' }, // line 1
-  { key: 'propertyType', label: 'Property type' }, // line 2
-  { key: 'designStyle', label: 'Design style' }, // line 3
-  { key: 'status', label: 'Status' }, // line 4
-  { key: 'completionDate', label: 'Completion date' }, // line 5
-  { key: 'designerName', label: 'Designer' }, // line 6
+// The table's columns. key = the field in each project, label = the heading.
+const COLUMNS = [
+  { key: 'name', label: 'Project name' },
+  { key: 'propertyType', label: 'Property type' },
+  { key: 'designStyle', label: 'Design style' },
+  { key: 'status', label: 'Status' },
 ];
 
-// =============================================================================
-// FUNCTION: ViewShortlistPg (the page itself)
-// WHAT IT DOES: draws one saved project and holds all its smaller functions.
-// =============================================================================
 export default function ViewShortlistPg() {
-  // useParams reads :id from the address. For /customer/shortlist/5, id is "5".
-  const { id } = useParams();
+  const navigate = useNavigate();
 
-  // ---- State --------------------------------------------------------------------
-  const [project, setProject] = useState(null); // the project; null until loaded
-  const [loading, setLoading] = useState(true); // true while waiting for the backend
-  const [error, setError] = useState(''); // red message
+  // The list
+  const [projects, setProjects] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  // The search box waits for the first load, so the two can never race.
+  const [firstLoadDone, setFirstLoadDone] = useState(false);
 
-  // ---------------------------------------------------------------------------
-  // FUNCTION: displaySuccess
-  // WHAT IT DOES: shows the loaded project.
-  // ---------------------------------------------------------------------------
-  const displaySuccess = useCallback((found) => {
-    setProject(found); // show the project
-    setLoading(false); // hide "Loading..."
-  }, []);
+  // The pop-up
+  const [selected, setSelected] = useState(null);
+  const [detailLoading, setDetailLoading] = useState(false);
+  const [detailError, setDetailError] = useState('');
+  const detailRequest = useRef(0); // counts requests so a late reply can be ignored
 
-  // ---------------------------------------------------------------------------
-  // FUNCTION: displayError
-  // WHAT IT DOES: shows a red message when the project could not load.
-  // ---------------------------------------------------------------------------
-  const displayError = useCallback((message) => {
-    // || gives a fallback message if the backend did not send one.
-    setError(message || 'The project could not be loaded. Try again.');
-    setLoading(false); // hide "Loading..."
-  }, []);
+  function displaySuccess(list) {
+    setProjects(list);
+    setError('');
+    setLoading(false);
+    setFirstLoadDone(true);
+  }
 
-  // ---------------------------------------------------------------------------
-  // viewSaved: LOAD THE PROJECT
-  // Runs when the page opens, and again if the ID in the address changes.
-  // ---------------------------------------------------------------------------
+  function displayError(message) {
+    setError(message || 'Your shortlist could not be loaded. Try again.');
+    setLoading(false);
+    setFirstLoadDone(true);
+  }
+
+  // viewShortlist: load everything the Customer saved when the page opens.
   useEffect(() => {
-    // "active" ignores a reply that arrives after the user has left the page.
-    let active = true;
-    api.get(`/customer/shortlist/${encodeURIComponent(id)}`) // GET /api/customer/shortlist/5
-      // The reply arrived, so show the project.
-      .then((found) => { if (active) displaySuccess(found); })
-      // For a project not in this shortlist, the backend replies 404, and that
-      // message is shown in the red box.
-      .catch((err) => { if (active) displayError(err.message); });
-    // The cleanup function (see "active" above).
+    let active = true; // stops a late reply from touching a page that has closed
+    api.get('/customer/shortlist')
+      .then((list) => { if (active) displaySuccess(list); })
+      .catch((failure) => { if (active) displayError(failure.message); });
     return () => { active = false; };
-  }, [id, displaySuccess, displayError]);
+  }, []);
 
-  // Keep only the photos that have a web address. ?. and || [] cover "not loaded yet".
-  const photos = (project?.images || []).filter((image) => image.url);
+  // viewSaved: open the pop-up straight away, then fill in the full details.
+  async function viewSaved(row) {
+    const request = ++detailRequest.current;
+    setSelected({ id: row.id, name: row.name });
+    setDetailLoading(true);
+    setDetailError('');
+    try {
+      const details = await api.get(`/customer/shortlist/${row.id}`);
+      if (request === detailRequest.current) setSelected(details);
+    } catch (failure) {
+      if (request === detailRequest.current) setDetailError(failure.message);
+    } finally {
+      if (request === detailRequest.current) setDetailLoading(false);
+    }
+  }
 
-  // ---- What the page shows (JSX) --------------------------------------------------------
+  function closeDetails() {
+    detailRequest.current += 1; // anything still on its way is now out of date
+    setSelected(null);
+    setDetailLoading(false);
+    setDetailError('');
+  }
+
+  // The same projects, with the status turned into 'Current' or 'Past'.
+  const rows = projects.map((project) => ({ ...project, status: statusLabel(project.status) }));
+
   return (
-    // max-w-3xl limits the width so the details stay easy to read.
-    <section className="grid max-w-3xl min-w-0 gap-6">
-      {/* Link back to the list. */}
-      <Link to="/customer/shortlist" className="text-sm text-action underline">Back to my shortlist</Link>
+    <section className="grid min-w-0 gap-6" aria-busy={loading}>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <h1 className="text-3xl tracking-tight text-ink sm:text-4xl">My Shortlist</h1>
+        {/* Projects are saved from Search IDPs, so this takes the Customer there. */}
+        <Button type="button" onClick={() => navigate('/customer/search')}>Find projects to save</Button>
+      </div>
 
-      {/* Show the project name once loaded; until then show 'Shortlisted project'. */}
-      <h1 className="break-words text-3xl tracking-tight text-ink sm:text-4xl">{project ? project.name : 'Shortlisted project'}</h1>
-
-      {/* Red message box (nothing shown when error is ''). */}
       <Message type="error" text={error} />
 
-      {/* Shown only while loading. */}
-      {loading && <p role="status" className="text-muted">Loading...</p>}
-
-      {/* The details, once loaded. The outer <div> draws the white card. */}
-      {project && (
-        <div className="rounded-card border border-border bg-surface px-5 py-2">
-          {/* item = a copy of the project with the status shown as 'Current' or 'Past'. */}
-          <DetailsView fields={FIELDS} item={{ ...project, status: statusLabel(project.status) }} />
-        </div>
+      {firstLoadDone && (
+        <SearchShortlistPg
+          onSearchStart={() => { setLoading(true); setError(''); }}
+          onResults={displaySuccess}
+          onSearchFail={displayError}
+        />
       )}
 
-      {/* The photos, if there are any. */}
-      {photos.length > 0 && (
-        <ul className="grid gap-4 md:grid-cols-2">
-          {/* Draw one photo for each entry. "key" helps React track each photo. */}
-          {photos.map((image) => (
-            <li key={image.id}>
-              {/* h-auto keeps the photo's own shape, so it is not cropped. */}
-              <img src={image.url} alt={image.altText || `${project.name} photo`} loading="lazy" className="h-auto w-full rounded-card" />
-            </li>
-          ))}
-        </ul>
-      )}
+      {loading
+        ? <p role="status" className="text-muted">Loading your shortlist...</p>
+        : !error && (
+          <ResultsTable
+            ariaLabel="My shortlist"
+            columns={COLUMNS}
+            rows={rows}
+            actions={[{ label: 'View', onClick: viewSaved }]}
+          />
+        )}
+
+      <ProjectPreviewDialog project={selected} loading={detailLoading} error={detailError} onClose={closeDetails} showDesigner />
     </section>
   );
-} // End of ViewShortlistPg.
+}

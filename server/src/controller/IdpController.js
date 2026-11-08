@@ -183,7 +183,8 @@ async function searchIdps(req, res, next, status) {
   try {
     const query = String(req.query.q || '').trim();
     if (query.length > 160) return res.status(422).json({ message: 'Use 160 characters or less for search.' });
-    const sort = req.query.sort === undefined ? 'oldest' : req.query.sort;
+    // No sort in the address means newest first, the same as every other list.
+    const sort = req.query.sort === undefined ? 'newest' : req.query.sort;
     if (Object.keys(req.query).some((key) => key.startsWith('sort['))
       || typeof sort !== 'string' || !InteriorDesignProject.IDP_SORT_VALUES.includes(sort)) {
       return res.status(422).json({ message: 'Choose a valid project sort order.' });

@@ -17,12 +17,15 @@ async function projectFixtures() {
   return { designer, customer, projects };
 }
 
-test('ongoing browsing defaults to FIFO and supports date and alphabetical ordering', async () => {
+test('ongoing browsing defaults to newest first and still supports oldest and alphabetical ordering', async () => {
   const { customer, projects } = await projectFixtures();
   const browse = await customer.client.get('/api/customer/idps');
   expect(browse.status).toBe(200);
   expect(browse.body.total).toBe(2);
-  expect(browse.body.projects.map(project => project.id)).toEqual([projects[0].id, projects[1].id]);
+  // No sort in the address means newest first: February comes before January.
+  expect(browse.body.projects.map(project => project.id)).toEqual([projects[1].id, projects[0].id]);
+  const oldest = await customer.client.get('/api/customer/idps').query({ sort: 'fifo' });
+  expect(oldest.body.projects.map(project => project.id)).toEqual([projects[0].id, projects[1].id]);
   for (const sort of ['date', 'alphabetical']) {
     const result = await customer.client.get('/api/customer/idps').query({ sort });
     expect(result.status).toBe(200);

@@ -3,17 +3,20 @@ import { api } from '../api';
 import Button from '../components/Button';
 import FormField from '../components/FormField';
 import ProjectPreviewDialog from '../components/ProjectPreviewDialog';
+import SaveShortlistPg from './SaveShortlistPg';
 
 // BCE boundary for listing, sorting and opening ongoing projects (#33).
-export default function OngoingIDPPage({ IDPList, pagination, sort, onPageChange, onSortChange }) {
-  const [selectedIDP, setSelectedIDP] = useState(null);
+// Every project card has a Save button, and so does the pop-up (#34).
+export default function OngoingIDPPage({ IDPList, pagination, sort, onPageChange, onSortChange, savedIds, onSaved }) {
+  const [selectedIDP, setSelectedIDP] = useState(null); // the project open in the pop-up
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
-  const detailRequest = useRef(0);
+  const detailRequest = useRef(0); // counts requests so a late reply can be ignored
   const pendingProject = useRef(null);
 
   useEffect(() => () => { detailRequest.current += 1; }, []);
 
+  // Opens the pop-up straight away, then fills in the full details.
   async function displayIDPDetails(project) {
     if (pendingProject.current === project.id) return;
     const request = ++detailRequest.current;
@@ -47,7 +50,12 @@ export default function OngoingIDPPage({ IDPList, pagination, sort, onPageChange
   }
 
   function sortIDP(event) {
-    onSortChange(event.target.value || 'fifo');
+    onSortChange(event.target.value);
+  }
+
+  // The shortlist button for one project. The cards and the pop-up both use it.
+  function displaySaveButton(project) {
+    return <SaveShortlistPg project={project} saved={savedIds.has(project.id)} onSaved={onSaved} />;
   }
 
   function displayOngoingIDPList() {
@@ -55,7 +63,7 @@ export default function OngoingIDPPage({ IDPList, pagination, sort, onPageChange
     return (
       <div className="grid min-w-0 gap-6 md:grid-cols-2 lg:grid-cols-3">
         {IDPList.map(project => (
-          <article key={project.id} className="grid min-w-0 gap-4 rounded-card border border-border bg-surface p-6 shadow-card">
+          <article key={project.id} className="grid min-w-0 grid-rows-[auto_auto_1fr] gap-4 rounded-card border border-border bg-surface p-6 shadow-card">
             <h2 className="break-words font-display text-2xl">{project.name}</h2>
             <dl className="grid gap-2">
               <div>
@@ -67,9 +75,12 @@ export default function OngoingIDPPage({ IDPList, pagination, sort, onPageChange
                 <dd className="break-words">{project.designStyle || 'Unspecified'}</dd>
               </div>
             </dl>
-            <Button type="button" variant="secondary" onClick={() => displayIDPDetails(project)}>
-              View project
-            </Button>
+            <div className="grid gap-2 self-end">
+              <Button type="button" variant="secondary" onClick={() => displayIDPDetails(project)}>
+                View project
+              </Button>
+              {displaySaveButton(project)}
+            </div>
           </article>
         ))}
       </div>
@@ -79,10 +90,10 @@ export default function OngoingIDPPage({ IDPList, pagination, sort, onPageChange
   return (
     <>
       <div className="max-w-xs">
-        <FormField id="customer-project-sort" label="Sort projects" value={sort} onChange={sortIDP}
+        <FormField id="customer-project-sort" label="Sort projects" value={sort} onChange={sortIDP} includeEmptyOption={false}
           options={[
-            { value: 'fifo', label: 'Oldest first' },
             { value: 'date', label: 'Newest first' },
+            { value: 'fifo', label: 'Oldest first' },
             { value: 'alphabetical', label: 'Name A–Z' },
           ]} />
       </div>
@@ -99,7 +110,7 @@ export default function OngoingIDPPage({ IDPList, pagination, sort, onPageChange
           onClick={() => onPageChange(pagination.page + 1)}>Next</Button>
       </nav>
       <ProjectPreviewDialog project={selectedIDP} loading={isLoading} error={error}
-        onClose={closeDetails} showDesigner />
+        onClose={closeDetails} showDesigner actions={selectedIDP && displaySaveButton(selectedIDP)} />
     </>
   );
 }

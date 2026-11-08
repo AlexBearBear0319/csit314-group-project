@@ -251,7 +251,7 @@ export default function SearchUserAccountPg() {
 
       {/* Search box. When Search is clicked, SearchBar calls searchAccounts
           with the typed text. */}
-      <SearchBar placeholder="Search by user ID, name or email" onSearch={searchAccounts} />
+      <SearchBar placeholder="Search by user ID, name or email" onSearch={searchAccounts} onClear={() => searchAccounts('')} />
 
       {/* a ? b : c in JSX: while loading, show the status line; otherwise
           show the table. role="status" lets screen readers announce it. */}

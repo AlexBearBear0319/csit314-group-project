@@ -117,8 +117,8 @@ The routes below are in `client/src/App.jsx`.
 | `/designer/current-idps` | Folder gallery with search, server sorting, numbered pages, forms, photo upload and a project dialog. | Current IDP create, view, update, delete, and search. View and shortlist counts are not implemented. |
 | `/designer/past-idps` | Folder gallery with search, server sorting, numbered pages, forms, photo upload and a project dialog. | Past IDP create, view, update, delete, and search. |
 | `/customer` | Existing role dashboard with a page heading. | Customer home. No dashboard data is defined in the stories. |
-| `/customer/search` | Existing title placeholder. | Search, view, and save IDPs. |
-| `/customer/shortlist` | Existing title placeholder. | Search and view a shortlist. The stories use both saved IDPs and shortlisted designers. See `To confirm` below. |
+| `/customer/search` | Project cards with search, filters, sorting and a pop-up. Each card and the pop-up have a Save button. | Search, view, and save IDPs. |
+| `/customer/shortlist` | Table of saved IDPs, latest save first, with search and a pop-up. | View and search the saved IDPs. |
 | `/manager` | Existing role dashboard with a page heading. | Platform Manager home. No dashboard data is defined in the stories. |
 | `/manager/categories` | Existing title placeholder. | IDP category create, view, update, delete, and search. |
 | `/manager/reports` | Existing title placeholder. | Daily, weekly, and monthly reports. |
@@ -129,7 +129,6 @@ Login, registration and role checks use the server API. Do not add a role select
 ### Source items to confirm
 
 - **To confirm:** User account and user profile stories say `delete`. The task allocation says `Suspend User Account (#9)` and `Suspend User Profile (#4)`. Keep the action open until the team confirms it.
-- **To confirm:** Customer stories say to save IDPs. Other stories refer to a shortlist of designers. The task allocation also uses `Save IDP to Shortlist`, `Search Shortlisted IDP`, and `View Shortlisted IDP`. Confirm what `My Shortlist` contains before building this feature.
 
 Do not silently choose one meaning. Do not assign work or ownership from these notes.
 
@@ -162,7 +161,7 @@ Use `FormField` for a labelled input, select, text area, or file input. Use `For
 
 ### Search and filters
 
-Use `SearchBar` for a keyword search. Keep its `placeholder` and `onSearch(keyword)` props. Use visible labels for filters. Use buttons with `aria-pressed` for on/off filter chips. Keep the chosen filter visible and easy to remove. Do not add filter values without a story or client decision.
+Use `SearchBar` for a keyword search. Keep its `placeholder` and `onSearch(keyword)` props. Use visible labels for filters. Use buttons with `aria-pressed` for on/off filter chips. Keep the chosen filter visible and easy to remove. A list with a search box offers a clear button that returns to the full list. Search IDPs uses `Clear filters` and keeps the chosen sort. Do not add filter values without a story or client decision.
 
 ### Tables
 
@@ -174,7 +173,7 @@ Current and past IDPs use the shared project folder card. Show the project name,
 
 Show three project cards per row on wide screens, two on tablet screens, and one on phone screens. Load nine projects per page from the API. Return the total and page count. Load preview images for the selected page and load the full gallery when a user opens a project.
 
-Default both collections to FIFO: creation date ascending, then ID ascending. Offer Oldest first, Newest first, Name A–Z and Name Z–A. State that oldest/newest use creation date in the option labels. Apply search and sort on the server before pagination. Use an ID tie-breaker for every order. Name sorting ignores letter case. Search and sort changes start at page 1. CRUD reloads and retry keep the selected search, sort and page. After a delete empties the last page, show the last valid page.
+Default every list to newest first. Project lists use creation date descending, then ID descending. Offer Newest first, Oldest first, Name A–Z and Name Z–A. State that oldest/newest use creation date in the option labels. Apply search and sort on the server before pagination. Use an ID tie-breaker for every order. Name sorting ignores letter case. Search and sort changes start at page 1. CRUD reloads and retry keep the selected search, sort and page. After a delete empties the last page, show the last valid page.
 
 Keep Previous and Next with disabled bounds and the page count. Add numbered page buttons with `aria-current="page"` on the current page. Show the first page, last page and current page's neighbours. Use gaps for omitted ranges and keep controls within a 320px page. After a page change, focus the results heading. Do not take focus from an open form.
 
@@ -190,7 +189,7 @@ Keep photo links private. If a link is missing or a photo fails to load, request
 
 Use cream, olive and warm material colours with Lora headings. Use simple architectural lines for empty image covers. Do not make a concept illustration look like a saved client photo.
 
-Read project totals from API pagination. Request `sort=recent` explicitly for dashboard reads: edit time descending, then ID descending. Show at most four recent projects from the first page of each collection. The collection pages' FIFO default must not change which projects count as recent. Open a project in a dialog. Keep errors separate from an empty collection, and provide a retry action when loading fails.
+Read project totals from API pagination. Request `sort=recent` explicitly for dashboard reads: edit time descending, then ID descending. Show at most four recent projects from the first page of each collection. The collection pages' newest-first default must not change which projects count as recent. Open a project in a dialog. Keep errors separate from an empty collection, and provide a retry action when loading fails.
 
 Use the Remotion player for the room study. The animation shows structure, furniture, then small details. Start with the finished room. Play starts one reveal; Pause stops it; Play at the end replays it. Do not loop or advance project photos automatically. Keep the three material choices available with or without motion. When reduced motion is on, show the finished still and hide the playback control. Keep the player in the designer route so other roles do not load it.
 

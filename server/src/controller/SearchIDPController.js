@@ -6,7 +6,8 @@ function searchOptions(query) {
   if (typeof query.page === 'object' || !Number.isSafeInteger(page) || page < 1 || page > 1000000) {
     throw Object.assign(new Error('Enter a valid page number.'), { status: 400 });
   }
-  const sort = query.sort || 'fifo';
+  // No sort chosen means newest first.
+  const sort = query.sort || 'date';
   if (!['fifo', 'date', 'alphabetical'].includes(sort)) {
     throw Object.assign(new Error('Choose a valid sort order.'), { status: 400 });
   }

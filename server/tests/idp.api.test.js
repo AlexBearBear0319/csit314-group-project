@@ -303,7 +303,7 @@ describe('Interior Designer IDP use cases #20-29', () => {
       expect(actualIds).toEqual([...rows].sort(compare).map((item) => item.id));
     }
     const defaultPage = await session.client.get(`/api/designer/${status}-idps`).expect(200);
-    expect(defaultPage.body.projects.map((item) => item.id)).toEqual([...rows].sort(byCreated).slice(0, 9).map((item) => item.id));
+    expect(defaultPage.body.projects.map((item) => item.id)).toEqual([...rows].sort(orders.newest).slice(0, 9).map((item) => item.id));
     const filtered = await session.client.get(`/api/designer/${status}-idps?q=alpha&sort=name-desc`).expect(200);
     expect(filtered.body.pagination.total).toBe(10);
     expect(filtered.body.projects.map((item) => item.id)).toEqual(rows.filter((item) => item.name.toLowerCase() === 'alpha').sort((a, b) => b.id - a.id).slice(0, 9).map((item) => item.id));
