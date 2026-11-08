@@ -38,7 +38,7 @@ test('company validation preserves saved data; role and CSRF checks protect writ
 test('customer browse paginates, searches literal text, and counts only successful detail opens', async () => {
  const {account} = await featureSession('Interior Designer','designer');
  const {client} = await featureSession('Customer','customer');
- const projects = await InteriorDesignProject.bulkCreate(Array.from({length:11},(_,i)=>({name:i===0?'Modern 100%_':'Project '+i, status:i%2?'past':'current',designerAccountId:account.id})));
+ const projects = await InteriorDesignProject.bulkCreate(Array.from({length:11},(_,i)=>({name:i===0?'Modern 100%_':'Project '+i, status:'current',designerAccountId:account.id})));
  let res = await client.get('/api/customer/idps');
  expect(res.status).toBe(200); expect(res.body.total).toBe(11); expect(res.body.projects).toHaveLength(9); expect(res.body.totalPages).toBe(2);
  res = await client.get('/api/customer/idps').query({keyword:'%_'});

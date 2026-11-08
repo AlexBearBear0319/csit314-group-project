@@ -16,7 +16,7 @@ import SearchCompanyPg from './boundary/SearchCompanyPg';
 import CreateCompanyPg from './boundary/CreateCompanyPg';
 import ViewCompanyPg from './boundary/ViewCompanyPg';
 import UpdateCompanyPg from './boundary/UpdateCompanyPg';
-import SearchCustomerIDPPg from './boundary/SearchCustomerIDPPg';
+import IDPManagementPage from './boundary/IDPManagementPage';
 import GenerateReportPg from './boundary/GenerateReportPg';
 import SearchUserProfilePg from './boundary/SearchUserProfilePg';
 import CreateUserProfilePg from './boundary/CreateUserProfilePg';
@@ -91,7 +91,7 @@ export default function App() {
 
         <Route element={<RequireRole role="Customer" />}>
           <Route path="/customer" element={<Dashboard role="Customer" />} />
-          <Route path="/customer/search" element={<SearchCustomerIDPPg />} />
+          <Route path="/customer/search" element={<IDPManagementPage />} />
           <Route path="/customer/shortlist" element={<SearchShortlistPg />} />
           <Route path="/customer/shortlist/save" element={<SaveShortlistPg />} />
           <Route path="/customer/shortlist/:id" element={<ViewShortlistPg />} />

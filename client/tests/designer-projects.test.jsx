@@ -13,6 +13,7 @@ const project = (id, status = 'current') => ({ id, name: `Room ${id}`, descripti
 let items;
 let requests;
 function list(path) {
+  if (path === '/designer/categories') return [];
   const url = new URL(path, 'http://test');
   const page = Number(url.searchParams.get('page') || 1);
   requests.push(url);

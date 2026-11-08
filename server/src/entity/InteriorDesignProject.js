@@ -97,6 +97,7 @@ class InteriorDesignProject extends Model {
 
 InteriorDesignProject.init(
   {
+    categoryId: { type: DataTypes.INTEGER, allowNull: true, field: 'category_id' },
     viewCount: { type: DataTypes.INTEGER, allowNull: false, defaultValue: 0, field: 'view_count' },
     name: { type: DataTypes.STRING(160), allowNull: false },
     description: { type: DataTypes.TEXT, allowNull: true },
