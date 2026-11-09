@@ -30,6 +30,7 @@ import UpdateIDPCategoryPg from './boundary/UpdateIDPCategoryPg';
 import DeleteIDPCategoryPg from './boundary/DeleteIDPCategoryPg';
 import ViewShortlistPg from './boundary/ViewShortlistPg'; // #36
 import RequireRole from './components/RequireRole';
+import ProfileHome from './pages/ProfileHome'; // accounts on a profile the User Admin created
 import { homeForRole, useSession } from './session';
 
 // Load the Remotion player only when a designer opens this route.
@@ -102,6 +103,9 @@ export default function App() {
           <Route path="/manager/categories/:id/delete" element={<DeleteIDPCategoryPg />} />
           <Route path="/manager/reports" element={<GenerateReportPg />} />
         </Route>
+
+        {/* Home for accounts whose profile is not a built-in role (story #1). */}
+        <Route path="/home" element={<ProfileHome />} />
 
         <Route path="*" element={<UnknownRoute />} />
       </Route>

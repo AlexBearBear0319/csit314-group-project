@@ -101,23 +101,38 @@ describe('account login and registration', () => {
     expect(response.body.message).toMatch(/user ID or password/i);
   });
 
-  test('rejects suspended accounts, suspended roles and unrecognized roles', async () => {
+  test('rejects suspended accounts and suspended roles', async () => {
     await accounts.Customer.update({ status: 'suspended' });
     expect((await login(accounts.Customer.username)).response.status).toBe(403);
     await accounts.Customer.update({ status: 'active' });
 
     await profiles.Customer.update({ status: 'suspended' });
     expect((await login(accounts.Customer.username)).response.status).toBe(403);
+  });
 
-    const unknownRole = await UserProfile.create({ name: 'Other Role' });
-    const unknownAccount = await UserAccount.create({
+  test('lets an account on a new profile log in without any role features', async () => {
+    const newProfile = await UserProfile.create({ name: 'Other Role' });
+    const newAccount = await UserAccount.create({
       username: 'other-role',
       password: await bcrypt.hash(PASSWORD, 4),
       name: 'Other Role',
       email: 'other-role@example.com',
-      profileId: unknownRole.id,
+      profileId: newProfile.id,
     });
-    expect((await login(unknownAccount.username)).response.status).toBe(403);
+
+    const { client, response } = await login(newAccount.username);
+    expect(response.status).toBe(200);
+    expect(response.body.account.role).toBe('Other Role');
+    expect((await client.get('/api/session').expect(200)).body.account.role).toBe('Other Role');
+
+    // The built-in role features stay closed.
+    await client.get('/api/user-profiles').set('Origin', ORIGIN).expect(403);
+    await client.get('/api/customer/shortlist').set('Origin', ORIGIN).expect(403);
+    await client.get('/api/reports').set('Origin', ORIGIN).expect(403);
+
+    // Suspending the new profile still blocks login.
+    await newProfile.update({ status: 'suspended' });
+    expect((await login(newAccount.username)).response.status).toBe(403);
   });
 
   test('registers a customer and ignores a requested privileged role', async () => {

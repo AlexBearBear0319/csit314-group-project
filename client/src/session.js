@@ -107,6 +107,13 @@ export async function killSession() {
   }
 }
 
+// True for the 4 built-in roles. A profile that a User Admin created (story #1)
+// is not built in: its accounts can log in, but have no role pages.
+export function isBuiltInRole(role) {
+  return Object.hasOwn(HOME, role);
+}
+
 export function homeForRole(role) {
-  return HOME[role] || '/login';
+  if (isBuiltInRole(role)) return HOME[role];
+  return role ? '/home' : '/login';
 }

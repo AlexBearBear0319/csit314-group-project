@@ -40,7 +40,10 @@ class UserAccount extends Model {
       return { error: 'This user profile is suspended.', reason: 'profile-suspended' };
     }
 
-    const role = canonicalRole(profile.name);
+    // A profile the User Admin created (story #1) is not one of the 4 built-in
+    // roles. Its accounts can still log in. The role is the profile name, so the
+    // built-in role checks (requireRole) refuse every role feature.
+    const role = sessionRole(profile.name);
     if (!role) {
       return { error: 'Your account role is not recognized. Contact an administrator.', reason: 'profile-unrecognized' };
     }
@@ -312,6 +315,12 @@ function canonicalRole(name) {
   return roles[String(name || '').trim().toLowerCase()] || null;
 }
 
+// The role used for a login session: a built-in role, or the name of a profile
+// the User Admin created. Returns null only when the profile has no name.
+function sessionRole(name) {
+  return canonicalRole(name) || String(name || '').trim() || null;
+}
+
 // -----------------------------------------------------------------------------
 // TABLE DEFINITION (from the project skeleton).
 // UserAccount.init tells Sequelize which columns the user_account table has.
@@ -346,3 +355,4 @@ UserAccount.belongsTo(UserProfile, { foreignKey: { name: 'profileId', allowNull:
 
 module.exports = UserAccount;
 module.exports.canonicalRole = canonicalRole;
+module.exports.sessionRole = sessionRole;
