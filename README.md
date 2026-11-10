@@ -10,6 +10,8 @@ Built with the **BCE** pattern:
 
 Class and method names in the code must match the diagrams exactly.
 
+To find the files for a story, or to see what each test checks, read [Where everything is](docs/WHERE-EVERYTHING-IS.md). You do not need to read code to use it.
+
 ## UI references
 
 - Read [UI_GUIDELINES.md](UI_GUIDELINES.md) before a UI change.
