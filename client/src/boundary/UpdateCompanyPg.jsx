@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Lets the user load the selected record, submit edits, and show the result for the company feature.
+
 // =============================================================================
 // BOUNDARY: UpdateCompanyPg               (BCE: Boundary layer)
 // User story #15: As an Interior Designer, I want to update my company

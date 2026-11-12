@@ -1,3 +1,6 @@
+// BCE: Outside BCE (test or test support).
+// Prepares a signed-in test client for requests to role-protected endpoints.
+
 // =============================================================================
 // TEST HELPER: featureSession
 // Logs in a test user with the given role and returns a client that already has the
@@ -23,4 +26,5 @@ async function featureSession(role, username = 'feature-owner') {
     [method, (path) => agent[method](path).set('Origin', ORIGIN).set('X-CSRF-Token', login.body.csrfToken)]));
   return { client, agent, csrfToken: login.body.csrfToken, profile, account };
 }
+// Expose this module’s entry points to its callers.
 module.exports = { featureSession, ORIGIN };

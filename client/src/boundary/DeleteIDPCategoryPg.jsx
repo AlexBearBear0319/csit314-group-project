@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Lets the user confirm deletion and report the outcome for the IDP category feature.
+
 // =============================================================================
 // BOUNDARY: DeleteIDPCategoryPg                     (BCE: Boundary layer)
 // User story #42: As a Platform Manager, I want to delete an IDP category so
@@ -23,8 +26,10 @@ import { CategoryPanel } from './idpCategoryShared';
 
 export default function DeleteIDPCategoryPg() {
   const { id, category, error, loading, retry } = useIDPCategory();
+  // Get the router function used to open the next page after an action.
   const navigate = useNavigate();
   const { search } = useLocation();
+  // Update the page after the server confirms the operation.
   function displaySuccess() {
     navigate(`/manager/categories${search}`, { replace: true, state: { message: 'IDP category deleted.' } });
   }

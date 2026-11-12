@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Collects signup details, chooses the customer or designer endpoint, and displays validation errors or starts the new session.
+
 // =============================================================================
 // BOUNDARY: RegisterPg / RegisterChoicePg (BCE: Boundary layer)
 // Sign-up for a Customer or an Interior Designer. (A User Admin creates other
@@ -52,9 +55,13 @@ export function RegisterChoicePg() {
 export default function RegisterPg({ role }) {
   const navigate = useNavigate();
   const { user } = useSession();
+  // Keep this value in component state so changes trigger a render.
   const [values, setValues] = useState({ name: '', email: '', username: '', password: '', passwordConfirmation: '' });
+  // Keep this value in component state so changes trigger a render.
   const [errors, setErrors] = useState({});
+  // Keep this value in component state so changes trigger a render.
   const [error, setError] = useState('');
+  // Keep this value in component state so changes trigger a render.
   const [isSubmitting, setIsSubmitting] = useState(false);
   const endpoint = role === 'Interior Designer' ? '/register/designer' : '/register/customer';
 

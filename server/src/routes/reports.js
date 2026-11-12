@@ -1,3 +1,6 @@
+// BCE: Boundary (HTTP entry point).
+// Connects reports HTTP requests to controller operations and translates their outcomes into responses.
+
 // =============================================================================
 // ROUTES: reports.js               (the HTTP bridge, not a BCE class)
 // User stories #44-46: the Platform Manager generates a daily, weekly or
@@ -13,4 +16,5 @@ const report = new GenerateReportC();
 
 router.get('/', async (req, res) => res.json(await report.generateReport(req.query)));
 
+// Expose this module’s entry points to its callers.
 module.exports = router;

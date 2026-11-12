@@ -1,3 +1,6 @@
+// BCE: Control.
+// Coordinates the search request for company data and delegates the operation to the entity.
+
 // =============================================================================
 // CONTROLLER: SearchCompanyC              (BCE: Controller layer)
 // User story #17: As an Interior Designer, I want to search my company
@@ -22,4 +25,5 @@ class SearchCompanyC {
   }
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = SearchCompanyC;

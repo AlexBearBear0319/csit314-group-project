@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Lets the user confirm suspension and report the resulting status for the user profile feature.
+
 // =============================================================================
 // BOUNDARY: SuspendUserProfilePg                    (BCE: Boundary layer)
 // User story #4: As a User Admin, I want to suspend a user profile so that
@@ -19,8 +22,10 @@ import { useUserProfile } from './userProfileData';
 
 export default function SuspendUserProfilePg() {
   const { id, profile, error, loading, retry } = useUserProfile();
+  // Get the router function used to open the next page after an action.
   const navigate = useNavigate();
   const { search } = useLocation();
+  // Update the page after the server confirms the operation.
   function displaySuccess() {
     navigate(`/admin/profiles/${id}${search}`, { replace: true, state: { message: 'User profile suspended.' } });
   }

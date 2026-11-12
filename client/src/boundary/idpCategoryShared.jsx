@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Provides feature-specific wrappers around the shared record UI and loading states.
+
 // =============================================================================
 // BOUNDARY HELPER: idpCategoryShared
 // The shared page frame (title + back link) of the IDP category pages (#39-43).

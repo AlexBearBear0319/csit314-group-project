@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Lets the user load the selected record, submit edits, and show the result for the IDP category feature.
+
 // =============================================================================
 // BOUNDARY: UpdateIDPCategoryPg           (BCE: Boundary layer)
 // User story #41: As a Platform Manager, I want to update an IDP category so
@@ -24,12 +27,17 @@ import { CategoryPanel } from './idpCategoryShared';
 
 export default function UpdateIDPCategoryPg() {
   const { id, category, error: loadError, loading, retry } = useIDPCategory();
+  // Get the router function used to open the next page after an action.
   const navigate = useNavigate();
   const { search } = useLocation();
+  // Keep this value in component state so changes trigger a render.
   const [saving, setSaving] = useState(false);
+  // Keep this value in component state so changes trigger a render.
   const [error, setError] = useState('');
+  // Keep this value in component state so changes trigger a render.
   const [errors, setErrors] = useState({});
 
+  // Update the page after the server confirms the operation.
   function displaySuccess() {
     navigate(`/manager/categories/${id}${search}`, { replace: true, state: { message: 'IDP category updated.' } });
   }
@@ -49,6 +57,7 @@ export default function UpdateIDPCategoryPg() {
   }
 
   async function updateCategory(values) {
+    // Ignore repeated submissions while the current request is pending.
     if (saving) return;
     setError('');
     setErrors({});

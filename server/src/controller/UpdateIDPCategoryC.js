@@ -1,3 +1,6 @@
+// BCE: Control.
+// Coordinates the update request for IDP category data and delegates the operation to the entity.
+
 // =============================================================================
 // CONTROLLER: UpdateIDPCategoryC          (BCE: Controller layer)
 // User story #41: As a Platform Manager, I want to update an IDP category so
@@ -36,4 +39,5 @@ class UpdateIDPCategoryC {
   }
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = UpdateIDPCategoryC;

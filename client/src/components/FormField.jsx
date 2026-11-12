@@ -1,3 +1,6 @@
+// BCE: Boundary (shared UI component).
+// Renders a labelled input or select and connects its help and error text to the control.
+
 // =============================================================================
 // COMPONENT: FormField
 // One labelled input box (text, textarea, dropdown, date or file) with its hint and
@@ -42,6 +45,7 @@ export default function FormField({
     'aria-describedby': describedBy,
   };
 
+  // Render the page layout and connect its controls to the state and handlers above.
   return (
     <div className="grid gap-2">
       <label htmlFor={id} className="text-sm font-medium text-ink">

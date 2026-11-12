@@ -1,3 +1,6 @@
+// BCE: Outside BCE (test or test support).
+// Checks role-based access to the profile, category, and project features.
+
 // =============================================================================
 // TESTS: role access and suspension
 // A User Admin and a Platform Manager cannot use each other's routes, and suspending a
@@ -26,6 +29,7 @@ test.each(['Customer', 'Interior Designer'])('%s cannot manage either feature', 
   const { client } = await featureSession(role);
   for (const [method, path] of routes) expect((await client[method](path).send({ name: 'Test' })).status).toBe(403);
 });
+// Check this scenario: admin and manager cannot use each other’s management routes.
 test('admin and manager cannot use each other’s management routes', async () => {
   const admin = await featureSession('User Admin', 'admin');
   const manager = await featureSession('Platform Manager', 'manager');
@@ -42,6 +46,7 @@ test.each([['User Admin', '/api/user-profiles'], ['Platform Manager', '/api/idp-
   expect((await client.post(path).set('Origin', 'https://untrusted.example').send({ name: 'Test' })).status).toBe(403);
   expect((await client.post(path).send({ name: 'Test' })).status).toBe(201);
 });
+// Check this scenario: suspending a profile blocks its existing session and future login.
 test('suspending a profile blocks its existing session and future login', async () => {
   const admin = await featureSession('User Admin', 'admin');
   const manager = await featureSession('Platform Manager', 'manager');

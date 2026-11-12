@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Defines the record endpoint and exposes shared loading behavior for this feature.
+
 // =============================================================================
 // BOUNDARY HELPER: companyData
 // Shared by the company pages (stories #13-17).
@@ -32,6 +35,7 @@ export function useCompany() {
   const [result, setResult] = useState({ key: null, company: null, error: '' });
 
   useEffect(() => {
+    // Give this request a cancellation signal so an obsolete load can be stopped.
     const controller = new AbortController();
     api.get('/companies/mine', { signal: controller.signal })
       .then((company) => { if (!controller.signal.aborted) setResult({ key: attempt, company, error: '' }); })

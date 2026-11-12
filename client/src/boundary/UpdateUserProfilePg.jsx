@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Lets the user load the selected record, submit edits, and show the result for the user profile feature.
+
 // =============================================================================
 // BOUNDARY: UpdateUserProfilePg           (BCE: Boundary layer)
 // User story #3: As a User Admin, I want to update a user profile so that its
@@ -23,12 +26,17 @@ import { PROFILE_FIELDS, useUserProfile, validateProfileInput } from './userProf
 
 export default function UpdateUserProfilePg() {
   const { id, profile, error: loadError, loading, retry } = useUserProfile();
+  // Get the router function used to open the next page after an action.
   const navigate = useNavigate();
   const { search } = useLocation();
+  // Keep this value in component state so changes trigger a render.
   const [saving, setSaving] = useState(false);
+  // Keep this value in component state so changes trigger a render.
   const [error, setError] = useState('');
+  // Keep this value in component state so changes trigger a render.
   const [errors, setErrors] = useState({});
 
+  // Update the page after the server confirms the operation.
   function displaySuccess() {
     navigate(`/admin/profiles/${id}${search}`, { replace: true, state: { message: 'User profile updated.' } });
   }
@@ -48,6 +56,7 @@ export default function UpdateUserProfilePg() {
   }
 
   async function updateProfile(values) {
+    // Ignore repeated submissions while the current request is pending.
     if (saving) return;
     setError('');
     setErrors({});
@@ -64,6 +73,7 @@ export default function UpdateUserProfilePg() {
     }
   }
 
+  // Render the page layout and connect its controls to the state and handlers above.
   return (
     <ProfilePanel title="Update User Profile">
       <ProfileLoadState loading={loading} error={loadError} onRetry={retry} />

@@ -1,3 +1,6 @@
+// BCE: Outside BCE (test or test support).
+// Checks browser origin handling for API requests.
+
 // =============================================================================
 // TESTS: browserOrigin
 // Only our own website is allowed to send changes to the API.
@@ -18,6 +21,7 @@ afterEach(() => {
   }
 });
 
+// Check this scenario: allows the configured frontend and the current and production Vercel domains.
 test('allows the configured frontend and the current and production Vercel domains', () => {
   process.env.FRONTEND_URL = 'http://localhost:5173';
   process.env.VERCEL_URL = 'csit314-group-project-preview.vercel.app';

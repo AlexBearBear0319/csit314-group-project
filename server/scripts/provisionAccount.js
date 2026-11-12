@@ -1,3 +1,6 @@
+// BCE: Outside BCE (application setup or infrastructure).
+// Reads administrative account provisioning arguments and invokes the account provisioning workflow.
+
 // =============================================================================
 // SCRIPT: provisionAccount.js (npm run auth:provision)
 // Resets the password of one account from the terminal (and can repair its role).

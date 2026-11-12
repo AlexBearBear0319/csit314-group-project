@@ -1,3 +1,6 @@
+// BCE: Control.
+// Validates and normalizes user profile inputs before a controller uses them.
+
 // =============================================================================
 // CONTROLLER HELPER: userProfileValidation
 // Input rules for the user profile stories (#1 create and #3 update), plus the
@@ -35,4 +38,5 @@ function profileId(id) {
   return Number(id);
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = { profileFields, profileId };

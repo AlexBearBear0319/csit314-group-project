@@ -1,3 +1,6 @@
+// BCE: Control.
+// Coordinates the create request for user profile data and delegates the operation to the entity.
+
 // =============================================================================
 // CONTROLLER: CreateUserProfileC          (BCE: Controller layer)
 // User story #1: As a User Admin, I want to create a user profile so that I can
@@ -31,4 +34,5 @@ class CreateUserProfileC {
   }
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = CreateUserProfileC;

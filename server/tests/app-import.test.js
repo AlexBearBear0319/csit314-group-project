@@ -1,3 +1,6 @@
+// BCE: Outside BCE (test or test support).
+// Checks that the Express application can be imported under the tested configuration.
+
 // =============================================================================
 // TESTS: app startup
 // The app refuses to start if the routes file does not export a router.
@@ -12,6 +15,7 @@ afterEach(() => {
 test.each(['commonjs', 'default', 'nested-default', 'named-router'])('starts with a %s router export', async (shape) => {
   const express = require('express');
   const router = express.Router();
+  // Register the GET handler for /health relative to this router.
   router.get('/health', (_req, res) => res.json({ status: 'ok' }));
 
   let app;
@@ -31,6 +35,7 @@ test.each(['commonjs', 'default', 'nested-default', 'named-router'])('starts wit
   expect(response.body).toEqual({ status: 'ok' });
 });
 
+// Check this scenario: rejects an invalid router export at startup.
 test('rejects an invalid router export at startup', () => {
   jest.isolateModules(() => {
     jest.doMock('../src/routes/index.cjs', () => ({}));

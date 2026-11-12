@@ -1,3 +1,6 @@
+// BCE: Boundary (shared UI component).
+// Checks session state and the required role before rendering protected page content.
+
 // =============================================================================
 // COMPONENT: RequireRole
 // Guards a group of pages. If nobody is logged in it sends the user to the login
@@ -10,6 +13,7 @@ import { hydrateSession, useSession } from '../session';
 import Button from './Button';
 
 function SessionUnavailable() {
+  // Render the page layout and connect its controls to the state and handlers above.
   return (
     <section className="mx-auto max-w-lg rounded-panel border border-border bg-surface p-6 shadow-card" role="alert">
       <h1 className="text-2xl text-ink">Cannot reach the sign-in service</h1>

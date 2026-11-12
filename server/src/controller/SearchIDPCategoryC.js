@@ -1,3 +1,6 @@
+// BCE: Control.
+// Coordinates the search request for IDP category data and delegates the operation to the entity.
+
 // =============================================================================
 // CONTROLLER: SearchIDPCategoryC          (BCE: Controller layer)
 // User story #43: As a Platform Manager, I want to search for IDP categories
@@ -23,4 +26,5 @@ class SearchIDPCategoryC {
   }
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = SearchIDPCategoryC;

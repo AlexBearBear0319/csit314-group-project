@@ -1,3 +1,6 @@
+// BCE: Boundary (shared UI component).
+// Provides the shared record-page layout and a link back to the results list.
+
 // =============================================================================
 // COMPONENT: RecordPanel
 // The page frame (title, content and a back link) of the View / Create / Update pages,
@@ -10,6 +13,7 @@ import Message from './Message';
 
 export default function RecordPanel({ title, listPath, backLabel, children }) {
   const { search } = useLocation();
+  // Render the page layout and connect its controls to the state and handlers above.
   return (
     <section className="grid min-w-0 gap-6 rounded-panel border border-border bg-surface p-4 shadow-card md:p-8">
       <h1 className="break-words font-display text-4xl text-ink">{title}</h1>

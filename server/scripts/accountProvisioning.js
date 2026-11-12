@@ -1,3 +1,6 @@
+// BCE: Outside BCE (application setup or infrastructure).
+// Normalizes account provisioning inputs and prepares the account details for administrative scripts.
+
 // =============================================================================
 // SCRIPT HELPER: accountProvisioning.js
 // The logic behind provisionAccount.js: reset a password, optionally set the role,
@@ -54,4 +57,5 @@ async function resetAccountPassword({ username, password, roleName }) {
   }
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = { resetAccountPassword };

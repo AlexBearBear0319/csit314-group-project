@@ -1,3 +1,6 @@
+// BCE: Outside BCE (HTTP middleware).
+// Tracks requests by key and rejects requests that exceed the configured limit.
+
 // =============================================================================
 // MIDDLEWARE: rateLimit
 // Slows down guessing. Login and sign-up allow only a limited number of tries in 15
@@ -82,4 +85,5 @@ function resetRateLimitsForTests() {
   requestCount = 0;
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = { loginRateLimit, loginAccountRateLimit, signupRateLimit, signupIdentityRateLimit, resetRateLimitsForTests };

@@ -1,3 +1,6 @@
+// BCE: Outside BCE (test or test support).
+// Tests request and response behavior in the shared browser API client.
+
 // =============================================================================
 // TESTS: api.js
 // Checks the fetch wrapper: CSRF token on changes, timeouts, errors and cancelled requests.
@@ -16,6 +19,7 @@ afterEach(() => {
   setUnauthorizedHandler(null);
 });
 
+// Check this scenario: a pending network request times out without waiting forever.
 test('a pending network request times out without waiting forever', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   t.mock.method(globalThis, 'fetch', (_url, { signal }) => new Promise((_resolve, reject) => {
@@ -28,6 +32,7 @@ test('a pending network request times out without waiting forever', async (t) =>
   await result;
 });
 
+// Check this scenario: the timeout also covers a response body that stops loading.
 test('the timeout also covers a response body that stops loading', async (t) => {
   t.mock.timers.enable({ apis: ['setTimeout'] });
   t.mock.method(globalThis, 'fetch', async (_url, { signal }) => ({
@@ -42,6 +47,7 @@ test('the timeout also covers a response body that stops loading', async (t) => 
   await result;
 });
 
+// Check this scenario: a hosting error returns a usable error without ending a valid session.
 test('a hosting error returns a usable error without ending a valid session', async (t) => {
   let ended = false;
   setUnauthorizedHandler(() => { ended = true; });
@@ -50,6 +56,7 @@ test('a hosting error returns a usable error without ending a valid session', as
   assert.equal(ended, false);
 });
 
+// Check this scenario: 401 ends a protected session but leaves login and initial session checks to their callers.
 test('401 ends a protected session but leaves login and initial session checks to their callers', async (t) => {
   let ended = 0;
   setUnauthorizedHandler(() => { ended += 1; });
@@ -61,6 +68,7 @@ test('401 ends a protected session but leaves login and initial session checks t
   assert.equal(ended, 1);
 });
 
+// Check this scenario: successful writes keep cookies and CSRF protection.
 test('successful writes keep cookies and CSRF protection', async (t) => {
   let options;
   setCsrfToken('test-csrf');
@@ -75,12 +83,14 @@ test('successful writes keep cookies and CSRF protection', async (t) => {
   assert.equal(options.signal.aborted, false);
 });
 
+// Check this scenario: invalid JSON is reported as an API error.
 test('invalid JSON is reported as an API error', async (t) => {
   t.mock.method(globalThis, 'fetch', async () => new Response('{', { headers: { 'Content-Type': 'application/json' } }));
   await assert.rejects(api.get('/session'), (error) => error instanceof ApiError && error.message.includes('invalid response'));
 });
 
 
+// Check this scenario: changing a search cancels its request without showing a timeout error.
 test('changing a search cancels its request without showing a timeout error', async (t) => {
   const caller = new AbortController();
   let signal;

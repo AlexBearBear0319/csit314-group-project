@@ -1,3 +1,6 @@
+// BCE: Outside BCE (test or test support).
+// Checks project image and fallback rendering in the browser UI.
+
 // =============================================================================
 // TESTS: project photos
 // The photo carousel and the project card keep working when a photo link expires.
@@ -21,6 +24,7 @@ const project = (url = '/expired.png') => ({ id: 2, status: 'past', name: 'Calm 
 
 beforeEach(() => { vi.resetAllMocks(); });
 
+// Check this scenario: an expired link is refreshed and a second failure offers a bounded user retry.
 test('an expired link is refreshed and a second failure offers a bounded user retry', async () => {
   const user = userEvent.setup();
   api.get.mockResolvedValueOnce({ project: project('/fresh.png') }).mockResolvedValueOnce({ project: project('/retry.png') });
@@ -38,6 +42,7 @@ test('an expired link is refreshed and a second failure offers a bounded user re
   expect(api.get).toHaveBeenCalledTimes(2);
 });
 
+// Check this scenario: retrying an identical URL with the same image ID resets its failed state.
 test('retrying an identical URL with the same image ID resets its failed state', async () => {
   const user = userEvent.setup();
   api.get.mockResolvedValue({ project: project() });
@@ -52,6 +57,7 @@ test('retrying an identical URL with the same image ID resets its failed state',
   expect(screen.queryByRole('button', { name: 'Retry photo' })).not.toBeInTheDocument();
 });
 
+// Check this scenario: a missing link and an offline refresh keep an explicit retry action.
 test('a missing link and an offline refresh keep an explicit retry action', async () => {
   const user = userEvent.setup();
   api.get.mockRejectedValueOnce(new Error('Offline')).mockResolvedValueOnce({ project: project('/fresh.png') });
@@ -62,6 +68,7 @@ test('a missing link and an offline refresh keep an explicit retry action', asyn
   await waitFor(() => expect(screen.getByAltText('Living room')).toHaveAttribute('src', '/fresh.png'));
 });
 
+// Check this scenario: a successful metadata response with missing links still offers folder retry.
 test('a successful metadata response with missing links still offers folder retry', async () => {
   api.get.mockResolvedValue({ project: project(null) });
   render(<ProjectFolderCard project={project(null)} past onView={vi.fn()} onEdit={vi.fn()} onDelete={vi.fn()} />);
@@ -69,6 +76,7 @@ test('a successful metadata response with missing links still offers folder retr
   expect(api.get).toHaveBeenCalledTimes(1);
 });
 
+// Check this scenario: a long-open viewer can recover another expired link after the cooldown.
 test('a long-open viewer can recover another expired link after the cooldown', async () => {
   const time = Date.now();
   const clock = vi.spyOn(Date, 'now').mockReturnValue(time);
@@ -82,6 +90,7 @@ test('a long-open viewer can recover another expired link after the cooldown', a
   expect(api.get).toHaveBeenCalledTimes(2);
 });
 
+// Check this scenario: leaving a viewer cancels an in-flight photo refresh.
 test('leaving a viewer cancels an in-flight photo refresh', async () => {
   let resolve;
   let signal;
@@ -93,6 +102,7 @@ test('leaving a viewer cancels an in-flight photo refresh', async () => {
   await act(async () => resolve({ project: project('/fresh.png') }));
 });
 
+// Check this scenario: folder previews refresh together and stop automatic retries on a bad object.
 test('folder previews refresh together and stop automatic retries on a bad object', async () => {
   const user = userEvent.setup();
   api.get.mockResolvedValue({ project: project('/fresh.png') });
@@ -106,6 +116,7 @@ test('folder previews refresh together and stop automatic retries on a bad objec
   await waitFor(() => expect(api.get).toHaveBeenCalledTimes(2));
 });
 
+// Check this scenario: the dashboard thumbnail and shared detail dialog both recover private links.
 test('the dashboard thumbnail and shared detail dialog both recover private links', async () => {
   api.get.mockResolvedValue({ project: project('/fresh.png') });
   const { container, unmount } = render(<RecentProjectCard project={project()} index={0} onView={vi.fn()} />);
@@ -118,6 +129,7 @@ test('the dashboard thumbnail and shared detail dialog both recover private link
   expect(api.get).toHaveBeenCalledTimes(2);
 });
 
+// Check this scenario: dashboard recent work explicitly requests edit-time order from both collections.
 test('dashboard recent work explicitly requests edit-time order from both collections', async () => {
   api.get.mockImplementation(async (path) => ({ projects: [{ ...project(), status: path.includes('current') ? 'current' : 'past', updatedAt: '2026-10-30' }], pagination: { total: 1 } }));
   render(<MemoryRouter><DesignerDashboard /></MemoryRouter>);

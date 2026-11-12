@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Lets the user load and display the selected record for the IDP category feature.
+
 // =============================================================================
 // BOUNDARY: ViewIDPCategoryPg                       (BCE: Boundary layer)
 // User story #40: As a Platform Manager, I want to view an IDP category so that
@@ -20,6 +23,7 @@ import { CategoryPanel } from './idpCategoryShared';
 
 export default function ViewIDPCategoryPg() {
   const { id, category, error, loading, retry } = useIDPCategory();
+  // Get the router function used to open the next page after an action.
   const navigate = useNavigate();
   const location = useLocation();
   return <CategoryPanel title="IDP Category">

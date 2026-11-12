@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Lets the user submit new details and show the result for the IDP category feature.
+
 // =============================================================================
 // BOUNDARY: CreateIDPCategoryPg           (BCE: Boundary layer)
 // User story #39: As a Platform Manager, I want to create an IDP category so
@@ -21,12 +24,17 @@ import { CATEGORY_FIELDS, validateCategoryInput } from './idpCategoryData';
 import { CategoryPanel } from './idpCategoryShared';
 
 export default function CreateIDPCategoryPg() {
+  // Get the router function used to open the next page after an action.
   const navigate = useNavigate();
   const { search } = useLocation();
+  // Keep this value in component state so changes trigger a render.
   const [saving, setSaving] = useState(false);
+  // Keep this value in component state so changes trigger a render.
   const [error, setError] = useState('');
+  // Keep this value in component state so changes trigger a render.
   const [errors, setErrors] = useState({});
 
+  // Update the page after the server confirms the operation.
   function displaySuccess(category) {
     navigate(`/manager/categories/${category.id}${search}`, { replace: true, state: { message: 'IDP category created.' } });
   }
@@ -46,6 +54,7 @@ export default function CreateIDPCategoryPg() {
   }
 
   async function createCategory(values) {
+    // Ignore repeated submissions while the current request is pending.
     if (saving) return;
     setError('');
     setErrors({});

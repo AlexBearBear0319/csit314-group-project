@@ -1,3 +1,6 @@
+// BCE: Control.
+// Coordinates the create request for IDP category data and delegates the operation to the entity.
+
 // =============================================================================
 // CONTROLLER: CreateIDPCategoryC          (BCE: Controller layer)
 // User story #39: As a Platform Manager, I want to create an IDP category so
@@ -31,4 +34,5 @@ class CreateIDPCategoryC {
   }
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = CreateIDPCategoryC;

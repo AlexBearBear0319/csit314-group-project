@@ -1,3 +1,6 @@
+// BCE: Outside BCE (application setup or infrastructure).
+// Starts the development processes and coordinates their shutdown.
+
 // =============================================================================
 // SCRIPT: dev.mjs (npm run dev)
 // Starts the server and the client together and stops both on Ctrl+C.

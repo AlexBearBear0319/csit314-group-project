@@ -1,3 +1,6 @@
+// BCE: Boundary (HTTP entry point).
+// Connects idpCategories HTTP requests to controller operations and translates their outcomes into responses.
+
 // =============================================================================
 // ROUTES: idpCategories.js         (the HTTP bridge, not a BCE class)
 // User stories #39-43: the Platform Manager creates, views, updates, deletes
@@ -26,4 +29,5 @@ router.get('/:id', async (req, res) => res.json(await view.viewCategory(req.para
 router.put('/:id', async (req, res) => res.json(await update.updateCategory(req.params.id, req.body))); // #41
 router.delete('/:id', async (req, res) => res.json(await remove.deleteCategory(req.params.id))); // #42
 
+// Expose this module’s entry points to its callers.
 module.exports = router;

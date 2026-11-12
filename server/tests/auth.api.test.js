@@ -1,3 +1,6 @@
+// BCE: Outside BCE (test or test support).
+// Exercises signup, login, current-session, and logout behavior through the authentication API.
+
 // =============================================================================
 // TESTS: login, logout, sign-up and sessions (#11, #12, #18, #19, #37, #38, #47, #48)
 // Login for every role, wrong password, expired session, logout, sign-up and a failed
@@ -18,6 +21,7 @@ const ROLE_NAMES = ['User Admin', 'Interior Designer', 'Customer', 'Platform Man
 let profiles;
 let accounts;
 
+// Check credentials through the account entity and create a session for a successful login.
 async function login(username, password = PASSWORD, extra = {}) {
   const client = request.agent(app);
   const response = await client
@@ -27,6 +31,7 @@ async function login(username, password = PASSWORD, extra = {}) {
   return { client, response };
 }
 
+// Validate signup, select the active role profile, and create the account and session together.
 async function register(path, values = {}) {
   return request(app)
     .post(path)
@@ -66,6 +71,7 @@ afterAll(async () => {
 });
 
 describe('account login and registration', () => {
+  // Check this scenario: signs in all four roles without a role value in the request.
   test('signs in all four roles without a role value in the request', async () => {
     for (const role of ROLE_NAMES) {
       const username = accounts[role].username;
@@ -82,12 +88,14 @@ describe('account login and registration', () => {
     }
   });
 
+  // Check this scenario: uses the saved role when a request includes a false role.
   test('uses the saved role when a request includes a false role', async () => {
     const { response } = await login(accounts.Customer.username, PASSWORD, { profile: 'User Admin' });
     expect(response.status).toBe(200);
     expect(response.body.account.role).toBe('Customer');
   });
 
+  // Check this scenario: rejects wrong and plain-text imported passwords.
   test('rejects wrong and plain-text imported passwords', async () => {
     await login(accounts.Customer.username, 'wrong password').then(({ response }) => {
       expect(response.status).toBe(401);
@@ -140,6 +148,7 @@ describe('account login and registration', () => {
     expect((await login(newAccount.username)).response.status).toBe(403);
   });
 
+  // Check this scenario: registers a customer and ignores a requested privileged role.
   test('registers a customer and ignores a requested privileged role', async () => {
     const response = await register('/api/register/customer', { role: 'User Admin' });
     expect(response.status).toBe(201);
@@ -153,6 +162,7 @@ describe('account login and registration', () => {
     expect(saved.password).not.toBe(PASSWORD);
   });
 
+  // Check this scenario: registers an interior designer and creates an authenticated session.
   test('registers an interior designer and creates an authenticated session', async () => {
     const client = request.agent(app);
     const response = await client
@@ -166,6 +176,7 @@ describe('account login and registration', () => {
     expect((await client.get('/api/session').expect(200)).body.account.role).toBe('Interior Designer');
   });
 
+  // Check this scenario: rejects duplicate user IDs and emails without changing existing accounts.
   test('rejects duplicate user IDs and emails without changing existing accounts', async () => {
     const first = await register('/api/register/customer', { username: 'same-id', email: 'same@example.com' });
     expect(first.status).toBe(201);
@@ -179,6 +190,7 @@ describe('account login and registration', () => {
     expect(await UserAccount.count({ where: { username: 'same-id' } })).toBe(1);
   });
 
+  // Check this scenario: keeps a failed registration transaction from leaving an account.
   test('keeps a failed registration transaction from leaving an account', async () => {
     jest.spyOn(UserSession, 'create').mockRejectedValueOnce(new Error('session write failed'));
     const response = await register('/api/register/customer');
@@ -186,6 +198,7 @@ describe('account login and registration', () => {
     expect(await UserAccount.count({ where: { username: 'new-person' } })).toBe(0);
   });
 
+  // Check this scenario: limits repeated login attempts.
   test('limits repeated login attempts', async () => {
     let response;
     for (let attempt = 0; attempt < 12; attempt += 1) {
@@ -196,6 +209,7 @@ describe('account login and registration', () => {
 });
 
 describe('session lifetime and password reset', () => {
+  // Check this scenario: rejects an expired session and revokes a session on logout.
   test('rejects an expired session and revokes a session on logout', async () => {
     const { client, response } = await login(accounts.Customer.username);
     expect(response.status).toBe(200);
@@ -213,6 +227,7 @@ describe('session lifetime and password reset', () => {
     await active.client.get('/api/session').expect(401);
   });
 
+  // Check this scenario: resets a password in place and removes old sessions.
   test('resets a password in place and removes old sessions', async () => {
     const { client, response } = await login(accounts.Customer.username);
     expect(response.status).toBe(200);

@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Defines the record endpoint and exposes shared loading behavior for this feature.
+
 // =============================================================================
 // BOUNDARY HELPER: userProfileData
 // Shared by the user profile pages (stories #1-5).

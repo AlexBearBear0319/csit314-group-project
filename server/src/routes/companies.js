@@ -1,3 +1,6 @@
+// BCE: Boundary (HTTP entry point).
+// Connects companies HTTP requests to controller operations and translates their outcomes into responses.
+
 // =============================================================================
 // ROUTES: companies.js             (the HTTP bridge, not a BCE class)
 // User stories #13-17: an Interior Designer creates, views, updates, deletes
@@ -29,4 +32,5 @@ router.post('/', async (req, res) => res.status(201).json(await create.createCom
 router.put('/mine', async (req, res) => res.json(await update.updateCompany(req.auth.accountId, req.body))); // #15
 router.delete('/mine', async (req, res) => res.json(await remove.deleteCompany(req.auth.accountId))); // #16
 
+// Expose this module’s entry points to its callers.
 module.exports = router;

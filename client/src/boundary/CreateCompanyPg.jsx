@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Lets the user submit new details and show the result for the company feature.
+
 // =============================================================================
 // BOUNDARY: CreateCompanyPg               (BCE: Boundary layer)
 // User story #13: As an Interior Designer, I want to create my company

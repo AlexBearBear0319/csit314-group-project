@@ -1,3 +1,6 @@
+// BCE: Control.
+// Coordinates the update request for company data and delegates the operation to the entity.
+
 // =============================================================================
 // CONTROLLER: UpdateCompanyC              (BCE: Controller layer)
 // User story #15: As an Interior Designer, I want to update my company
@@ -27,4 +30,5 @@ class UpdateCompanyC {
   }
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = UpdateCompanyC;
