@@ -90,17 +90,20 @@ class InteriorDesignProject extends Model {
   // ---------------------------------------------------------------------------
   static async deleteProject({ id, designerAccountId, status }) {
     return sequelize.transaction(async (transaction) => {
+      // Lock the project row only. PostgreSQL refuses FOR UPDATE on a query that
+      // also joins the photo tables, so we load the photos in separate queries.
       const project = await InteriorDesignProject.findOne({
         where: { id, designerAccountId, status },
-        include: [{ association: 'images' }, { association: 'uploadIntents' }],
         transaction,
         lock: transaction.LOCK?.UPDATE,
       });
       if (!project) return null;
+      const images = await ProjectImage.findAll({ where: { projectId: project.id }, transaction });
+      const intents = await IdpImageUploadIntent.findAll({ where: { projectId: project.id }, transaction });
 
       const paths = [
-        ...(project.images || []).map((image) => image.storagePath),
-        ...(project.uploadIntents || []).map((intent) => intent.storagePath),
+        ...images.map((image) => image.storagePath),
+        ...intents.map((intent) => intent.storagePath),
       ];
       await IdpImageCleanupTask.queue(paths, designerAccountId, transaction);
       await project.destroy({ transaction });

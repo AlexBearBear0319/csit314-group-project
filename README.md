@@ -81,6 +81,12 @@ Then make the database settings file:
 
 The SQL files in `database/` are numbered in the order to run them in the
 Supabase SQL Editor. This is only needed for a new, empty database.
+If deleting a project says "This record is still in use", run
+`database/07-fix-delete-cascade.sql`. It makes the database remove a project's
+photos and shortlist rows together with the project.
+`database/optional-demo-data.sql` is run last and only adds rows: about 100
+accounts, categories, companies, IDPs and shortlist items for the demo. It does
+not delete anything, so it is safe to run on a database that already has data.
 
 Check it works:
 
