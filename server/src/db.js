@@ -31,8 +31,15 @@ if (process.env.NODE_ENV === 'test') {
   if (!process.env.DATABASE_URL) {
     throw new Error('DATABASE_URL is missing. Copy .env.example to .env and fill it in.');
   }
+  // On Vercel every request can start its own copy of the server, and each copy
+  // opens its own connections. Supabase only allows a small number at once, so
+  // we keep the pool tiny there and close idle connections quickly.
+  const serverlessPool = process.env.VERCEL
+    ? { pool: { max: 2, min: 0, idle: 5000, acquire: 15000, evict: 5000 } }
+    : {};
   sequelize = new Sequelize(process.env.DATABASE_URL, {
     ...postgresOptions,
+    ...serverlessPool,
   });
 }
 
