@@ -1,3 +1,6 @@
+// BCE: Entity.
+// Defines the company model and the fields persisted for a designer company.
+
 // =============================================================================
 // ENTITY: Company                (BCE: Entity layer)
 // The company information of one Interior Designer (stories #13-17).
@@ -53,4 +56,5 @@ Company.init({
   designerAccountId: { type: DataTypes.INTEGER, allowNull: false, unique: true, field: 'designer_account_id' },
 }, { sequelize, modelName: 'Company', tableName: 'company', underscored: true });
 
+// Expose this module’s entry points to its callers.
 module.exports = Company;

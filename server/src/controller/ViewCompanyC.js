@@ -1,3 +1,6 @@
+// BCE: Control.
+// Coordinates the view request for company data and delegates the operation to the entity.
+
 // =============================================================================
 // CONTROLLER: ViewCompanyC                (BCE: Controller layer)
 // User story #14: As an Interior Designer, I want to view my company
@@ -24,4 +27,5 @@ class ViewCompanyC {
   }
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = ViewCompanyC;

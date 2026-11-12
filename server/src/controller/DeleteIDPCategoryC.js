@@ -1,3 +1,6 @@
+// BCE: Control.
+// Coordinates the delete request for IDP category data and delegates the operation to the entity.
+
 // =============================================================================
 // CONTROLLER: DeleteIDPCategoryC          (BCE: Controller layer)
 // User story #42: As a Platform Manager, I want to delete an IDP category so
@@ -36,4 +39,5 @@ class DeleteIDPCategoryC {
   }
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = DeleteIDPCategoryC;

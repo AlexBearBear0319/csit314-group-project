@@ -1,3 +1,6 @@
+// BCE: Control.
+// Coordinates the view request for IDP category data and delegates the operation to the entity.
+
 // =============================================================================
 // CONTROLLER: ViewIDPCategoryC            (BCE: Controller layer)
 // User story #40: As a Platform Manager, I want to view an IDP category so
@@ -26,4 +29,5 @@ class ViewIDPCategoryC {
   }
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = ViewIDPCategoryC;

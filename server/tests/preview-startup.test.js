@@ -1,3 +1,6 @@
+// BCE: Outside BCE (test or test support).
+// Checks startup behavior under preview configuration.
+
 // =============================================================================
 // TESTS: startup
 // The app starts for a Vercel Preview without a database URL, and Production still
@@ -21,6 +24,7 @@ afterAll(() => {
   }
 });
 
+// Check this scenario: Vercel Preview starts without a database URL and serves API health.
 test('Vercel Preview starts without a database URL and serves API health', async () => {
   process.env.NODE_ENV = 'production';
   process.env.VERCEL_ENV = 'preview';
@@ -42,6 +46,7 @@ test('Vercel Preview starts without a database URL and serves API health', async
   }
 });
 
+// Check this scenario: Production still requires DATABASE_URL.
 test('Production still requires DATABASE_URL', () => {
   process.env.NODE_ENV = 'production';
   process.env.VERCEL_ENV = 'production';

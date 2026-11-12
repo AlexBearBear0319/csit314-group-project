@@ -1,3 +1,6 @@
+// BCE: Outside BCE (application setup or infrastructure).
+// Checks account and profile role data and reports records requiring attention.
+
 // =============================================================================
 // SCRIPT: auditAccountRoles.js (npm run auth:audit)
 // Read-only check of the database. Lists accounts with a missing or unknown role, a

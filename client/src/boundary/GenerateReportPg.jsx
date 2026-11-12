@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Collects report options, requests report data, and renders the returned report.
+
 // =============================================================================
 // BOUNDARY: GenerateReportPg              (BCE: Boundary layer)
 // User stories #44, #45, #46: As a Platform Manager, I want to generate a daily,

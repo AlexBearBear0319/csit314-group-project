@@ -1,3 +1,6 @@
+// BCE: Outside BCE (application setup or infrastructure).
+// Finds project image objects eligible for cleanup and delegates removal to the storage adapter.
+
 // =============================================================================
 // SCRIPT: cleanupIdpStorage.js (npm run storage:cleanup)
 // Removes photo files that are still in storage after a failed delete, and old upload
@@ -69,4 +72,5 @@ if (require.main === module) {
   })();
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = cleanupIdpStorage;

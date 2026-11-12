@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Lets the user load and display the selected record for the company feature.
+
 // =============================================================================
 // BOUNDARY: ViewCompanyPg                           (BCE: Boundary layer)
 // User story #14: As an Interior Designer, I want to view my company
@@ -22,6 +25,7 @@ import {useCompany} from './companyData';
 import DeleteCompanyPg from './DeleteCompanyPg';
 export default function ViewCompanyPg(){
   const {company,error,loading,retry}=useCompany();
+  // Get the router function used to open the next page after an action.
   const location=useLocation(),navigate=useNavigate();
   // displaySuccess: show the company details and its action buttons.
   function displaySuccess(){

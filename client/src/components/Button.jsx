@@ -1,3 +1,6 @@
+// BCE: Boundary (shared UI component).
+// Renders a button or link using shared styles and reflects pending or disabled state.
+
 // =============================================================================
 // COMPONENT: Button
 // The one button style used on every page (variants, sizes, loading spinner).
@@ -41,6 +44,7 @@ export default function Button({
   const variantClass = VARIANTS[variant] || VARIANTS.secondary;
   const sizeClass = SIZES[size] || SIZES.md;
 
+  // Render the page layout and connect its controls to the state and handlers above.
   return (
     <button
       {...props}

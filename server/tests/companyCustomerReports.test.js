@@ -1,3 +1,6 @@
+// BCE: Outside BCE (test or test support).
+// Exercises the customer-facing project features covered by these fixtures.
+
 // =============================================================================
 // TESTS: company (#13-17), customer browsing (#32, #33) and reports (#44-46)
 // Company CRUD for the session owner, customer search and view counts, and the report
@@ -11,6 +14,7 @@ const { sequelize, Company, InteriorDesignProject, UserAccount } = require('../s
 const { featureSession } = require('./helpers/featureSession');
 beforeEach(async () => { await sequelize.sync({ force: true }); });
 afterAll(async () => { await sequelize.close(); });
+// Check this scenario: company CRUD and literal search use only the session owner.
 test('company CRUD and literal search use only the session owner', async () => {
  const { client, account } = await featureSession('Interior Designer','owner');
  const { client: other, account: otherAccount } = await featureSession('Interior Designer','other');
@@ -28,6 +32,7 @@ test('company CRUD and literal search use only the session owner', async () => {
  expect((await client.delete('/api/companies/mine')).status).toBe(200);
  expect(await Company.count()).toBe(0);
 });
+// Check this scenario: company validation preserves saved data; role and CSRF checks protect writes.
 test('company validation preserves saved data; role and CSRF checks protect writes', async () => {
  const {client,agent} = await featureSession('Interior Designer');
  expect((await client.post('/api/companies').send({name:'Original'})).status).toBe(201);
@@ -41,6 +46,7 @@ test('company validation preserves saved data; role and CSRF checks protect writ
  expect((await customer.get('/api/companies')).status).toBe(403);
  expect((await request(app).get('/api/companies')).status).toBe(401);
 });
+// Check this scenario: customer browse paginates, searches literal text, and counts only successful detail opens.
 test('customer browse paginates, searches literal text, and counts only successful detail opens', async () => {
  const {account} = await featureSession('Interior Designer','designer');
  const {client} = await featureSession('Customer','customer');
@@ -61,6 +67,7 @@ test('customer browse paginates, searches literal text, and counts only successf
  expect((await client.get('/api/customer/idps')).body.total).toBe(0);
  expect((await client.post('/api/customer/idps/'+projects[0].id+'/view').send({})).status).toBe(404);
 });
+// Check this scenario: customer view writes require CSRF and customer role.
 test('customer view writes require CSRF and customer role', async () => {
  const {client,agent} = await featureSession('Customer');
  expect((await agent.post('/api/customer/idps/1/view').set('Origin','http://localhost:5173').send({})).status).toBe(403);
@@ -68,6 +75,7 @@ test('customer view writes require CSRF and customer role', async () => {
  const {client: designer} = await featureSession('Interior Designer','designer');
  expect((await designer.get('/api/customer/idps')).status).toBe(403);
 });
+// Check this scenario: daily reports count records created inside Singapore calendar bounds only.
 test('daily reports count records created inside Singapore calendar bounds only', async () => {
  const {client} = await featureSession('Platform Manager','manager');
  const {account} = await featureSession('Interior Designer','designer');
@@ -82,6 +90,7 @@ test('daily reports count records created inside Singapore calendar bounds only'
  expect(res.body).toMatchObject({timezone:'Asia/Singapore',start:'2026-10-29T16:00:00.000Z',endExclusive:'2026-10-30T16:00:00.000Z'});
  expect(res.body.counts).toMatchObject({companies:0,projects:2,currentProjects:1,pastProjects:1});
 });
+// Check this scenario: weekly and monthly report boundaries handle year crossover and leap February.
 test('weekly and monthly report boundaries handle year crossover and leap February', async () => {
  const {client} = await featureSession('Platform Manager');
  let res = await client.get('/api/reports').query({period:'weekly',date:'2026-01-01'});

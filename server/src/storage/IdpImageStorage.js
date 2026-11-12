@@ -1,3 +1,6 @@
+// BCE: Outside BCE (application setup or infrastructure).
+// Connects project image operations to object storage, including signed URLs, verification, readiness, and deletion.
+
 // =============================================================================
 // STORAGE: IdpImageStorage
 // The only file that talks to Supabase Storage (where the project photos live).
@@ -10,14 +13,17 @@ const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_CONTENT_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 let testAdapter = null;
 
+// Resolve the configured bucket name.
 function bucketName() {
   return process.env.SUPABASE_STORAGE_BUCKET || 'designer-idp-images';
 }
 
+// Check whether the required storage settings are available.
 function isStorageConfigured() {
   return Boolean(process.env.SUPABASE_URL && process.env.SUPABASE_SECRET_KEY);
 }
 
+// Read the storage endpoint and credentials needed by the adapter.
 function storageConfig() {
   if (testAdapter) return testAdapter;
   const url = process.env.SUPABASE_URL;
@@ -26,18 +32,22 @@ function storageConfig() {
   return { url: url.replace(/\/$/, ''), secretKey };
 }
 
+// Install a substitute storage adapter for tests.
 function setStorageAdapterForTests(adapter) {
   testAdapter = adapter;
 }
 
+// Encode path segments for use in object storage URLs.
 function encodeStoragePath(value) {
   return String(value).split('/').map(encodeURIComponent).join('/');
 }
 
+// Build the headers for requests to the storage provider.
 function requestHeaders(secretKey) {
   return { apikey: secretKey };
 }
 
+// Call the storage provider and handle an unsuccessful response.
 async function storageRequest(endpoint, secretKey, options = {}) {
   let response;
   try {
@@ -54,6 +64,7 @@ async function storageRequest(endpoint, secretKey, options = {}) {
   return response;
 }
 
+// Read image bytes within the size limit before verifying the image type.
 async function readBoundedImage(response) {
   const declaredSize = Number(response.headers.get('content-length'));
   if (Number.isFinite(declaredSize) && declaredSize > MAX_IMAGE_SIZE_BYTES) {
@@ -77,6 +88,7 @@ async function readBoundedImage(response) {
   return Buffer.concat(chunks, sizeBytes);
 }
 
+// Identify the image format from the byte signature.
 function detectImageType(bytes) {
   if (bytes.length >= 3 && bytes[0] === 0xff && bytes[1] === 0xd8 && bytes[2] === 0xff) return 'image/jpeg';
   if (bytes.length >= 8 && bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47) return 'image/png';
@@ -86,6 +98,7 @@ function detectImageType(bytes) {
   return null;
 }
 
+// Request a signed URL for uploading to the specified object path.
 async function createSignedUploadUrl(path) {
   const config = storageConfig();
   if (testAdapter) return testAdapter.createSignedUploadUrl(path);
@@ -103,6 +116,7 @@ async function createSignedUploadUrl(path) {
   return { token, path, signedUrl };
 }
 
+// Read the stored object and verify its image format.
 async function verifyObject(path) {
   const config = storageConfig();
   if (testAdapter) return testAdapter.verifyObject(path);
@@ -115,6 +129,7 @@ async function verifyObject(path) {
   return { contentType, sizeBytes: bytes.byteLength };
 }
 
+// Request a signed URL for reading the specified object.
 async function createSignedReadUrl(path) {
   const config = storageConfig();
   if (testAdapter) return testAdapter.createSignedReadUrl(path);
@@ -134,6 +149,7 @@ async function createSignedReadUrl(path) {
     : `${config.url}/storage/v1${signedPath}`;
 }
 
+// Check whether the image bucket can be reached.
 async function checkStorageReady() {
   if (testAdapter) {
     return typeof testAdapter.checkReady === 'function' ? Boolean(await testAdapter.checkReady()) : true;
@@ -151,6 +167,7 @@ async function checkStorageReady() {
     && [...ALLOWED_CONTENT_TYPES].every((contentType) => allowedTypes.includes(contentType));
 }
 
+// Remove the specified image objects through the storage adapter.
 async function removeObjects(paths) {
   const uniquePaths = [...new Set(paths)];
   if (uniquePaths.length === 0) return { removed: [], failed: [] };
@@ -170,6 +187,7 @@ async function removeObjects(paths) {
   }
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = {
   ALLOWED_CONTENT_TYPES,
   MAX_IMAGE_SIZE_BYTES,

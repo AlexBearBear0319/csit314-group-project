@@ -1,3 +1,6 @@
+// BCE: Boundary (shared UI component).
+// Opens a modal before a consequential action, manages focus, and displays failures from the confirmed request.
+
 // =============================================================================
 // COMPONENT: ConfirmAction
 // A button that opens a "Are you sure?" pop-up before a delete or suspend. If the server
@@ -14,12 +17,16 @@ export default function ConfirmAction({ title, description, label, disabled = fa
   const pending = useRef(false);
   const titleId = useId();
   const descriptionId = useId();
+  // Keep this value in component state so changes trigger a render.
   const [saving, setSaving] = useState(false);
+  // Keep this value in component state so changes trigger a render.
   const [error, setError] = useState('');
 
+  // Run the action after confirmation and manage its pending and error states.
   async function confirm() {
     if (pending.current) return;
     pending.current = true;
+    // Mark the request as pending and clear errors from the previous attempt.
     setSaving(true); setError('');
     try { await onConfirm(); }
     catch (failure) { setError(failure.message); }

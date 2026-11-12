@@ -1,3 +1,6 @@
+// BCE: Control.
+// Coordinates the create request for company data and delegates the operation to the entity.
+
 // =============================================================================
 // CONTROLLER: CreateCompanyC              (BCE: Controller layer)
 // User story #13: As an Interior Designer, I want to create my company
@@ -33,4 +36,5 @@ class CreateCompanyC {
   }
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = CreateCompanyC;

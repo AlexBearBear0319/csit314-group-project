@@ -1,3 +1,6 @@
+// BCE: Control.
+// Validates and normalizes idp category inputs before a controller uses them.
+
 // =============================================================================
 // CONTROLLER HELPER: idpCategoryValidation
 // Input rules for the IDP category stories (#39 create and #41 update), plus
@@ -35,4 +38,5 @@ function categoryId(id) {
   return Number(id);
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = { categoryFields, categoryId };

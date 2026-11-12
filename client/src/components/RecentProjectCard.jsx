@@ -1,3 +1,6 @@
+// BCE: Boundary (shared UI component).
+// Presents a project summary with its photo and navigation link.
+
 // =============================================================================
 // COMPONENT: RecentProjectCard
 // A project card on the designer dashboard, with the first photo.

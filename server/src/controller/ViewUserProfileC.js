@@ -1,3 +1,6 @@
+// BCE: Control.
+// Coordinates the view request for user profile data and delegates the operation to the entity.
+
 // =============================================================================
 // CONTROLLER: ViewUserProfileC            (BCE: Controller layer)
 // User story #2: As a User Admin, I want to view a user profile so that I can
@@ -26,4 +29,5 @@ class ViewUserProfileC {
   }
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = ViewUserProfileC;

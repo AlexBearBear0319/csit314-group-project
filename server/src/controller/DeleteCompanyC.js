@@ -1,3 +1,6 @@
+// BCE: Control.
+// Coordinates the delete request for company data and delegates the operation to the entity.
+
 // =============================================================================
 // CONTROLLER: DeleteCompanyC              (BCE: Controller layer)
 // User story #16: As an Interior Designer, I want to delete my company
@@ -24,4 +27,5 @@ class DeleteCompanyC {
   }
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = DeleteCompanyC;

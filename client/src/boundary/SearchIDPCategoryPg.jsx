@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Lets the user apply a keyword and display matching records for the IDP category feature.
+
 // =============================================================================
 // BOUNDARY: SearchIDPCategoryPg                     (BCE: Boundary layer)
 // User story #43: As a Platform Manager, I want to search for IDP categories
@@ -22,6 +25,7 @@ import { RecordLoadState } from '../components/RecordPanel';
 import useRecordSearch from '../hooks/useRecordSearch';
 
 export default function SearchIDPCategoryPg() {
+  // Get the router function used to open the next page after an action.
   const navigate = useNavigate();
   const location = useLocation();
   const { keyword, rows, error, loading, search, retry } = useRecordSearch('/idp-categories');

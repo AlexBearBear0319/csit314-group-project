@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Lets the user confirm deletion and report the outcome for the company feature.
+
 // =============================================================================
 // BOUNDARY: DeleteCompanyPg                         (BCE: Boundary layer)
 // User story #16: As an Interior Designer, I want to delete my company
@@ -17,7 +20,9 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import ConfirmAction from '../components/ConfirmAction';
 export default function DeleteCompanyPg({company}) {
+  // Get the router function used to open the next page after an action.
   const navigate=useNavigate();
+  // Update the page after the server confirms the operation.
   function displaySuccess(){navigate('/designer/company',{replace:true,state:{message:'Company deleted.'}});}
   // displayError: pass the message to the confirmation dialog, which shows it.
   function displayError(failure){throw failure;}

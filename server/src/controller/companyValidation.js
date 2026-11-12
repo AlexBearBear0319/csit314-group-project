@@ -1,3 +1,6 @@
+// BCE: Control.
+// Validates and normalizes company inputs before a controller uses them.
+
 // =============================================================================
 // CONTROLLER HELPER: companyValidation
 // Input rules for the company stories (#13 create and #15 update) and for the
@@ -34,4 +37,5 @@ function keyword(value = '') {
   return value;
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = { companyFields, keyword };

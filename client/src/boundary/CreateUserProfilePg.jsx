@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Lets the user submit new details and show the result for the user profile feature.
+
 // =============================================================================
 // BOUNDARY: CreateUserProfilePg           (BCE: Boundary layer)
 // User story #1: As a User Admin, I want to create a user profile so that I can
@@ -21,13 +24,16 @@ import { ProfilePanel } from './userProfileShared';
 import { PROFILE_FIELDS, validateProfileInput } from './userProfileData';
 
 export default function CreateUserProfilePg() {
+  // Get the router function used to open the next page after an action.
   const navigate = useNavigate();
   const { search } = useLocation();
+  // Keep this value in component state so changes trigger a render.
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(''); // red message at the top
   const [errors, setErrors] = useState({}); // messages under each box
 
   // Step 4: the profile was saved.
+  // Update the page after the server confirms the operation.
   function displaySuccess(profile) {
     navigate(`/admin/profiles/${profile.id}${search}`, { replace: true, state: { message: 'User profile created.' } });
   }
@@ -50,6 +56,7 @@ export default function CreateUserProfilePg() {
 
   // Step 3: send the form to the controller.
   async function createProfile(values) {
+    // Ignore repeated submissions while the current request is pending.
     if (saving) return;
     setError('');
     setErrors({});
@@ -65,6 +72,7 @@ export default function CreateUserProfilePg() {
     }
   }
 
+  // Render the page layout and connect its controls to the state and handlers above.
   return (
     <ProfilePanel title="Create User Profile">
       <Message type="error" text={error} />

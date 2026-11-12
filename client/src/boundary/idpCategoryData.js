@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Defines the record endpoint and exposes shared loading behavior for this feature.
+
 // =============================================================================
 // BOUNDARY HELPER: idpCategoryData
 // Shared by the IDP category pages (stories #39-43).

@@ -1,3 +1,6 @@
+// BCE: Outside BCE (HTTP middleware).
+// Resolves the session from the request and attaches verified account context for protected routes.
+
 // =============================================================================
 // MIDDLEWARE: authenticateSession
 // Three small checks that run BEFORE a route reaches its controller. routes/
@@ -22,6 +25,7 @@ const verifySession = new VerifySessionC();
 
 // Reads our session cookie out of the Cookie header. Returns null if missing.
 function cookieToken(req) {
+  // Read the cookie header before looking up the application session cookie.
   const header = req.get('Cookie') || '';
   const item = header.split(';').map((part) => part.trim()).find((part) => part.startsWith(`${COOKIE_NAME}=`));
   if (!item) return null;
@@ -54,6 +58,7 @@ function requireRole(role) {
 }
 
 function requireCsrf(req, res, next) {
+  // Apply the CSRF token check to requests that can change server state.
   if (!['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method)) return next();
   const supplied = req.get('X-CSRF-Token') || '';
   const expected = req.userSession?.csrfToken || '';
@@ -61,6 +66,7 @@ function requireCsrf(req, res, next) {
   const expectedBytes = Buffer.from(expected);
   // timingSafeEqual compares in constant time, so the response time cannot
   // be used to guess the token.
+  // Reject a missing or mismatched token and compare equal-length tokens in constant time.
   if (!expected || suppliedBytes.length !== expectedBytes.length || !crypto.timingSafeEqual(suppliedBytes, expectedBytes)) {
     return res.status(403).json({ message: 'Refresh the page and try again.' });
   }

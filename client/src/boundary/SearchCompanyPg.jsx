@@ -1,3 +1,6 @@
+// BCE: Boundary.
+// Lets the user apply a keyword and display matching records for the company feature.
+
 // =============================================================================
 // BOUNDARY: SearchCompanyPg                         (BCE: Boundary layer)
 // User story #17: As an Interior Designer, I want to search my company
@@ -19,6 +22,7 @@ import ResultsTable from '../components/ResultsTable';
 import { RecordLoadState } from '../components/RecordPanel';
 import useRecordSearch from '../hooks/useRecordSearch';
 export default function SearchCompanyPg() {
+  // Get the router function used to open the next page after an action.
   const navigate=useNavigate(), location=useLocation();
   const {keyword,rows,error,loading,search,retry}=useRecordSearch('/companies');
   // displaySuccess: show the matching companies in the table.

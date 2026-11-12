@@ -1,3 +1,6 @@
+// BCE: Control.
+// Coordinates the search request for user profile data and delegates the operation to the entity.
+
 // =============================================================================
 // CONTROLLER: SearchUserProfileC          (BCE: Controller layer)
 // User story #5: As a User Admin, I want to search for user profiles so that I
@@ -23,4 +26,5 @@ class SearchUserProfileC {
   }
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = SearchUserProfileC;

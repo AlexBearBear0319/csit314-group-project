@@ -1,3 +1,6 @@
+// BCE: Control.
+// Coordinates the update request for user profile data and delegates the operation to the entity.
+
 // =============================================================================
 // CONTROLLER: UpdateUserProfileC          (BCE: Controller layer)
 // User story #3: As a User Admin, I want to update a user profile so that its
@@ -37,4 +40,5 @@ class UpdateUserProfileC {
   }
 }
 
+// Expose this module’s entry points to its callers.
 module.exports = UpdateUserProfileC;

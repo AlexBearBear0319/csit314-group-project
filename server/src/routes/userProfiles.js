@@ -1,3 +1,6 @@
+// BCE: Boundary (HTTP entry point).
+// Connects userProfiles HTTP requests to controller operations and translates their outcomes into responses.
+
 // =============================================================================
 // ROUTES: userProfiles.js          (the HTTP bridge, not a BCE class)
 // User stories #1-5: the User Admin creates, views, updates, suspends and
@@ -27,4 +30,5 @@ router.put('/:id', async (req, res) => res.json(await update.updateProfile(req.p
 router.post('/:id/suspend', async (req, res) => res.json(await suspend.suspendProfile(req.params.id))); // #4
 router.post('/:id/activate', async (req, res) => res.json(await suspend.activateProfile(req.params.id))); // #4 alternative flow
 
+// Expose this module’s entry points to its callers.
 module.exports = router;

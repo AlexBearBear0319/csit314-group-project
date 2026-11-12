@@ -1,3 +1,6 @@
+// BCE: Outside BCE (application setup or infrastructure).
+// Mounts the React application in the HTML root and loads the global styles.
+
 // =============================================================================
 // ENTRY: main.jsx
 // Starts the React website. It draws <App /> inside the browser router, so the
