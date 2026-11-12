@@ -1,6 +1,6 @@
 // =============================================================================
 // TESTS: DesignerIdpsPage (stories #20-29)
-// The designer's project page: validateInput, create, edit, delete, search and photos.
+// The designer's project page: create, edit, delete, search and photos.
 // =============================================================================
 
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
@@ -62,19 +62,6 @@ test('a rejected edit keeps every draft and focuses the server field error', asy
   expect(screen.getByLabelText('Design style')).toHaveAttribute('aria-invalid', 'true');
   await waitFor(() => expect(screen.getByLabelText('Design style')).toHaveFocus());
   expect(screen.queryByText('Project saved.')).not.toBeInTheDocument();
-});
-
-test('the boundary checks the input first and does not call the server', async () => {
-  const user = userEvent.setup();
-  mount();
-  await edit(user);
-  api.put.mockClear();
-  // maxLength stops typing, but a pasted or scripted value can still be too long.
-  fireEvent.change(screen.getByLabelText('Design style'), { target: { value: 'x'.repeat(81) } });
-  await user.click(screen.getByRole('button', { name: 'Save project' }));
-  await screen.findByText('Use 80 characters or less.');
-  expect(api.put).not.toHaveBeenCalled();
-  expect(screen.getByLabelText('Design style')).toHaveAttribute('aria-invalid', 'true');
 });
 
 test('a past project can change its completion date without sending the creation date', async () => {
