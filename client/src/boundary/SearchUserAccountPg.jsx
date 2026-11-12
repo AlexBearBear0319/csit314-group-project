@@ -35,7 +35,7 @@ import { useCallback, useEffect, useState } from 'react';
 //   useLocation - tells us about the current page, including messages
 //                 that the previous page passed along
 import { useLocation, useNavigate } from 'react-router-dom';
-// api - Alex's helper for calling the backend. It adds the login cookie and
+// api - our helper for calling the backend. It adds the login cookie and
 // the CSRF token, and turns error replies into an error with .message.
 import { api } from '../api';
 // Shared components (reusable pieces of page that the team already built):
@@ -84,7 +84,7 @@ export default function SearchUserAccountPg() {
   const [suspendTarget, setSuspendTarget] = useState(null); // the account in the Suspend pop-up; null = pop-up closed
 
   // ---------------------------------------------------------------------------
-  // FUNCTION: displaySuccess (name from Mr Chew's design)
+  // FUNCTION: displaySuccess (name from our design)
   // WHAT IT DOES: puts the loaded accounts into the table.
   // useCallback(fn, []) gives back the SAME function on every redraw.
   // Without it, a new function would be made each redraw, and the useEffect
@@ -97,7 +97,7 @@ export default function SearchUserAccountPg() {
   }, []);
 
   // ---------------------------------------------------------------------------
-  // FUNCTION: displayError (name from Mr Chew's design)
+  // FUNCTION: displayError (name from our design)
   // WHAT IT DOES: shows a red message when the list could not load.
   // ---------------------------------------------------------------------------
   const displayError = useCallback((message) => {

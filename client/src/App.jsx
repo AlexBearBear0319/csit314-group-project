@@ -1,3 +1,10 @@
+// =============================================================================
+// ROUTES: App.jsx
+// The map of the website: which address shows which Boundary page.
+// Each role has its own group of addresses, and <RequireRole> sends anyone who is
+// not logged in with that role away before the page loads.
+// =============================================================================
+
 import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import Layout from './layout/Layout';
@@ -16,7 +23,7 @@ import SearchCompanyPg from './boundary/SearchCompanyPg';
 import CreateCompanyPg from './boundary/CreateCompanyPg';
 import ViewCompanyPg from './boundary/ViewCompanyPg';
 import UpdateCompanyPg from './boundary/UpdateCompanyPg';
-import IDPManagementPage from './boundary/IDPManagementPage';
+import IDPManagementPage from './boundary/IDPManagementPage'; // #32, #33
 import GenerateReportPg from './boundary/GenerateReportPg';
 import SearchUserProfilePg from './boundary/SearchUserProfilePg';
 import CreateUserProfilePg from './boundary/CreateUserProfilePg';

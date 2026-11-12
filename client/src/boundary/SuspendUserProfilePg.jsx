@@ -1,4 +1,17 @@
-﻿import { useLocation, useNavigate } from 'react-router-dom';
+// =============================================================================
+// BOUNDARY: SuspendUserProfilePg                    (BCE: Boundary layer)
+// User story #4: As a User Admin, I want to suspend a user profile so that
+// users of that type can no longer log in.
+//
+// What this page does (the steps of our sequence diagram):
+//   1. loads the profile (GET /api/user-profiles/:id) and shows its name and status
+//   2. the admin taps "Suspend profile" and a pop-up asks them to confirm
+//   3. suspendProfile()         sends the request to SuspendUserProfileC
+//                               (POST /api/user-profiles/:id/suspend)
+//   4. displaySuccess()         suspended: open the profile page
+// =============================================================================
+
+import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import ConfirmAction from '../components/ConfirmAction';
 import { ProfilePanel, ProfileLoadState } from './userProfileShared';

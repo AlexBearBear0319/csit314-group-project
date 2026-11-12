@@ -1,10 +1,15 @@
+// =============================================================================
+// TESTS: login, logout, sign-up and sessions (#11, #12, #18, #19, #37, #38, #47, #48)
+// Login for every role, wrong password, expired session, logout, sign-up and a failed
+// sign-up that must not leave an account behind, rate limits, and a password reset.
+// =============================================================================
+
 const bcrypt = require('bcryptjs');
 const request = require('supertest');
 const app = require('../src/app');
 const { sequelize, UserProfile, UserAccount, UserSession } = require('../src/entity');
-const SessionController = require('../src/controller/SessionController');
 const { resetRateLimitsForTests } = require('../src/middleware/rateLimit');
-const { resetAccountPassword } = require('../src/accountProvisioning');
+const { resetAccountPassword } = require('../scripts/accountProvisioning');
 
 const ORIGIN = 'http://localhost:5173';
 const PASSWORD = 'a test password with enough length';
@@ -175,7 +180,7 @@ describe('account login and registration', () => {
   });
 
   test('keeps a failed registration transaction from leaving an account', async () => {
-    jest.spyOn(SessionController, 'createSession').mockRejectedValueOnce(new Error('session write failed'));
+    jest.spyOn(UserSession, 'create').mockRejectedValueOnce(new Error('session write failed'));
     const response = await register('/api/register/customer');
     expect(response.status).toBe(500);
     expect(await UserAccount.count({ where: { username: 'new-person' } })).toBe(0);

@@ -1,3 +1,10 @@
+// =============================================================================
+// HELPER: session.js
+// Remembers who is logged in, on the page side. It asks the server (GET /api/session)
+// when the website loads, keeps the user and CSRF token, and logs the user out when
+// the server says the session has ended. homeForRole() gives the home address of a role.
+// =============================================================================
+
 import { useSyncExternalStore } from 'react';
 import { ApiError, api, setCsrfToken, setUnauthorizedHandler } from './api';
 

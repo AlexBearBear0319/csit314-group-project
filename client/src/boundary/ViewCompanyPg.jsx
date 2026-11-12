@@ -1,3 +1,18 @@
+// =============================================================================
+// BOUNDARY: ViewCompanyPg                           (BCE: Boundary layer)
+// User story #14: As an Interior Designer, I want to view my company
+// information so that I can check its details.
+//
+// It also has the buttons for Update (#15, UpdateCompanyPg) and Delete (#16,
+// DeleteCompanyPg).
+//
+// What this page does (the steps of our sequence diagram):
+//   1. useCompany() loads the designer's company (GET /api/companies/mine)
+//      from ViewCompanyC
+//   2. displaySuccess()         shows the details and the buttons
+//      displayError()           shows the message, with a "Try again" button
+// =============================================================================
+
 import { useLocation,useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
 import DetailsView from '../components/DetailsView';

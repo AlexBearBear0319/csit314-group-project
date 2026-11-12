@@ -1,3 +1,8 @@
+// =============================================================================
+// COMPONENT: Button
+// The one button style used on every page (variants, sizes, loading spinner).
+// =============================================================================
+
 const VARIANTS = {
   primary: 'border-transparent bg-action text-white hover:bg-action-hover',
   secondary: 'border-border bg-surface text-ink hover:bg-surface-hover',

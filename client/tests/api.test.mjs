@@ -1,3 +1,8 @@
+// =============================================================================
+// TESTS: api.js
+// Checks the fetch wrapper: CSRF token on changes, timeouts, errors and cancelled requests.
+// =============================================================================
+
 import assert from 'node:assert/strict';
 import { readFile } from 'node:fs/promises';
 import { afterEach, test } from 'node:test';

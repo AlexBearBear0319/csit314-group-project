@@ -1,198 +1,123 @@
 // =============================================================================
-// CONTROLLER HELPER: userAccountValidation.js
-// Shared input checks used by the 5 user account controllers (#6-10).
+// CONTROLLER HELPER: userAccountValidation
+// Input rules for the user account stories (#6 create and #8 update).
 //
-// Why a separate file? Create (#6) and Update (#8) check the same fields.
-// Writing the rules once here means they can never get out of sync.
+// Why is there a check here when the page already checks the input?
+//   The Boundary (CreateUserAccountPg / UpdateUserAccountPg) checks first, so
+//   the User Admin sees a message straight away. We check again here because
+//   anyone can call the API without our page (for example from a test tool),
+//   and the database must never receive unchecked data.
 //
-// The rules match customer and designer sign-up in SessionController.js
-// (Alex's code), so an account made by a User Admin follows the same rules as
-// one made through sign-up.
+// The rules are the same as sign-up (RegisterAccountC), so an account made by
+// a User Admin follows the same rules as one made through sign-up.
 //
-// This file exports 3 things:
-//   RequestError  - an error that carries an HTTP status code
-//   accountId     - turns the ID from the URL into a number
-//   accountValues - checks and cleans the fields from the request body
+// This file has no database code. Checks that need the database (does this
+// profile exist? is this user ID taken?) are done in the controller.
 // =============================================================================
 
-// We need UserProfile (an entity) to check that the chosen profile exists.
-// Controllers may call entities; that is the Controller -> Entity arrow in BCE.
-const { UserProfile } = require('../entity');
-
-// =============================================================================
-// SECTION: THE RULES
-// A "regular expression" (regex) is a pattern for checking text.
-// =============================================================================
+const RequestError = require('./RequestError');
 
 // Email: some text, then @, then some text, then a dot, then some text.
-//   ^ start of text   [^\s@]+ one or more characters that are not a space or @
-//   \. a real dot      $ end of text
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 // User ID: 3 to 64 characters, only letters, numbers, dot, underscore, hyphen.
-//   [a-zA-Z0-9._-] the allowed characters   {3,64} between 3 and 64 of them
 const USERNAME_PATTERN = /^[a-zA-Z0-9._-]{3,64}$/;
 
-// Password length rules. bcrypt (the password scrambler) only reads the first
-// 72 bytes, so anything longer would be silently cut off. We reject it instead.
-const PASSWORD_MIN_LENGTH = 12; // the shortest password allowed
-const PASSWORD_MAX_BYTES = 72; // the longest password allowed
+// bcrypt (the password scrambler) only reads the first 72 bytes. A longer
+// password would be cut off silently, so we refuse it instead.
+const PASSWORD_MIN_LENGTH = 12;
+const PASSWORD_MAX_BYTES = 72;
 
-// =============================================================================
-// CLASS: RequestError
-// WHAT IT DOES: a normal JavaScript Error only has a message. This one also has:
-//   status - the HTTP status code to send (400, 404, 409)
-//   errors - optional { fieldName: 'message' } list, so the page can show each
-//            message next to the right box
-// "class X extends Error" means: RequestError is a kind of Error with extras.
-// When a controller "throw"s one, the error handler at the bottom of
-// routes/userAccounts.js reads error.status and sends it to the browser.
-// =============================================================================
-class RequestError extends Error {
-  // constructor runs when you write: new RequestError(409, 'message', {...})
-  constructor(status, message, errors) {
-    super(message); // let the built-in Error class store the message
-    this.status = status; // save the status code on the new error
-    this.errors = errors; // save the per-field messages on the new error
-  } // End of constructor.
-} // End of RequestError.
-
-// =============================================================================
-// FUNCTION: accountId
-// WHAT IT DOES: the ID in the URL (/user-accounts/5) arrives as text: "5".
-// This turns it into a number and makes sure it is a real ID (a whole number
-// from 1 up). "abc", "1.5" or "-3" can never match an account, so it answers
-// 404 Not Found.
-// RECEIVES: value = the ID as text.
-// GIVES BACK: the ID as a number.
-// =============================================================================
+// -----------------------------------------------------------------------------
+// accountId
+// The ID in the web address (/user-accounts/5) arrives as text. This turns it
+// into a number. "abc", "1.5" or "-3" can never match an account, so we answer
+// 404 Not Found straight away.
+// -----------------------------------------------------------------------------
 function accountId(value) {
-  const id = Number(value); // "5" -> 5,  "abc" -> NaN (Not a Number)
-  // ! means "not" and || means "or". Stop if it is not a whole number, or is below 1.
+  const id = Number(value);
   if (!Number.isInteger(id) || id < 1) throw new RequestError(404, 'User account not found.');
-  return id; // the ID is good, so hand it back
-} // End of accountId.
+  return id;
+}
 
-// =============================================================================
-// FUNCTION: accountValues
-// WHAT IT DOES: checks every field in body and returns a clean copy (trimmed,
-// lowercased). If ANY field is wrong, it throws ONE 400 error listing ALL the
-// problems, so the user can fix everything in one go.
-//
-// RECEIVES:
-//   body    - the JSON the browser sent. "= {}" means: use an empty object if
-//             nothing was sent, so body.username does not crash.
-//   partial - false for Create (#6): every field is required.
-//             true for Update (#8): only check the fields that were sent.
-//   { partial = false } = {} is "destructuring with defaults": it reads the
-//   partial setting from the second argument, or uses false if not given.
-//
-// GIVES BACK: the clean values.
-//
-// "async" because checking the profile needs the database (it takes time).
-// =============================================================================
-async function accountValues(body = {}, { partial = false } = {}) {
-  const values = {}; // the clean values we will return
-  const errors = {}; // fieldName -> problem message
-
-  // Small helper: was this field actually sent with a value?
-  // (field) => ... is an "arrow function", a short way to write a function.
+// -----------------------------------------------------------------------------
+// checkAccountFields
+// Checks every field in body and returns a clean copy (trimmed, lowercased).
+//   body    = what the page sent
+//   partial = false for Create (#6): every field is required
+//             true for Update (#8): only the fields that were sent are checked
+// Returns { values, errors }. The caller throws one 400 error if errors has
+// anything, so the user can fix every box in one go.
+// The profile is only checked for its shape here. Whether it exists is checked
+// by the controller, because that needs the database.
+// -----------------------------------------------------------------------------
+function checkAccountFields(body = {}, { partial = false } = {}) {
+  const values = {};
+  const errors = {};
   const has = (field) => body[field] !== undefined && body[field] !== null && body[field] !== '';
 
-  // Each block below reads: "if this is a Create, or if the field was sent,
-  // then check it". For Update, fields that were not sent are skipped and
-  // left unchanged in the database.
-
-  // ---- Check 1: username (the login "User ID") -------------------------------
+  // Check 1: username (the login "User ID")
   if (!partial || has('username')) {
-    // Only accept text. .trim() removes spaces at the ends, .toLowerCase()
-    // makes "Kaz.Test" and "kaz.test" the same user ID.
-    // a ? b : c means: if a then b, else c.
     const username = typeof body.username === 'string' ? body.username.trim().toLowerCase() : '';
-    // .test() returns true if the text matches the pattern.
     if (!USERNAME_PATTERN.test(username)) errors.username = 'Use 3 to 64 letters, numbers, dots, underscores or hyphens.';
-    else values.username = username; // it passed, so keep the clean value
-  } // End of the username check.
+    else values.username = username;
+  }
 
-  // ---- Check 2: password (plain text here; the entity scrambles it before saving) --
+  // Check 2: password (plain text here; the controller hashes it before saving)
   if (!partial || has('password')) {
-    // Only accept text; anything else counts as an empty password.
     const password = typeof body.password === 'string' ? body.password : '';
-    // Buffer.byteLength counts bytes, not letters. Some characters (emoji,
-    // Chinese) take more than 1 byte, and bcrypt's limit is in bytes.
+    // Buffer.byteLength counts bytes, not letters. An emoji takes more than 1
+    // byte, and the bcrypt limit is in bytes.
     if (password.length < PASSWORD_MIN_LENGTH || Buffer.byteLength(password, 'utf8') > PASSWORD_MAX_BYTES) {
-      // `...${x}...` is a template string: it puts the value of x in the text.
       errors.password = `Use at least ${PASSWORD_MIN_LENGTH} characters and no more than ${PASSWORD_MAX_BYTES} bytes.`;
-    } else values.password = password; // it passed, so keep it
-  } // End of the password check.
+    } else values.password = password;
+  }
 
-  // ---- Check 3: name (the person's display name) -----------------------------
+  // Check 3: name (the person's display name)
   if (!partial || has('name')) {
-    // Only accept text, and remove spaces at the ends.
     const name = typeof body.name === 'string' ? body.name.trim() : '';
-    // The name must not be empty and must be 100 characters or fewer.
     if (!name || name.length > 100) errors.name = 'Enter a name up to 100 characters.';
-    else values.name = name; // it passed, so keep it
-  } // End of the name check.
+    else values.name = name;
+  }
 
-  // ---- Check 4: email --------------------------------------------------------
+  // Check 4: email
   if (!partial || has('email')) {
-    // Only accept text. Remove spaces at the ends and make it all lowercase.
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
-    // It must match the email pattern and be 254 characters or fewer.
     if (!EMAIL_PATTERN.test(email) || email.length > 254) errors.email = 'Enter a valid email address.';
-    else values.email = email; // it passed, so keep it
-  } // End of the email check.
+    else values.email = email;
+  }
 
-  // ---- Check 5: profileId (which role: User Admin, Interior Designer, Customer, Platform Manager) --
+  // Check 5: profileId (which role). Shape only: a whole number from 1 up.
   if (!partial || has('profileId')) {
-    // Turn the value into a number.
     const profileId = Number(body.profileId);
-    // Only ask the database if the ID looks valid. findByPk = "find by primary
-    // key" (find the row with this ID). It returns null if there is none.
-    const profile = Number.isInteger(profileId) && profileId > 0 ? await UserProfile.findByPk(profileId) : null;
-    if (!profile) errors.profileId = 'Choose a user profile.'; // no such profile
-    else values.profileId = profileId; // it exists, so keep it
-  } // End of the profile check.
+    if (!Number.isInteger(profileId) || profileId < 1) errors.profileId = 'Choose a user profile.';
+    else values.profileId = profileId;
+  }
 
-  // ---- Check 6: dob (date of birth). Optional, even for Create. ---------------
+  // Check 6: dob (date of birth). Optional, even for Create.
   if (has('dob')) {
-    // Turn the value into text.
     const dob = String(body.dob);
-    // Must look like YYYY-MM-DD AND be a real date. Three checks, in order:
-    //   1. the pattern: 4 digits, dash, 2 digits, dash, 2 digits
-    //   2. JavaScript can read it as a date at all. "2026-13-01" (month 13)
-    //      gives an "Invalid Date", and getTime() of that is NaN.
-    //   3. reading it back gives the same text. This catches 2026-02-31:
-    //      JavaScript rolls it over to 3 March, which no longer matches.
-    // && stops at the first false, so check 3 never runs on an invalid date.
+    // Three checks: the YYYY-MM-DD pattern, a date JavaScript can read, and
+    // reading it back gives the same text. The last one catches 2026-02-31,
+    // which JavaScript would roll over to 3 March.
     const date = new Date(`${dob}T00:00:00Z`);
     const valid = /^\d{4}-\d{2}-\d{2}$/.test(dob)
       && Number.isFinite(date.getTime())
       && date.toISOString().slice(0, 10) === dob;
-    if (!valid) errors.dob = 'Enter a valid date of birth.'; // it failed a check
-    else values.dob = dob; // it passed all 3, so keep it
-  } // End of the date of birth check.
+    if (!valid) errors.dob = 'Enter a valid date of birth.';
+    else values.dob = dob;
+  }
 
-  // ---- Check 7: status. Only on Update (#8), and only to reactivate. ----------
-  // Reactivating a suspended account is an alternative flow of Update (#8):
-  // the admin sets the status back to 'active'. Setting 'suspended' here is
-  // refused, so suspending always goes through Suspend (#9), which has the
-  // "cannot suspend your own account" rule. On Create, status is ignored:
-  // new accounts always start active.
+  // Check 7: status. Only on Update (#8), and only to reactivate.
+  // Suspending always goes through Suspend (#9), which has the "cannot suspend
+  // your own account" rule. On Create the status is ignored: a new account
+  // always starts active.
   if (partial && has('status')) {
-    if (body.status !== 'active') errors.status = 'Use Suspend to suspend an account.'; // refuse anything but 'active'
-    else values.status = 'active'; // reactivate
-  } // End of the status check.
+    if (body.status !== 'active') errors.status = 'Use Suspend to suspend an account.';
+    else values.status = 'active';
+  }
 
-  // Object.keys(errors) lists the field names that have a problem.
-  // If there is at least one, stop and send 400 Bad Request with all of them.
-  if (Object.keys(errors).length) throw new RequestError(400, 'Check the fields and try again.', errors);
+  return { values, errors };
+}
 
-  // Everything is fine: return the clean values for the controller to use.
-  return values;
-} // End of accountValues.
-
-// Make these 3 available to the controllers, e.g.
-//   const { RequestError, accountValues } = require('./userAccountValidation');
-module.exports = { RequestError, accountId, accountValues };
+module.exports = { accountId, checkAccountFields, PASSWORD_MIN_LENGTH, PASSWORD_MAX_BYTES, EMAIL_PATTERN, USERNAME_PATTERN };

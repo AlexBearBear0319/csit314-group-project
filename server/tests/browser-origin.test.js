@@ -1,3 +1,8 @@
+// =============================================================================
+// TESTS: browserOrigin
+// Only our own website is allowed to send changes to the API.
+// =============================================================================
+
 const { allowedOrigins, isTrustedOrigin } = require('../src/security/browserOrigin');
 
 const environment = {

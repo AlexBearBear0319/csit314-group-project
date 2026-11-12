@@ -1,3 +1,9 @@
+// =============================================================================
+// PAGE: DesignerDashboard
+// The Interior Designer's home screen: a short intro and the latest projects.
+// It is a dashboard, not a user story, so it is in pages/ and not in boundary/.
+// =============================================================================
+
 import { useEffect, useRef, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../api';

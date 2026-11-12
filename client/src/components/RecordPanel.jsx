@@ -1,3 +1,9 @@
+// =============================================================================
+// COMPONENT: RecordPanel
+// The page frame (title, content and a back link) of the View / Create / Update pages,
+// and RecordLoadState, which shows "Loading..." or the load error with a Try again button.
+// =============================================================================
+
 import { Link, useLocation } from 'react-router-dom';
 import Button from './Button';
 import Message from './Message';

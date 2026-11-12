@@ -1,3 +1,10 @@
+// =============================================================================
+// TESTS: Interior Designer projects (stories #20-29, #30, #31)
+// Create, view, update, delete and search of current and past projects, the photo
+// upload flow, ownership rules (a designer cannot touch another designer's project)
+// and pagination.
+// =============================================================================
+
 const bcrypt = require('bcryptjs');
 const request = require('supertest');
 const app = require('../src/app');
@@ -199,7 +206,7 @@ describe('Interior Designer IDP use cases #20-29', () => {
 
     const addProjects = async (from, to) => {
       for (let number = from; number <= to; number += 1) {
-        await InteriorDesignProject.createOwned({
+        await InteriorDesignProject.createProject({
           name: `Pagination project ${number}`,
           description: null,
           propertyType: 'Apartment',

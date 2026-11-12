@@ -1,3 +1,15 @@
+// =============================================================================
+// BOUNDARY: ViewIDPCategoryPg                       (BCE: Boundary layer)
+// User story #40: As a Platform Manager, I want to view an IDP category so that
+// I can check its details.
+//
+// What this page does (the steps of our sequence diagram):
+//   1. useIDPCategory() loads the category (GET /api/idp-categories/:id) from
+//      ViewIDPCategoryC
+//   2. shows the details and the buttons for Update (#41) and Delete (#42)
+//      or the load error with a "Try again" button
+// =============================================================================
+
 import { useLocation, useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
 import DetailsView from '../components/DetailsView';

@@ -1,33 +1,24 @@
-// ROUTES for stories #30 and #31 (IDP view count and shortlist count).
-// They are mounted at /api/designer/idps in routes/index.cjs, after the login,
-// role and CSRF checks, so req.auth.accountId is always a logged-in designer.
-const router = require('express').Router();
-const viewCount = new (require('../controller/ViewIDPViewCountC'))();
-const shortlistCount = new (require('../controller/ViewIDPShortlistCountC'))();
+// =============================================================================
+// ROUTES: designerIdpStats.js      (the HTTP bridge, not a BCE class)
+// User stories #30 and #31: an Interior Designer sees the view count and the
+// shortlist count of their own project. This file only matches an address to a
+// controller method.
+// =============================================================================
 
-// #30  GET /api/designer/idps/5/view-count
-router.get('/:id/view-count', async (req, res, next) => {
-  try {
-    const result = await viewCount.viewIDPViewCount(req.auth.accountId, req.params.id);
-    // Not found and "belongs to someone else" look the same on purpose.
-    if (!result) return res.status(404).json({ message: 'Project not found.' });
-    return res.json(result);
-  } catch (error) { return next(error); }
-});
+const express = require('express');
+const ViewIDPViewCountC = require('../controller/ViewIDPViewCountC'); // #30
+const ViewIDPShortlistCountC = require('../controller/ViewIDPShortlistCountC'); // #31
 
-// #31  GET /api/designer/idps/5/shortlist-count
-router.get('/:id/shortlist-count', async (req, res, next) => {
-  try {
-    const result = await shortlistCount.viewIDPShortlistCount(req.auth.accountId, req.params.id);
-    if (!result) return res.status(404).json({ message: 'Project not found.' });
-    return res.json(result);
-  } catch (error) { return next(error); }
-});
+const router = express.Router();
+const viewCount = new ViewIDPViewCountC();
+const shortlistCount = new ViewIDPShortlistCountC();
 
-// A bad project id throws an error with status 400. Turn it into a 400 reply.
-router.use((error, req, res, next) => {
-  if (error.status === 400) return res.status(400).json({ message: error.message });
-  return next(error);
-});
+// #30: GET /api/designer/idps/5/view-count
+router.get('/:id/view-count', async (req, res) =>
+  res.json(await viewCount.viewIDPViewCount(req.auth.accountId, req.params.id)));
+
+// #31: GET /api/designer/idps/5/shortlist-count
+router.get('/:id/shortlist-count', async (req, res) =>
+  res.json(await shortlistCount.viewIDPShortlistCount(req.auth.accountId, req.params.id)));
 
 module.exports = router;

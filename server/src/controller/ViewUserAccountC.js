@@ -1,38 +1,29 @@
 // =============================================================================
-// CONTROLLER: ViewUserAccountC
-// User story #7: "As a User Admin, I want to view a user account so that I
-// can check its details."
+// CONTROLLER: ViewUserAccountC            (BCE: Controller layer)
+// User story #7: As a User Admin, I want to view a user account so that I can
+// manage platform access.
 //
-// HOW THE REQUEST TRAVELS:
-//   Boundary (the web page) -> route GET /api/user-accounts/:id
-//   -> ViewUserAccountC.viewAccount()          <- THIS FILE
-//   -> UserAccount.viewAccount()  (entity, reads the database)
-//
-// (The words const, require, class, async and return are explained at the top
-// of CreateUserAccountC.js.)
+// Sequence for story #7:
+//   1. ViewUserAccountPg opens and asks for account :id
+//   2. ViewUserAccountC.viewAccount(id)                    <- THIS FILE
+//        a. check the ID is a real whole number
+//        b. UserAccount.viewAccount(id)            read the account
+//        c. no account found -> 404 "User account not found."
+//   3. the account goes back to the page, which shows the details
 // =============================================================================
 
-// Load the entity class that reads the user_account table.
 const UserAccount = require('../entity/UserAccount');
-
-// Load the accountId helper. It turns the "5" from the web address into the
-// number 5, or reports 404 (not found) if it cannot be a real ID, such as "abc".
+const RequestError = require('./RequestError');
 const { accountId } = require('./userAccountValidation');
 
-// Start of the class for story #7.
 class ViewUserAccountC {
-  // ---------------------------------------------------------------------------
-  // FUNCTION: viewAccount
-  // WHAT IT DOES: finds one account by its ID.
-  // RECEIVES: id = the ID from the web address, as text.
-  // GIVES BACK: the account, or null ("nothing") if no account has that ID.
-  //             The route turns null into 404 Not Found.
-  // ---------------------------------------------------------------------------
+  // Receives: id = the ID from the web address, as text.
+  // Returns:  the account's safe fields (no password).
   async viewAccount(id) {
-    // First check the ID, then ask the entity for that account.
-    return UserAccount.viewAccount(accountId(id));
-  } // End of viewAccount.
-} // End of the class.
+    const account = await UserAccount.viewAccount(accountId(id));
+    if (!account) throw new RequestError(404, 'User account not found.');
+    return account;
+  }
+}
 
-// Let other files load this class. routes/userAccounts.js uses it.
 module.exports = ViewUserAccountC;

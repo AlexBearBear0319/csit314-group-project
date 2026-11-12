@@ -1,3 +1,10 @@
+// =============================================================================
+// SECURITY: browserOrigin
+// Only our own website may send changes (POST/PUT/PATCH/DELETE) to the API.
+// The Origin header of the request must be our frontend (FRONTEND_URL) or our Vercel
+// domain. This stops other websites from using a logged-in user's cookie.
+// =============================================================================
+
 const UNSAFE_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
 function allowedOrigins() {

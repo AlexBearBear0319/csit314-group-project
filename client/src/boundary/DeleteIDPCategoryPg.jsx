@@ -1,3 +1,18 @@
+// =============================================================================
+// BOUNDARY: DeleteIDPCategoryPg                     (BCE: Boundary layer)
+// User story #42: As a Platform Manager, I want to delete an IDP category so
+// that an unused or inappropriate category is removed.
+//
+// What this page does (the steps of our sequence diagram):
+//   1. loads the category (GET /api/idp-categories/:id) and shows its details
+//   2. the manager taps "Delete category" and a pop-up asks them to confirm
+//   3. deleteCategory()         sends the request to DeleteIDPCategoryC
+//                               (DELETE /api/idp-categories/:id)
+//   4. displaySuccess()         deleted: go back to the category list
+//      the pop-up shows the server message if it fails, for example when projects
+//      still use the category
+// =============================================================================
+
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import ConfirmAction from '../components/ConfirmAction';

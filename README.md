@@ -1,32 +1,72 @@
 # CSIT314 Group CCB: Interior Design Platform
 
-Built with the **BCE** pattern:
+A web platform where Interior Designers show their projects (IDPs), Customers
+search and shortlist them, a User Admin manages users, and a Platform Manager
+manages categories and reports.
 
-| Layer | Where | Naming |
-|---|---|---|
-| Boundary (pages) | `client/src/boundary/` | `[Action][Thing]Pg.jsx` e.g. `SuspendUserAccountPg.jsx` |
-| Controller | `server/src/controller/` | `[Action][Thing]C.js` e.g. `SuspendUserAccountC.js` |
-| Entity (database) | `server/src/entity/` | plain noun e.g. `UserAccount.js` |
+**Tech stack:** React + Vite (client), Node.js + Express (server), Sequelize,
+Supabase (PostgreSQL database and image storage), Vercel (hosting).
 
-Class and method names in the code must match the diagrams exactly.
+We built the system with the **BCE pattern** (Boundary, Controller, Entity).
+Every user story has its own Boundary page, its own Controller class and the
+Entity (database) class it needs. The class and method names in the code match
+the diagrams in our report.
 
-To find the files for a story, or to see what each test checks, read [Where everything is](docs/WHERE-EVERYTHING-IS.md). You do not need to read code to use it.
+## The three layers
 
-## UI references
+| Layer | Folder | What it does | Naming |
+|---|---|---|---|
+| **Boundary** | `client/src/boundary/` | The pages the user sees. It **checks the input** (`validateInput`) before anything is sent, and **shows the messages** (`displaySuccess`, `displayError`). | `[Action][Thing]Pg.jsx`, e.g. `SuspendUserAccountPg.jsx`. Three older pages keep their `...Page` names: `IDPManagementPage` (#32), `OngoingIDPPage` (#33) and `DesignerIdpsPage` (#20-29) |
+| **Controller** | `server/src/controller/` | The **business logic** of one story: checks the input again, checks the rules (does it exist? is the name free? is it yours?), calls the entities and decides the result or the error. | `[Action][Thing]C.js`, e.g. `SuspendUserAccountC.js` |
+| **Entity** | `server/src/entity/` | The **CRUD** on one database table: create, read, update, delete, search. It does not decide what is allowed. | a noun, e.g. `UserAccount.js` |
 
-- Read [UI_GUIDELINES.md](UI_GUIDELINES.md) before a UI change.
-- See the [standalone UI preview](docs/ui-preview.html) for the approved visual example. Its sample records do not belong to the app.
-- See [Interior Designer IDP setup](docs/INTERIOR_DESIGNER_IDPS_SETUP.md) for the SQL, Supabase Storage settings, deployment variables and live API checks.
+How a request travels:
 
-For another coding tool, use this prompt:
+```
+Boundary (page)  ->  api.js  ->  routes/ (HTTP bridge)  ->  Controller  ->  Entity  ->  Database
+   validateInput        POST        matches the address       the rules       CRUD
+   displaySuccess                   to a controller method
+   displayError
+```
 
-> Read `AGENTS.md` and `UI_GUIDELINES.md`. Use the shared theme and components. Keep the routes, props, and behaviour that this task does not ask you to change. Implement only this story and its acceptance criteria: `[story and criteria]`. Do not add sample records or unsupported rules. Report the changed files and checks.
+Rules we follow:
 
-Some tools do not read repository instructions. If your tool does not load these files, paste this prompt into it.
+- A Boundary never talks to the database. It only calls a Controller.
+- A Controller never writes SQL. It only calls Entity methods.
+- Only an Entity reads or writes its table.
+- `server/src/routes/` is not a BCE class. It only matches an address to a
+  controller method. It makes no decisions.
+- The Boundary checks the input so the user sees a message at once. The
+  Controller checks it again, because anyone can call the API without our page.
+- Errors are thrown as `RequestError` in the controller. `middleware/errorHandler.js`
+  turns them into the HTTP reply, so no route file has its own error handling.
+
+## Folder layout
+
+```
+client/src/
+  boundary/      the pages (one per user story) and their small helpers
+  components/    reusable parts: Button, FormField, Message, ResultsTable ...
+  hooks/         useRecord, useRecordSearch
+  layout/        the menus and page frame
+  pages/         the dashboards (not a user story)
+  api.js         the fetch wrapper (adds the CSRF token, handles errors)
+server/src/
+  controller/    one class per user story, plus small rule helpers
+  entity/        one class per database table
+  routes/        the HTTP bridge
+  middleware/    login check, role check, CSRF check, rate limit, error handler
+  storage/       the Supabase Storage client for project photos
+server/scripts/  tools we run by hand: seed, account audit, password reset, storage cleanup
+server/tests/    API tests for every story (Jest, in-memory SQLite)
+client/tests/    page tests (Vitest)
+database/        the SQL files that build the Supabase database, in the order to run
+```
 
 ## First-time setup (on your laptop)
 
-Run every command from the **main project folder** (`csit314-group-project`), not inside `server` or `client`.
+Run every command from the **main project folder** (`csit314-group-project`),
+not inside `server` or `client`.
 
 ```
 git clone <repo link>
@@ -36,13 +76,16 @@ npm install                       (installs packages for both server and client)
 
 Then make the database settings file:
 
-1. In the `server` folder, copy `.env.example` and rename the copy to `.env`
-2. Paste in the `DATABASE_URL` from the group chat (ask Kaz if you don't have it)
+1. In the `server` folder, copy `.env.example` and rename the copy to `.env`.
+2. Paste in the `DATABASE_URL` from the group chat.
+
+The SQL files in `database/` are numbered in the order to run them in the
+Supabase SQL Editor. This is only needed for a new, empty database.
 
 Check it works:
 
 ```
-npm test                          (all tests should pass)
+npm test                          (all server tests should pass)
 npm run dev                       (starts the API on port 3000 and the website on port 5173)
 ```
 
@@ -58,7 +101,9 @@ git add <the files you changed>
 git commit -m "Story #<number>: what you did"
 git push -u origin story-<number>-<short-name>
 ```
-Then open a Pull Request on GitHub, wait for all the checks (including Vercel) to go green, and get a review.
+
+Then open a Pull Request on GitHub, wait for all the checks (including Vercel)
+to go green, and get a review.
 
 **Never** push straight to `main`. **Never** commit `.env`. Keep commit messages short.
 
@@ -67,15 +112,15 @@ Then open a Pull Request on GitHub, wait for all the checks (including Vercel) t
 | Command | What it does |
 |---|---|
 | `npm install` | Installs or updates all packages |
-| `npm test` | Runs all server unit tests (uses a temporary test database, never the real one) |
+| `npm test` | Runs all server tests (uses a temporary test database, never the real one) |
 | `npm run dev` | Starts the API and website together; Ctrl+C stops both |
 | `npm run dev:server` | Starts the backend and restarts it when you save a file |
 | `npm run dev:client` | Starts the website |
 | `npm run build` | Builds the website (same as Vercel does) |
+| `npm test --workspace client` | Runs the page tests |
 
-**Do not run `npm run seed`.** The database is shared by the whole team, and seeding **wipes everything**. Ask Kaz if the data needs resetting.
-
-Use a project account with a password that the account owner has confirmed. This workspace cannot verify shared database passwords. Do not run the seed command against the shared database.
+**Do not run `npm run seed`.** The database is shared by the whole team, and
+seeding **wipes everything**. Ask the team if the data needs resetting.
 
 ## If something breaks
 

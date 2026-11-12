@@ -1,3 +1,8 @@
+// =============================================================================
+// COMPONENT: UserAdminRoute
+// Shows its pages only to a logged-in User Admin (a short way to write RequireRole).
+// =============================================================================
+
 import RequireRole from './RequireRole';
 
 export default function UserAdminRoute() {

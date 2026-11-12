@@ -1,3 +1,8 @@
+// =============================================================================
+// TESTS: IDPManagementPage and OngoingIDPPage (stories #32, #33)
+// The customer search page: keyword and filter check, results, sorting and the project pop-up.
+// =============================================================================
+
 import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';

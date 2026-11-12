@@ -1,7 +1,17 @@
+// =============================================================================
+// TESTS: user profiles (stories #1-5)
+// Create, view, update, suspend, activate and search, duplicate names and bad input.
+// =============================================================================
+
 const { featureSession } = require('./helpers/featureSession');
 let client;
 const bcrypt = require('bcryptjs');
 const { sequelize, UserProfile, UserAccount } = require('../src/entity');
+const UserLoginC = require('../src/controller/UserLoginC');
+
+// Login now lives in UserLoginC (controller). It returns the account when the
+// login is fine, and throws a RequestError with a status and message otherwise.
+const userLogin = new UserLoginC();
 
 beforeEach(async () => {
   await sequelize.sync({ force: true });
@@ -69,13 +79,14 @@ describe('User profile stories #1–5', () => {
     const profile = await UserProfile.create({ name: 'Customer' });
     await UserAccount.create({ username: 'customer', password: await bcrypt.hash('password123', 4),
       name: 'Customer', email: 'c@example.com', profileId: profile.id });
-    expect((await UserAccount.login('customer', 'password123', 'Customer')).account).toBeTruthy();
+    expect((await userLogin.login('customer', 'password123')).account).toBeTruthy();
     const res = await client.post(`/api/user-profiles/${profile.id}/suspend`);
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('suspended');
     expect(await UserProfile.count()).toBe(2);
     expect(await UserAccount.count()).toBe(2);
-    expect((await UserAccount.login('customer', 'password123', 'Customer')).reason).toBe('profile-suspended');
+    await expect(userLogin.login('customer', 'password123'))
+      .rejects.toMatchObject({ status: 403, message: 'This user profile is suspended.' });
     expect((await client.post(`/api/user-profiles/${profile.id}/suspend`)).status).toBe(200);
     expect((await client.post('/api/user-profiles/9999/suspend')).status).toBe(404);
   });
@@ -84,11 +95,12 @@ describe('User profile stories #1–5', () => {
     const profile = await UserProfile.create({ name: 'Customer', status: 'suspended' });
     await UserAccount.create({ username: 'customer', password: await bcrypt.hash('password123', 4),
       name: 'Customer', email: 'c@example.com', profileId: profile.id });
-    expect((await UserAccount.login('customer', 'password123', 'Customer')).reason).toBe('profile-suspended');
+    await expect(userLogin.login('customer', 'password123'))
+      .rejects.toMatchObject({ status: 403, message: 'This user profile is suspended.' });
     const res = await client.post(`/api/user-profiles/${profile.id}/activate`);
     expect(res.status).toBe(200);
     expect(res.body.status).toBe('active');
-    expect((await UserAccount.login('customer', 'password123', 'Customer')).account).toBeTruthy();
+    expect((await userLogin.login('customer', 'password123')).account).toBeTruthy();
     expect((await client.post(`/api/user-profiles/${profile.id}/activate`)).status).toBe(200);
     expect((await client.post('/api/user-profiles/9999/activate')).status).toBe(404);
     expect((await client.post('/api/user-profiles/not-an-id/activate')).status).toBe(400);

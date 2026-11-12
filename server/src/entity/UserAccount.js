@@ -1,358 +1,215 @@
-// ENTITY: UserAccount — ONE person's login, linked to one UserProfile (role).
-// Only entity classes talk to the database.
-const { DataTypes, Model, Op, col, fn, where } = require('sequelize');
-const bcrypt = require('bcryptjs');
+// =============================================================================
+// ENTITY: UserAccount            (BCE: Entity layer)
+// One person's login. Each account is linked to exactly one UserProfile (role).
+//
+// Table: user_account (username, password, name, email, dob, photo, status,
+//        profileId)
+//
+// Stories that use this entity:
+//   #6-10   the User Admin creates, views, updates, suspends, searches accounts
+//   #11 #18 #37 #47   login (UserLoginC reads the account with findForLogin)
+//   sign-up (RegisterAccountC)
+//
+// This class only does CRUD on its own table. It does not decide what is
+// allowed. The controllers check the rules first, hash the password, and then
+// call the methods below. That is why every password arriving here is already
+// a bcrypt hash.
+// =============================================================================
+
+const { DataTypes, Model, Op, UniqueConstraintError, ValidationError, col, fn, where } = require('sequelize');
 const sequelize = require('../db');
 const UserProfile = require('./UserProfile');
+const UserSession = require('./UserSession');
 
 class UserAccount extends Model {
-  // Story: Login (#11, #18, #37, #47)
-  // Checks the user ID and password, then reads the role from the linked profile.
-  // Returns { account } on success, or { error, reason } on failure.
-  static async login(username, password) {
-    const normalizedUsername = String(username || '').trim().toLowerCase();
-    const matchingAccounts = await UserAccount.findAll({
-      where: where(fn('LOWER', fn('TRIM', col('username'))), normalizedUsername),
-      include: [{ model: UserProfile }],
-    });
-
-    // Same message for every wrong-detail case, so attackers can't tell
-    // which part was wrong.
-    const invalid = { error: 'Wrong user ID or password.', reason: 'invalid' };
-    if (matchingAccounts.length !== 1 || typeof password !== 'string') return invalid;
-    const account = matchingAccounts[0];
-
-    // Manually imported plain-text passwords are not accepted. Reset them with
-    // the account provisioning tool so the stored value is a bcrypt hash.
-    const isBcryptHash = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/.test(account.password);
-    if (!isBcryptHash) return invalid;
-    const passwordOk = await bcrypt.compare(password, account.password);
-    if (!passwordOk) return invalid;
-
-    if (account.status !== 'active') {
-      return { error: 'This account is suspended.', reason: 'account-suspended' };
-    }
-    const profile = account.UserProfile;
-    if (!profile) {
-      return { error: 'Your account role is not set. Contact an administrator.', reason: 'profile-missing' };
-    }
-    if (profile.status !== 'active') {
-      return { error: 'This user profile is suspended.', reason: 'profile-suspended' };
-    }
-
-    // A profile the User Admin created (story #1) is not one of the 4 built-in
-    // roles. Its accounts can still log in. The role is the profile name, so the
-    // built-in role checks (requireRole) refuse every role feature.
-    const role = sessionRole(profile.name);
-    if (!role) {
-      return { error: 'Your account role is not recognized. Contact an administrator.', reason: 'profile-unrecognized' };
-    }
-
-    // Never send the password hash back
-    return {
-      account: {
-        id: account.id,
-        username: account.username,
-        name: account.name,
-        email: account.email,
-        photo: account.photo,
-        role,
-      },
-    };
-  }
-
-  // ===========================================================================
-  // User Admin: user account stories #6-10
-  //
-  // These methods are the ENTITY layer of BCE: the only code that reads or
-  // writes the user_account table. Controllers (CreateUserAccountC etc.) check
-  // the input first, then call these.
-  //
-  // "static" means you call the method on the class itself, e.g.
-  // UserAccount.viewAccount(5), without making an object first.
-  //
-  // "extends Model" (at the top of the class) gives UserAccount Sequelize's
-  // database methods: findByPk, findOne, findAll, create, update. Sequelize
-  // turns these into SQL for us.
-  // ===========================================================================
-
   // ---------------------------------------------------------------------------
-  // FUNCTION: publicFields
-  // WHAT IT DOES: builds a SAFE copy of an account to send to the browser.
-  // The password hash is deliberately left out, so it can never leak.
-  // profileName comes from the linked UserProfile row (loaded with "include").
-  // RECEIVES: account = one row from the database.
-  // GIVES BACK: the safe copy.
+  // HELPER: publicFields
+  // Builds a SAFE copy of an account for the browser. The password hash is left
+  // out on purpose, so it can never leak.
+  // account = one row loaded together with its profile.
   // ---------------------------------------------------------------------------
   static publicFields(account) {
     return {
-      id: account.id, // the account's ID number
-      username: account.username, // the login user ID
-      name: account.name, // the person's name
-      email: account.email, // the email
-      dob: account.dob || null, // || null: send null rather than undefined if empty
-      photo: account.photo || null, // the photo's web address, or null if none
+      id: account.id,
+      username: account.username,
+      name: account.name,
+      email: account.email,
+      dob: account.dob || null, // send null, not undefined, when empty
+      photo: account.photo || null,
       status: account.status, // 'active' or 'suspended'
-      profileId: account.profileId, // the ID of the linked profile (role)
-      // a ? b : c means: if a then b, else c. Guards against a missing profile.
+      profileId: account.profileId,
       profileName: account.UserProfile ? account.UserProfile.name : null,
     };
-  } // End of publicFields.
+  }
 
   // ---------------------------------------------------------------------------
-  // FUNCTION: findWithProfile
-  // WHAT IT DOES: finds one account by its ID AND loads its profile in the same
-  // query.
-  // SQL: SELECT * FROM user_account JOIN user_profile ... WHERE user_account.id = ?
-  // GIVES BACK: the row, or null if there is none.
+  // READ with profile (used inside this class)
+  // SQL: SELECT * FROM user_account JOIN user_profile WHERE user_account.id = ?
   // ---------------------------------------------------------------------------
   static async findWithProfile(id) {
-    // findByPk = find by primary key (the ID). include = also load the profile.
     return UserAccount.findByPk(id, { include: UserProfile });
-  } // End of findWithProfile.
+  }
 
   // ---------------------------------------------------------------------------
-  // FUNCTION: findDuplicates
-  // WHAT IT DOES: checks whether another account already uses this user ID or
-  // email.
-  // RECEIVES:
-  //   { username, email } = "destructuring": takes those two fields out of the
-  //                         object passed in. Either may be missing.
-  //   ignoreId            = when updating, skip the account being updated, so
-  //                         saving your own unchanged email is not a "conflict".
-  // GIVES BACK: e.g. { username: 'This user ID is already in use.' }, or {} if
-  // all clear.
+  // READ for login (stories #11, #18, #37, #47)
+  // Finds the accounts whose user ID matches, ignoring capitals and spaces at
+  // the ends. UserLoginC decides what to do with the answer: it checks the
+  // password, the account status and the profile.
+  // Returns a list (normally 0 or 1 account) with the profile loaded.
+  // ---------------------------------------------------------------------------
+  static async findForLogin(username) {
+    const normalizedUsername = String(username || '').trim().toLowerCase();
+    return UserAccount.findAll({
+      where: where(fn('LOWER', fn('TRIM', col('username'))), normalizedUsername),
+      include: [{ model: UserProfile }],
+    });
+  }
+
+  // ---------------------------------------------------------------------------
+  // READ duplicates (used by stories #6 and #8 and by sign-up)
+  // Checks whether another account already uses this user ID or email.
+  //   { username, email } = either one may be missing
+  //   ignoreId            = when updating, skip the account we are editing
+  // Returns { username: '...', email: '...' } with only the clashes, or {}.
   // ---------------------------------------------------------------------------
   static async findDuplicates({ username, email }, ignoreId = null) {
-    const errors = {}; // start with no problems found
-
-    // Extra condition "id is not ignoreId". Op.ne = "not equal". When there
-    // is no ignoreId (Create), use {} which means "no extra condition".
+    const errors = {};
     const notSelf = ignoreId ? { id: { [Op.ne]: ignoreId } } : {};
 
-    // Only check the user ID if one was given.
     if (username) {
-      // SQL: WHERE LOWER(TRIM(username)) = 'kaz.test' AND id <> ignoreId
-      // LOWER + TRIM so "Kaz.Test " counts as the same as "kaz.test",
-      // which matters for accounts added by hand before the rules existed.
+      // LOWER + TRIM so "Sam.Test " counts as "sam.test", which matters for
+      // accounts that were added by hand before our rules existed.
       const taken = await UserAccount.findOne({
         where: { [Op.and]: [where(fn('LOWER', fn('TRIM', col('username'))), username), notSelf] },
       });
-      // If another account has it, record the problem.
       if (taken) errors.username = 'This user ID is already in use.';
     }
 
-    // Only check the email if one was given.
     if (email) {
-      // Same check for email.
       const taken = await UserAccount.findOne({
         where: { [Op.and]: [where(fn('LOWER', fn('TRIM', col('email'))), email), notSelf] },
       });
-      // If another account has it, record the problem.
       if (taken) errors.email = 'This email is already in use.';
     }
-
-    // Hand back the problems found (empty if none).
     return errors;
-  } // End of findDuplicates.
+  }
 
   // ---------------------------------------------------------------------------
-  // FUNCTION: profileOptions
-  // Story #6 (part): the profiles a User Admin can give an account.
-  // The Create and Update forms show these in a dropdown. Suspended profiles
-  // are left out, because nobody with a suspended profile can log in.
-  // Returns e.g. [{ id: 3, name: 'Customer' }, ...], sorted A-Z by name.
-  // SQL: SELECT id, name FROM user_profile WHERE status = 'active' ORDER BY name
-  // ---------------------------------------------------------------------------
-  static async profileOptions() {
-    // Read the profiles from the database.
-    const profiles = await UserProfile.findAll({
-      where: { status: 'active' }, // only active profiles
-      attributes: ['id', 'name'], // only read the 2 columns we need
-      order: [['name', 'ASC']], // sort A-Z by name
-    });
-    // Turn each database row into a plain { id, name } object.
-    return profiles.map((profile) => ({ id: profile.id, name: profile.name }));
-  } // End of profileOptions.
-
-  // ---------------------------------------------------------------------------
-  // FUNCTION: createAccount
-  // Story #6: Create user account.
-  // values = checked fields from CreateUserAccountC. values.password is still
-  //          plain text here; it is scrambled (hashed) before saving.
-  // Returns { account } when saved, or { conflict: {...} } when the user ID
-  // or email is already in use.
+  // CREATE (story #6)
+  // values = checked fields from CreateUserAccountC. values.password is
+  //          already hashed by the controller.
+  // Returns the new account's safe fields (with profileName).
+  // SQL: INSERT INTO user_account (...) VALUES (...)
   // ---------------------------------------------------------------------------
   static async createAccount(values) {
-    // 1. Stop if the user ID or email is taken.
-    //    Object.keys(x).length = how many entries x has. 0 means no conflicts.
-    const conflict = await UserAccount.findDuplicates(values);
-    if (Object.keys(conflict).length) return { conflict };
-
-    // 2. Hash the password. 10 is the "cost": how much work bcrypt does.
-    //    Higher is slower to crack. Login uses bcrypt.compare to check it later.
-    const password = await bcrypt.hash(values.password, 10);
-
-    // 3. Save the new row. { ...values, password } copies every field from
-    //    values, then replaces password with the hashed one.
-    //    SQL: INSERT INTO user_account (...) VALUES (...)
-    const created = await UserAccount.create({ ...values, password });
-
-    // 4. Read it back with its profile, so the reply includes profileName,
-    //    and send only the safe fields.
-    return { account: UserAccount.publicFields(await UserAccount.findWithProfile(created.id)) };
-  } // End of createAccount.
+    const created = await UserAccount.create(values);
+    return UserAccount.publicFields(await UserAccount.findWithProfile(created.id));
+  }
 
   // ---------------------------------------------------------------------------
-  // FUNCTION: viewAccount
-  // Story #7: View user account.
+  // CREATE with a login session (sign-up)
+  // Saves the account and its first session in ONE transaction. If the session
+  // cannot be saved, the account is not saved either, so no half-made account
+  // is left behind.
+  // values = account fields (password already hashed)
+  // sessionValues = { tokenHash, csrfToken, expiresAt }
+  // Returns the saved account row.
+  // ---------------------------------------------------------------------------
+  static async createAccountWithSession(values, sessionValues) {
+    return sequelize.transaction(async (transaction) => {
+      const account = await UserAccount.create(values, { transaction });
+      await UserSession.create({ ...sessionValues, accountId: account.id }, { transaction });
+      return account;
+    });
+  }
+
+  // True when a save failed because the user ID or email was taken at the same
+  // moment by someone else. The sign-up controller uses it to reply 409.
+  static isConflictError(error) {
+    return error instanceof UniqueConstraintError || error instanceof ValidationError;
+  }
+
+  // ---------------------------------------------------------------------------
+  // READ one (story #7)
   // Returns the account's safe fields, or null if no account has this ID.
   // ---------------------------------------------------------------------------
   static async viewAccount(id) {
-    // Find the account and its profile.
     const account = await UserAccount.findWithProfile(id);
-    // If it was found, hand back the safe copy. If not, hand back null.
     return account ? UserAccount.publicFields(account) : null;
-  } // End of viewAccount.
+  }
 
   // ---------------------------------------------------------------------------
-  // FUNCTION: updateAccount
-  // Story #8: Update user account.
-  // values = only the fields to change (already checked by UpdateUserAccountC).
-  //          values.status can only be 'active' (reactivate a suspended account).
-  // Returns { account } when saved, { conflict } when the new user ID or email
-  // belongs to another account, or null when no account has this ID.
+  // UPDATE (story #8, also reactivating a suspended account)
+  // values = only the fields to change, already checked by UpdateUserAccountC.
+  //          If values.password is there, it is already hashed.
+  // Returns the updated account's safe fields, or null if no account has this ID.
+  // SQL: UPDATE user_account SET ... WHERE id = ?
   // ---------------------------------------------------------------------------
   static async updateAccount(id, values) {
-    // 1. Find the account. findByPk = find by primary key (the ID).
     const account = await UserAccount.findByPk(id);
-    if (!account) return null; // no such account, so stop
-
-    // 2. Check duplicates, ignoring this account itself.
-    const conflict = await UserAccount.findDuplicates(values, account.id);
-    if (Object.keys(conflict).length) return { conflict }; // already in use, so stop
-
-    // 3. Copy the changes. If a new password was sent, hash it first.
-    //    Never store a plain-text password.
-    const changes = { ...values };
-    if (changes.password) changes.password = await bcrypt.hash(changes.password, 10);
-
-    // 4. Save only the changed fields.
-    //    SQL: UPDATE user_account SET name = ?, ... WHERE id = ?
-    await account.update(changes);
-
-    // 5. Read it back with its profile (the profile may have changed).
-    return { account: UserAccount.publicFields(await UserAccount.findWithProfile(account.id)) };
-  } // End of updateAccount.
+    if (!account) return null;
+    await account.update(values);
+    return UserAccount.publicFields(await UserAccount.findWithProfile(account.id));
+  }
 
   // ---------------------------------------------------------------------------
-  // FUNCTION: suspendAccount
-  // Story #9: Suspend user account.
-  // Sets status to 'suspended'. login() and authenticateSession both refuse
-  // suspended accounts, so the user is blocked from then on.
+  // UPDATE status (story #9)
+  // Sets status to 'suspended'. Login and every later request refuse accounts
+  // that are not 'active', so the user is blocked from then on.
   // Returns the account's safe fields, or null if no account has this ID.
   // ---------------------------------------------------------------------------
   static async suspendAccount(id) {
-    // Find the account by its ID.
     const account = await UserAccount.findByPk(id);
-    if (!account) return null; // no such account, so stop
-
-    // SQL: UPDATE user_account SET status = 'suspended' WHERE id = ?
+    if (!account) return null;
     await account.update({ status: 'suspended' });
-
-    // Read it back with its profile and hand back the safe copy.
     return UserAccount.publicFields(await UserAccount.findWithProfile(account.id));
-  } // End of suspendAccount.
+  }
 
   // ---------------------------------------------------------------------------
-  // FUNCTION: searchAccounts
-  // Story #10: Search user accounts.
-  // Finds accounts whose user ID, name or email CONTAINS the keyword,
-  // ignoring capitals. An empty keyword lists every account.
-  // Returns a list (array) of safe account objects, newest first.
+  // SEARCH (story #10)
+  // Finds accounts whose user ID, name or email contains the keyword (capital
+  // letters ignored). An empty keyword lists every account, newest first.
   // ---------------------------------------------------------------------------
   static async searchAccounts(keyword) {
-    // String(...) turns anything into text. || '' handles undefined/null.
     const text = String(keyword || '').trim().toLowerCase();
-
-    // Query settings: load each account's profile. IDs only ever go up, so the
-    // biggest ID is the newest account and it goes to the top.
     const options = { include: UserProfile, order: [['id', 'DESC']] };
 
-    // Only add a filter if there is search text.
     if (text) {
-      // % means "any characters" in SQL LIKE. '%kaz%' matches anything containing "kaz".
+      // % means "any characters" in SQL LIKE. '%sam%' matches anything containing "sam".
       const pattern = `%${text}%`;
-
-      // Build: WHERE LOWER(username) LIKE '%kaz%'
-      //           OR LOWER(name)     LIKE '%kaz%'
-      //           OR LOWER(email)    LIKE '%kaz%'
-      // .map() runs the arrow function once per field name and collects the
-      // 3 conditions into a list. Op.or joins them with OR.
-      // 'UserAccount.' in front of the column name tells the database which
-      // table we mean, because the joined user_profile table also has a "name".
+      // 'UserAccount.' tells the database which table we mean, because the
+      // joined user_profile table also has a "name" column.
       options.where = {
         [Op.or]: ['username', 'name', 'email'].map((field) =>
           where(fn('LOWER', col(`UserAccount.${field}`)), { [Op.like]: pattern })),
       };
     }
 
-    // SQL: SELECT ... FROM user_account JOIN user_profile ... WHERE ... ORDER BY id
     const accounts = await UserAccount.findAll(options);
-
-    // Turn every row into its safe version (no passwords).
     return accounts.map((account) => UserAccount.publicFields(account));
-  } // End of searchAccounts.
-} // End of the UserAccount class.
-
-function canonicalRole(name) {
-  const roles = {
-    'user admin': 'User Admin',
-    'interior designer': 'Interior Designer',
-    customer: 'Customer',
-    'platform manager': 'Platform Manager',
-  };
-  return roles[String(name || '').trim().toLowerCase()] || null;
-}
-
-// The role used for a login session: a built-in role, or the name of a profile
-// the User Admin created. Returns null only when the profile has no name.
-function sessionRole(name) {
-  return canonicalRole(name) || String(name || '').trim() || null;
+  }
 }
 
 // -----------------------------------------------------------------------------
-// TABLE DEFINITION (from the project skeleton).
-// UserAccount.init tells Sequelize which columns the user_account table has.
-//   type      - the kind of data (STRING = text, DATEONLY = a date with no time)
-//   allowNull - false means the column must have a value
-//   unique    - true means no two rows may have the same value
+// TABLE DEFINITION
 // Sequelize also adds id, createdAt and updatedAt automatically.
 // -----------------------------------------------------------------------------
 UserAccount.init(
   {
-    username: { type: DataTypes.STRING, allowNull: false, unique: true }, // the login user ID; required; no two the same
+    username: { type: DataTypes.STRING, allowNull: false, unique: true }, // the login user ID
     password: { type: DataTypes.STRING, allowNull: false }, // stored HASHED with bcrypt, never plain text
-    name: { type: DataTypes.STRING, allowNull: false }, // the person's name; required
-    email: { type: DataTypes.STRING, allowNull: false }, // the email; required
-    dob: { type: DataTypes.DATEONLY }, // date of birth; optional
-    photo: { type: DataTypes.STRING }, // image URL
+    name: { type: DataTypes.STRING, allowNull: false },
+    email: { type: DataTypes.STRING, allowNull: false },
+    dob: { type: DataTypes.DATEONLY }, // date of birth, optional
+    photo: { type: DataTypes.STRING }, // image URL, optional
     status: { type: DataTypes.STRING, allowNull: false, defaultValue: 'active' }, // active | suspended
   },
-  {
-    sequelize,
-    modelName: 'UserAccount',
-    tableName: 'user_account',
-  }
+  { sequelize, modelName: 'UserAccount', tableName: 'user_account' }
 );
 
-// Each account belongs to exactly one profile (role).
-// hasMany/belongsTo add a profileId column to user_account that points at a
-// user_profile row. This link is what lets queries use { include: UserProfile }
-// and read account.UserProfile.name.
+// Each account belongs to exactly one profile (role). This adds a profileId
+// column to user_account and lets us load the profile with { include: UserProfile }.
 UserProfile.hasMany(UserAccount, { foreignKey: { name: 'profileId', allowNull: false } });
 UserAccount.belongsTo(UserProfile, { foreignKey: { name: 'profileId', allowNull: false } });
 
 module.exports = UserAccount;
-module.exports.canonicalRole = canonicalRole;
-module.exports.sessionRole = sessionRole;

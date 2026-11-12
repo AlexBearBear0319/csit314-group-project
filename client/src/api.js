@@ -1,3 +1,13 @@
+// =============================================================================
+// HELPER: api.js
+// How every Boundary page talks to the server. It is the only place that calls
+// fetch(). It adds the CSRF token to changes, cancels slow requests after 15
+// seconds, and turns every error reply into an ApiError with a message and the
+// field errors, so a page can simply call displayError(failure).
+//
+//   api.get / post / put / patch / del  ->  routes/  ->  controller
+// =============================================================================
+
 const BASE_URL = (import.meta.env.VITE_API_URL || '').trim().replace(/\/$/, '');
 let csrfToken = '';
 let unauthorizedHandler = () => {};

@@ -1,3 +1,23 @@
+// =============================================================================
+// BOUNDARY: OngoingIDPPage  (BCE: Boundary layer)
+// User story #33: As a Customer, I want to view an IDP so that I can see its
+// design details and the interior designer behind it.
+//
+// IDPManagementPage gives this page the list of projects. This page:
+//   - draws the list as cards, with sorting and page buttons
+//   - opens one project in a pop-up when the Customer taps "View project"
+//   - shows a Save button on every card and in the pop-up (story #34, SaveShortlistPg)
+//
+// What this page does (the steps of our sequence diagram for #33):
+//   1. displayOngoingIDPList()    shows the cards
+//   2. displayIDPDetails(project) asks ViewIDPC for the full project
+//                                 (POST /api/customer/idps/:id/view)
+//   3. the pop-up shows the details, the photos and the designer
+//      displayErrorMessage()      shows the message when something is wrong
+//
+// Opening a project adds 1 to its view count (story #30).
+// =============================================================================
+
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api';
 import Button from '../components/Button';
@@ -5,8 +25,6 @@ import FormField from '../components/FormField';
 import ProjectPreviewDialog from '../components/ProjectPreviewDialog';
 import SaveShortlistPg from './SaveShortlistPg';
 
-// BCE boundary for listing, sorting and opening ongoing projects (#33).
-// Every project card has a Save button, and so does the pop-up (#34).
 export default function OngoingIDPPage({ IDPList, pagination, sort, onPageChange, onSortChange, savedIds, onSaved }) {
   const [selectedIDP, setSelectedIDP] = useState(null); // the project open in the pop-up
   const [isLoading, setIsLoading] = useState(false);

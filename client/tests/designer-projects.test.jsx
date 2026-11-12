@@ -1,10 +1,15 @@
+// =============================================================================
+// TESTS: DesignerIdpsPage (stories #20-29)
+// The designer's project page: validateInput, create, edit, delete, search and photos.
+// =============================================================================
+
 import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, expect, test, vi } from 'vitest';
 import { api } from '../src/api';
 import { uploadSignedImage } from '../src/storage';
-import DesignerIdpsPage from '../src/pages/DesignerIdpsPage';
+import DesignerIdpsPage from '../src/boundary/DesignerIdpsPage';
 
 vi.mock('../src/api', () => ({ api: { get: vi.fn(), post: vi.fn(), put: vi.fn(), patch: vi.fn(), del: vi.fn() } }));
 vi.mock('../src/storage', () => ({ uploadSignedImage: vi.fn() }));
@@ -47,16 +52,29 @@ test('a rejected edit keeps every draft and focuses the server field error', asy
   await user.type(screen.getByRole('textbox', { name: 'Project name', exact: true }), 'My draft name');
   await user.clear(screen.getByLabelText('Description'));
   await user.type(screen.getByLabelText('Description'), 'My draft description');
-  // A server response still needs handling when browser bounds are bypassed.
-  fireEvent.change(screen.getByLabelText('Design style'), { target: { value: 'x'.repeat(81) } });
+  const originalStyle = screen.getByLabelText('Design style').value;
+  // The page accepts this input, so the server's answer is what the user sees.
   await user.click(screen.getByRole('button', { name: 'Save project' }));
   await screen.findByText('Use 80 characters or less.');
   expect(screen.getByRole('textbox', { name: 'Project name', exact: true })).toHaveValue('My draft name');
   expect(screen.getByLabelText('Description')).toHaveValue('My draft description');
-  expect(screen.getByLabelText('Design style')).toHaveValue('x'.repeat(81));
+  expect(screen.getByLabelText('Design style')).toHaveValue(originalStyle);
   expect(screen.getByLabelText('Design style')).toHaveAttribute('aria-invalid', 'true');
   await waitFor(() => expect(screen.getByLabelText('Design style')).toHaveFocus());
   expect(screen.queryByText('Project saved.')).not.toBeInTheDocument();
+});
+
+test('the boundary checks the input first and does not call the server', async () => {
+  const user = userEvent.setup();
+  mount();
+  await edit(user);
+  api.put.mockClear();
+  // maxLength stops typing, but a pasted or scripted value can still be too long.
+  fireEvent.change(screen.getByLabelText('Design style'), { target: { value: 'x'.repeat(81) } });
+  await user.click(screen.getByRole('button', { name: 'Save project' }));
+  await screen.findByText('Use 80 characters or less.');
+  expect(api.put).not.toHaveBeenCalled();
+  expect(screen.getByLabelText('Design style')).toHaveAttribute('aria-invalid', 'true');
 });
 
 test('a past project can change its completion date without sending the creation date', async () => {

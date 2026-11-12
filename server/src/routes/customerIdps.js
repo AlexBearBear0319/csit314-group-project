@@ -1,46 +1,30 @@
-const router = require('express').Router();
-const { SearchIDPController } = require('../controller/SearchIDPController');
-const ViewIDPController = require('../controller/ViewIDPController');
-const IDPDatabase = require('../entity/IDPDatabase');
-const { createSignedReadUrl } = require('../storage/IdpImageStorage');
+// =============================================================================
+// ROUTES: customerIdps.js          (the HTTP bridge, not a BCE class)
+// User stories #32 and #33: a Customer searches IDPs and views one.
+// This file only matches an address to a controller method.
+// =============================================================================
 
-router.get('/filters', async (req, res) => res.json(await IDPDatabase.availableFilters()));
+const express = require('express');
+const SearchIDPC = require('../controller/SearchIDPC'); // #32
+const ViewIDPC = require('../controller/ViewIDPC'); // #33
 
+const router = express.Router();
+const search = new SearchIDPC();
+const view = new ViewIDPC();
+
+// The choices for the filter dropdowns: GET /api/customer/idps/filters
+router.get('/filters', async (req, res) => res.json(await search.listFilters()));
+
+// #32 Search and #33 View (list): GET /api/customer/idps[?keyword=&propertyType=&designStyle=&page=&sort=]
+// If any search value is in the address the Customer is searching. Otherwise they
+// are just browsing the list.
 router.get('/', async (req, res) => {
-  const searching = ['keyword', 'propertyType', 'designStyle'].some(key => Object.hasOwn(req.query, key));
-  const result = searching
-    ? await new SearchIDPController().receiveSearchKeyword(req.query)
-    : await new ViewIDPController().retrieveIDP(req.query);
-  return res.json(result);
+  const searching = ['keyword', 'propertyType', 'designStyle'].some((key) => Object.hasOwn(req.query, key));
+  return res.json(searching ? await search.searchIDPs(req.query) : await view.browseIDPs(req.query));
 });
 
-router.post('/:id/view', async (req, res) => {
-  const project = await new ViewIDPController().selectIDP(req.params.id);
-  if (!project) return res.status(404).json({ message: 'Project not found.' });
-
-  const orderedImages = [...project.images].sort((left, right) =>
-    left.sortOrder - right.sortOrder || left.id - right.id);
-  const images = await Promise.all(orderedImages.map(async image => {
-    let url = null;
-    try {
-      url = await createSignedReadUrl(image.storagePath);
-    } catch {
-      // The gallery displays an unavailable-photo state while details stay readable.
-    }
-    return {
-      id: image.id,
-      fileName: image.fileName,
-      altText: image.altText,
-      sortOrder: image.sortOrder,
-      url,
-    };
-  }));
-  return res.json({ ...project, images, imageCount: images.length });
-});
-
-router.use((error, req, res, next) => {
-  if (error.status === 400) return res.status(400).json({ message: error.message });
-  return next(error);
-});
+// #33 View (one project): POST /api/customer/idps/5/view
+// It is a POST because opening a project changes data: it adds 1 to the view count.
+router.post('/:id/view', async (req, res) => res.json(await view.viewIDP(req.params.id)));
 
 module.exports = router;

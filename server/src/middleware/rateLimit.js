@@ -1,3 +1,10 @@
+// =============================================================================
+// MIDDLEWARE: rateLimit
+// Slows down guessing. Login and sign-up allow only a limited number of tries in 15
+// minutes, counted for each IP address and for each user ID. Over the limit, the
+// server answers 429 (Too Many Requests) before the controller runs.
+// =============================================================================
+
 const buckets = new Map();
 let requestCount = 0;
 

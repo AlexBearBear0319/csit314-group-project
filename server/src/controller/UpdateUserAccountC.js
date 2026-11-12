@@ -1,61 +1,64 @@
 // =============================================================================
-// CONTROLLER: UpdateUserAccountC
-// User story #8: "As a User Admin, I want to update user accounts so that
-// users' information stays up to date."
+// CONTROLLER: UpdateUserAccountC          (BCE: Controller layer)
+// User story #8: As a User Admin, I want to update a user account so that I
+// can manage platform access.
 //
-// HOW THE REQUEST TRAVELS:
-//   Boundary (the web page) -> route PUT /api/user-accounts/:id
-//   -> UpdateUserAccountC.updateAccount()      <- THIS FILE
-//   -> UserAccount.updateAccount()  (entity, saves to the database)
+// Sequence for story #8:
+//   1. UpdateUserAccountPg checks the form, then sends the changes here
+//   2. UpdateUserAccountC.updateAccount(id, body)          <- THIS FILE
+//        a. check the ID and the fields that were sent
+//        b. UserAccount.viewAccount(id)            does the account exist?
+//        c. UserProfile.viewProfile(profileId)     is the new profile real?
+//        d. UserAccount.findDuplicates(..., id)    is the new user ID / email free?
+//        e. hash the new password (only if one was sent)
+//        f. UserAccount.updateAccount(id, values)  save the changes
+//   3. the updated account goes back -> displaySuccess()
 //
-// Only the fields that are sent get changed. For example, sending only
-// { "name": "New Name" } changes the name and leaves the password alone.
+// Only the fields that are sent are changed. Sending only { name } changes the
+// name and leaves the password alone.
 //
-// Alternative flow: REACTIVATE a suspended account by sending
-// { "status": "active" }. The user can then log in again. Sending
-// "suspended" is refused (use SuspendUserAccountC, story #9).
-// The status check lives in accountValues (userAccountValidation.js).
-//
-// (The words const, require, class, async, await, return and throw are
-// explained at the top of CreateUserAccountC.js.)
+// Alternative flow: reactivate a suspended account by sending
+// { status: 'active' }. Sending 'suspended' is refused; suspending belongs to
+// SuspendUserAccountC (story #9).
 // =============================================================================
 
-// Load the entity class that saves to the user_account table.
+const bcrypt = require('bcryptjs');
 const UserAccount = require('../entity/UserAccount');
+const UserProfile = require('../entity/UserProfile');
+const RequestError = require('./RequestError');
+const { accountId, checkAccountFields } = require('./userAccountValidation');
 
-// Load 3 shared helpers: the error type, the ID check and the field checks.
-const { RequestError, accountId, accountValues } = require('./userAccountValidation');
+const SALT_ROUNDS = 10;
 
-// Start of the class for story #8.
 class UpdateUserAccountC {
-  // ---------------------------------------------------------------------------
-  // FUNCTION: updateAccount
-  // WHAT IT DOES: checks the changes and saves them to one account.
-  // RECEIVES: id   = the account ID from the web address, as text
-  //           body = only the fields to change, such as { name, email,
-  //                  profileId, password, status }
-  // GIVES BACK: the updated account, or null if the account does not exist.
-  // ---------------------------------------------------------------------------
+  // Receives: id = the account ID from the web address, as text
+  //           body = only the fields to change
+  // Returns:  the updated account (no password).
   async updateAccount(id, body) {
-    // Step 1: check only the fields that were sent ({ partial: true }).
-    const values = await accountValues(body, { partial: true });
+    // Step 2a: check the ID and only the fields that were sent (partial).
+    const targetId = accountId(id);
+    const { values, errors } = checkAccountFields(body, { partial: true });
 
-    // Step 2: ask the entity to update. It answers with
-    //   null                    -> no account with this ID
-    //   { conflict: {...} }     -> the new user ID or email belongs to someone else
-    //   { account: {...} }      -> saved
-    const result = await UserAccount.updateAccount(accountId(id), values);
+    // Step 2b: the account must exist. We check this before the other lookups.
+    if (!(await UserAccount.viewAccount(targetId))) throw new RequestError(404, 'User account not found.');
 
-    // Step 3: pass "not found" on as null (the route sends 404) ...
-    if (!result) return null;
+    // Step 2c: a new profile must exist.
+    if (values.profileId && !(await UserProfile.viewProfile(values.profileId))) {
+      errors.profileId = 'Choose a user profile.';
+    }
+    if (Object.keys(errors).length) throw new RequestError(400, 'Check the fields and try again.', errors);
 
-    // ... turn a conflict into 409 ...
-    if (result.conflict) throw new RequestError(409, 'Some details are already in use.', result.conflict);
+    // Step 2d: the new user ID or email must not belong to another account.
+    // We pass targetId so saving your own unchanged email is not a clash.
+    const duplicates = await UserAccount.findDuplicates(values, targetId);
+    if (Object.keys(duplicates).length) throw new RequestError(409, 'Some details are already in use.', duplicates);
 
-    // ... or return the updated account (the route sends 200 OK).
-    return result.account;
-  } // End of updateAccount.
-} // End of the class.
+    // Step 2e: hash a new password. We never store plain text.
+    if (values.password) values.password = await bcrypt.hash(values.password, SALT_ROUNDS);
 
-// Let other files load this class. routes/userAccounts.js uses it.
+    // Step 2f: save.
+    return UserAccount.updateAccount(targetId, values);
+  }
+}
+
 module.exports = UpdateUserAccountC;

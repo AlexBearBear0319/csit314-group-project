@@ -1,3 +1,9 @@
+// =============================================================================
+// COMPONENT: ProjectFolderCard
+// A project card in the designer's list (stories #24, #29) with View, Edit and Delete.
+// It also shows the view count (#30) and the shortlist count (#31).
+// =============================================================================
+
 import { useEffect, useId, useRef, useState } from 'react';
 import Button from './Button';
 import useProjectImages from '../useProjectImages';

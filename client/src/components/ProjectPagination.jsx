@@ -1,3 +1,8 @@
+// =============================================================================
+// COMPONENT: ProjectPagination
+// The page buttons of the designer's project list (nine projects per page).
+// =============================================================================
+
 import Button from './Button';
 
 export default function ProjectPagination({ page, pagination, onPageChange }) {

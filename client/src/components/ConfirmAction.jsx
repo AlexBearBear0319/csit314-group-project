@@ -1,3 +1,9 @@
+// =============================================================================
+// COMPONENT: ConfirmAction
+// A button that opens a "Are you sure?" pop-up before a delete or suspend. If the server
+// refuses (for example "category in use"), the message shows inside the pop-up.
+// =============================================================================
+
 import { useId, useRef, useState } from 'react';
 import Button from './Button';
 import Message from './Message';

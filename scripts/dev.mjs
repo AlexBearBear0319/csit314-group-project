@@ -1,3 +1,8 @@
+// =============================================================================
+// SCRIPT: dev.mjs (npm run dev)
+// Starts the server and the client together and stops both on Ctrl+C.
+// =============================================================================
+
 import { spawn } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 

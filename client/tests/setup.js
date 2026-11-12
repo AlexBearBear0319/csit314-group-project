@@ -1,3 +1,9 @@
+// =============================================================================
+// TEST SETUP
+// Runs before every page test: cleans the page and adds the browser parts that
+// the test environment does not have (media settings, dialog, object URLs).
+// =============================================================================
+
 import '@testing-library/jest-dom/vitest';
 import { cleanup } from '@testing-library/react';
 import { afterEach, vi } from 'vitest';

@@ -1,10 +1,26 @@
+// =============================================================================
+// MIDDLEWARE: authenticateSession
+// Three small checks that run BEFORE a route reaches its controller. routes/
+// index.cjs puts them in front of each group of routes.
+//
+//   authenticateSession -> is someone logged in? (401 if not)
+//   requireRole(role)   -> is it the right role for this feature? (403 if not)
+//   requireCsrf         -> for changes (POST/PUT/PATCH/DELETE): does the
+//                          X-CSRF-Token header match the session? (403 if not)
+//                          This stops other websites from sending requests
+//                          with the user's cookie.
+//
+// The "is this session real?" decision is made by VerifySessionC. This file
+// only reads the cookie and passes the result on.
+// =============================================================================
+
 const crypto = require('node:crypto');
-const { Op } = require('sequelize');
-const { UserAccount, UserProfile, UserSession } = require('../entity');
-const { sessionRole } = UserAccount;
+const VerifySessionC = require('../controller/VerifySessionC');
 
 const COOKIE_NAME = 'csit314_session';
+const verifySession = new VerifySessionC();
 
+// Reads our session cookie out of the Cookie header. Returns null if missing.
 function cookieToken(req) {
   const header = req.get('Cookie') || '';
   const item = header.split(';').map((part) => part.trim()).find((part) => part.startsWith(`${COOKIE_NAME}=`));
@@ -16,37 +32,18 @@ function cookieToken(req) {
   }
 }
 
-function hashToken(token) {
-  return crypto.createHash('sha256').update(token).digest('hex');
-}
+async function authenticateSession(req, res, next) {
+  try {
+    const result = await verifySession.verifySession(cookieToken(req));
+    if (!result) return res.status(401).json({ message: 'Sign in to continue.' });
 
-function authenticateSession(req, res, next) {
-  const token = cookieToken(req);
-  if (!token) return res.status(401).json({ message: 'Sign in to continue.' });
-
-  return UserSession.findOne({
-    where: { tokenHash: hashToken(token), expiresAt: { [Op.gt]: new Date() } },
-    include: [{ model: UserAccount, include: [UserProfile] }],
-  }).then(async (session) => {
-    const account = session?.UserAccount;
-    const profile = account?.UserProfile;
-    const role = sessionRole(profile?.name);
-    if (!session || !account || account.status !== 'active' || profile?.status !== 'active' || !role) {
-      if (session) await session.destroy();
-      return res.status(401).json({ message: 'Sign in to continue.' });
-    }
-
-    req.auth = {
-      accountId: account.id,
-      username: account.username,
-      name: account.name,
-      email: account.email,
-      photo: account.photo,
-      role,
-    };
-    req.userSession = session;
+    // The rest of the request can read who is logged in from req.auth.
+    req.auth = result.auth;
+    req.userSession = result.session;
     return next();
-  }).catch(next);
+  } catch (error) {
+    return next(error);
+  }
 }
 
 function requireRole(role) {
@@ -62,10 +59,12 @@ function requireCsrf(req, res, next) {
   const expected = req.userSession?.csrfToken || '';
   const suppliedBytes = Buffer.from(supplied);
   const expectedBytes = Buffer.from(expected);
+  // timingSafeEqual compares in constant time, so the response time cannot
+  // be used to guess the token.
   if (!expected || suppliedBytes.length !== expectedBytes.length || !crypto.timingSafeEqual(suppliedBytes, expectedBytes)) {
     return res.status(403).json({ message: 'Refresh the page and try again.' });
   }
   return next();
 }
 
-module.exports = { COOKIE_NAME, authenticateSession, requireCsrf, requireRole, hashToken };
+module.exports = { COOKIE_NAME, authenticateSession, requireCsrf, requireRole };

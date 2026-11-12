@@ -1,32 +1,19 @@
 // =============================================================================
-// ENTITY: ShortlistItem
-// User stories #34-36: a Customer saves, searches and views shortlisted IDPs.
+// ENTITY: ShortlistItem          (BCE: Entity layer)
+// Stories #34-36: a Customer saves, searches and views shortlisted IDPs.
+// One row in the shortlist_item table means "this Customer saved this project".
 //
-// One row in the shortlist_item table means: "this Customer saved this project".
+// Table: shortlist_item (customer_account_id, project_id). The pair is unique,
+// so a Customer can save a project only once.
 //
-// HOW A REQUEST TRAVELS (BCE = Boundary, Controller, Entity):
-//   Boundary (the web page) -> routes/shortlist.js -> a Shortlist controller
-//   -> ShortlistItem  <- THIS FILE, the only layer that reads or writes this table
-//
-// WORDS USED IN THIS FILE:
-//   const   = give a value a name. The name keeps that value.
-//   require = load code from another file so this file can use it.
-//   class   = a group of related functions. A function in a class is a "method".
-//   static  = call the method on the class itself: ShortlistItem.viewSaved(...).
-//   async   = this function takes time (it waits for the database).
-//   await   = wait here for the slow work to finish, then carry on.
-//   return  = stop the function and hand back this value.
+// This class only does CRUD on its own table. The controllers (SaveShortlistC,
+// SearchShortlistC, ViewShortlistC) decide what is allowed, then call it.
 // =============================================================================
 
-// Load the tools from Sequelize, the library that talks to the database for us.
-const { DataTypes, Model, UniqueConstraintError } = require('sequelize');
-// Load the database connection.
+const { DataTypes, Model } = require('sequelize');
 const sequelize = require('../db');
-// Load the account table, because each saved row belongs to a Customer account.
 const UserAccount = require('./UserAccount');
-// Load the project table, because each saved row points at a project.
 const InteriorDesignProject = require('./InteriorDesignProject');
-// Load the photo table, because the View page shows a project's photos.
 const ProjectImage = require('./ProjectImage');
 
 // =============================================================================
@@ -58,36 +45,28 @@ function summaryFields(item) {
 // Start of the class. "extends Model" gives it database methods such as findOne.
 class ShortlistItem extends Model {
   // ---------------------------------------------------------------------------
-  // FUNCTION: saveProject
-  // Story #34: Save IDP to shortlist.
-  // RECEIVES: customerAccountId = the logged-in Customer's account ID
-  //           projectId         = the project to save
-  // GIVES BACK: { project } when saved, { conflict: true } when it is already
-  //             saved, or null when no project has this ID.
+  // CREATE (story #34)
+  // Saves one row. SaveShortlistC has already checked that the project exists
+  // and that this Customer has not saved it yet.
+  // Returns the saved project's safe fields.
+  // SQL: INSERT INTO shortlist_item (customer_account_id, project_id) VALUES (?, ?)
   // ---------------------------------------------------------------------------
-  static async saveProject(customerAccountId, projectId) {
-    // 1. Check that the project exists. findByPk = find by primary key (the ID).
-    const project = await InteriorDesignProject.findByPk(projectId);
-    if (!project) return null; // no such project, so stop
-
-    // 2. Try to save the row. "try" means: if this fails, jump to "catch".
-    try {
-      // SQL: INSERT INTO shortlist_item (customer_account_id, project_id) VALUES (?, ?)
-      const item = await ShortlistItem.create({ customerAccountId, projectId });
-      // 3. Read the row back with its project, and send only the safe fields.
-      return { project: await ShortlistItem.viewSaved(customerAccountId, item.projectId) };
-    } catch (error) {
-      // The table allows each Customer to save each project only once. The
-      // database itself refuses a second copy, even if 2 clicks arrive together.
-      if (error instanceof UniqueConstraintError) return { conflict: true };
-      // Any other problem is unexpected, so pass it on to the error handler.
-      throw error;
-    }
-  } // End of saveProject.
+  static async createItem(customerAccountId, projectId) {
+    const item = await ShortlistItem.create({ customerAccountId, projectId });
+    return ShortlistItem.viewSaved(customerAccountId, item.projectId);
+  }
 
   // ---------------------------------------------------------------------------
-  // FUNCTION: viewShortlist
-  // Story: "view my shortlist so that I can see all the IDPs I have saved".
+  // READ one row (used by SaveShortlistC to see if the project is already saved)
+  // Returns the row, or null.
+  // ---------------------------------------------------------------------------
+  static async findItem(customerAccountId, projectId) {
+    return ShortlistItem.findOne({ where: { customerAccountId, projectId } });
+  }
+
+  // ---------------------------------------------------------------------------
+  // READ all (story #36, the list)
+  // "View my shortlist so that I can see all the IDPs I have saved".
   // RECEIVES: customerAccountId = the logged-in Customer's account ID
   // GIVES BACK: every project this Customer saved, the latest save at the top.
   // ---------------------------------------------------------------------------
@@ -185,16 +164,13 @@ class ShortlistItem extends Model {
   } // End of countsByProject.
 
   // ---------------------------------------------------------------------------
-  // FUNCTION: countForOwnedProject
-  // Story #31: the shortlist count of one project, for the designer who owns it.
-  // GIVES BACK: the count, or null if the project is not found or not theirs.
+  // READ a count (story #31)
+  // How many Customers saved this project. ViewIDPShortlistCountC has already
+  // checked that the project belongs to the designer who asked.
   // ---------------------------------------------------------------------------
-  static async countForOwnedProject(designerAccountId, projectId) {
-    // Check ownership first, so a designer cannot read another designer's numbers.
-    const project = await InteriorDesignProject.findOne({ where: { id: projectId, designerAccountId }, attributes: ['id'] });
-    if (!project) return null;
-    return ShortlistItem.count({ where: { projectId: project.id } });
-  } // End of countForOwnedProject.
+  static async countForProject(projectId) {
+    return ShortlistItem.count({ where: { projectId } });
+  }
 } // End of the class.
 
 // -----------------------------------------------------------------------------

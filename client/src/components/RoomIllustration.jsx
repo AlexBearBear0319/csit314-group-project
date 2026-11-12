@@ -1,3 +1,8 @@
+// =============================================================================
+// COMPONENT: RoomIllustration
+// A drawing of a room, used on the designer dashboard. Not part of a user story.
+// =============================================================================
+
 import { ROOM_PALETTES } from './roomPalettes';
 
 // A code-drawn concept room. It is not a photograph of a client project.

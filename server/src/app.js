@@ -5,6 +5,7 @@ const express = require('express');
 const cors = require('cors');
 const routesModule = require('./routes/index.cjs');
 const { allowedOrigins, requireTrustedOrigin } = require('./security/browserOrigin');
+const errorHandler = require('./middleware/errorHandler');
 
 function resolveRouterExport(moduleValue) {
   const pending = [moduleValue];
@@ -51,9 +52,8 @@ if (typeof routes !== 'function') {
 }
 app.use('/api', routes);
 
-app.use((error, req, res, next) => {
-  if (res.headersSent) return next(error);
-  return res.status(500).json({ message: 'The request could not be completed.' });
-});
+// Every error thrown by a controller or an entity ends up here (see
+// middleware/errorHandler.js). It must be registered last.
+app.use(errorHandler);
 
 module.exports = app;

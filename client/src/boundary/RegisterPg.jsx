@@ -1,3 +1,19 @@
+// =============================================================================
+// BOUNDARY: RegisterPg / RegisterChoicePg (BCE: Boundary layer)
+// Sign-up for a Customer or an Interior Designer. (A User Admin creates other
+// accounts with CreateUserAccountPg, story #6.)
+//
+// RegisterChoicePg  asks "Customer or Interior Designer?" and links to RegisterPg.
+//
+// What RegisterPg does (the steps of our sequence diagram for sign-up):
+//   1. shows the form: name, email, user ID, password, confirm password
+//   2. validateInput()           checks every box BEFORE anything is sent
+//   3. register()                sends the values to RegisterAccountC
+//                                (POST /api/register/customer or /designer)
+//   4. displaySuccess(result)    the account is made and logged in: open home
+//      displayError(failure)     something is wrong: show the message
+// =============================================================================
+
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ApiError, api } from '../api';
@@ -5,6 +21,7 @@ import Button from '../components/Button';
 import FormField from '../components/FormField';
 import Message from '../components/Message';
 import { homeForRole, setUser, useSession } from '../session';
+import { EMAIL_PATTERN, USERNAME_PATTERN, checkPassword, checkRequiredText, onlyProblems, text } from './inputRules';
 
 export function RegisterChoicePg() {
   const { user } = useSession();
@@ -51,22 +68,51 @@ export default function RegisterPg({ role }) {
     setErrors((current) => ({ ...current, [name]: '' }));
   }
 
+  // Step 4: the account is made and the user is logged in.
+  function displaySuccess({ account, csrfToken, expiresAt }) {
+    setUser(account, csrfToken, expiresAt);
+    navigate(homeForRole(account.role), { replace: true });
+  }
+
+  // Step 4: show what went wrong (from validateInput or from the server).
+  function displayError(failure) {
+    if (failure instanceof ApiError) {
+      setError(failure.message);
+      setErrors(failure.errors || {});
+    } else {
+      setError('The account could not be created. Try again.');
+    }
+  }
+
+  // Step 2: check every box. Same rules as the server. Returns true if all fine.
+  function validateInput() {
+    const email = text(values.email).toLowerCase();
+    const problems = onlyProblems({
+      name: checkRequiredText(values.name, { label: 'name', max: 100 }),
+      email: EMAIL_PATTERN.test(email) && email.length <= 254 ? '' : 'Enter a valid email address.',
+      username: USERNAME_PATTERN.test(text(values.username)) ? '' : 'Use 3 to 64 letters, numbers, dots, underscores or hyphens.',
+      password: checkPassword(values.password),
+      passwordConfirmation: values.passwordConfirmation === values.password ? '' : 'Passwords do not match.',
+    });
+    if (Object.keys(problems).length) {
+      displayError(new ApiError('Check the fields and try again.', { data: { errors: problems } }));
+      return false;
+    }
+    return true;
+  }
+
+  // Step 3: send the form to the controller.
   async function submit(event) {
     event.preventDefault();
     setError('');
     setErrors({});
+    if (!validateInput()) return;
+
     setIsSubmitting(true);
     try {
-      const { account, csrfToken, expiresAt } = await api.post(endpoint, values);
-      setUser(account, csrfToken, expiresAt);
-      navigate(homeForRole(account.role), { replace: true });
-    } catch (requestError) {
-      if (requestError instanceof ApiError) {
-        setError(requestError.message);
-        setErrors(requestError.errors || {});
-      } else {
-        setError('The account could not be created. Try again.');
-      }
+      displaySuccess(await api.post(endpoint, values));
+    } catch (failure) {
+      displayError(failure);
     } finally {
       setIsSubmitting(false);
     }

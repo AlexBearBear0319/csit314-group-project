@@ -1,5 +1,5 @@
 // Tests for the company pages: #14 View, #16 Delete, #17 Search.
-// I added displaySuccess() and displayError() to these pages. The pages should
+// These pages have displaySuccess() and displayError(). They should
 // behave the same as before, so these tests check the results and error messages.
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';

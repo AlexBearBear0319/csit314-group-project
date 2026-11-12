@@ -1,9 +1,15 @@
+// =============================================================================
+// TESTS: IDP categories (stories #39-43)
+// Create, view, update, delete and search, duplicate names (409), a category that
+// projects still use (409), and bad IDs.
+// =============================================================================
+
 const { featureSession } = require('./helpers/featureSession');
 let client;
 const { DataTypes } = require('sequelize');
 const { sequelize, IDPCategory } = require('../src/entity');
 
-// A test-only consumer verifies the foreign-key contract for Alex's IDP model.
+// A test-only consumer verifies the foreign-key contract for the IDP model.
 const CategoryReference = sequelize.define('CategoryReferenceTest', {
   categoryId: { type: DataTypes.INTEGER, allowNull: false,
     references: { model: 'idp_category', key: 'id' }, onDelete: 'RESTRICT' },

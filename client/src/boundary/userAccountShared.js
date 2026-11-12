@@ -1,98 +1,81 @@
 // =============================================================================
-// SHARED HELPERS for the User Account boundary pages (stories #6-10).
-// Used by SearchUserAccountPg, CreateUserAccountPg, ViewUserAccountPg,
-// UpdateUserAccountPg and SuspendUserAccountPg, so the field names, labels and
-// wording stay the same on every page.
+// BOUNDARY HELPER: userAccountShared
+// Shared by the user account pages (stories #6-10), so the field names, labels
+// and wording are the same on every page.
 //
-// This file gives other files 3 functions:
-//   statusLabel   - turns a status into nice text to show
-//   accountFields - lists the boxes on the Create and Update forms
-//   toRequestBody - turns the typed form values into what the backend expects
-//
-// "export" means other files are allowed to load that function.
+//   statusLabel           turns 'active' into 'Active' for display
+//   accountFields         the boxes of the Create and Update forms
+//   validateAccountInput  the input check of the Create and Update forms
+//   toRequestBody         turns the typed values into what the server expects
 // =============================================================================
 
-// =============================================================================
-// FUNCTION: statusLabel
-// WHAT IT DOES: turns 'active' into 'Active' and 'suspended' into 'Suspended'
-// for display.
-// RECEIVES: status = the status text from the backend.
-// GIVES BACK: the same word with a capital first letter, or '-' if it is empty.
-// =============================================================================
+import {
+  EMAIL_PATTERN, USERNAME_PATTERN, checkPassword, checkRequiredText, isRealDate, onlyProblems, text,
+} from './inputRules';
+
+// 'active' -> 'Active'. Shows '-' when there is no status.
 export function statusLabel(status) {
-  // ! means "not". If there is no status, show a dash and stop here.
   if (!status) return '-';
-  // charAt(0) is the first letter; slice(1) is everything after it.
   return status.charAt(0).toUpperCase() + status.slice(1);
-} // End of statusLabel.
+}
 
-// =============================================================================
-// FUNCTION: accountFields
-// WHAT IT DOES: lists the fields on the Create and Update forms. FormFields (a
-// shared component) draws one box per entry.
-//   name     - the key sent to the backend (must match the API)
-//   label    - the text shown above the box
-//   type     - the kind of box: 'password', 'email', 'date' (default: text)
-//   options  - turns the box into a dropdown
-//   required - the browser will not submit while this is empty
-//   hint     - small help text under the box
-//
-// RECEIVES:
-//   profiles  = the list from GET /api/user-accounts/profiles, for the dropdown
-//   isUpdate  = true on the Update page: the password becomes optional there
-// GIVES BACK: the list of fields.
-// =============================================================================
+// The boxes of the Create and Update forms. FormFields draws one box for each entry.
+//   profiles = the choices for the "User profile" dropdown
+//   isUpdate = true on the Update page (the password is then optional)
 export function accountFields(profiles, isUpdate = false) {
-  // Hand back the list. Each { } below describes one box on the form.
   return [
-    // Box 1: the user ID. It is required.
     { name: 'username', label: 'User ID', required: true, hint: '3 to 64 letters, numbers, dots, underscores or hyphens.' },
-    // Box 2: the password. a ? b : c means: if a then b, else c.
     {
-      name: 'password', // the key sent to the backend
+      name: 'password',
       label: isUpdate ? 'New password' : 'Password', // different wording on the Update page
       type: 'password', // hides the typed letters
-      required: !isUpdate, // required on Create, optional on Update
-      hint: isUpdate ? 'Leave blank to keep the current password.' : 'At least 12 characters.', // the help text
+      required: !isUpdate,
+      hint: isUpdate ? 'Leave blank to keep the current password.' : 'At least 12 characters.',
     },
-    // Box 3: the person's name. It is required.
     { name: 'name', label: 'Name', required: true },
-    // Box 4: the email. It is required.
     { name: 'email', label: 'Email', type: 'email', required: true },
-    // Box 5: the dropdown of user profiles (roles).
     {
-      name: 'profileId', // the key sent to the backend
-      label: 'User profile', // the text above the dropdown
-      required: true, // the user must choose one
-      // .map turns each profile { id, name } into a dropdown choice { value, label }.
-      // String(...) because dropdown values are always text.
+      name: 'profileId',
+      label: 'User profile',
+      required: true,
       options: profiles.map((profile) => ({ value: String(profile.id), label: profile.name })),
     },
-    // Box 6: the date of birth. It is optional.
     { name: 'dob', label: 'Date of birth', type: 'date' },
   ];
-} // End of accountFields.
+}
 
-// =============================================================================
-// FUNCTION: toRequestBody
-// WHAT IT DOES: turns the form's values into what the backend expects.
-// - Empty optional fields are left out (so Update does not change them).
-// - The password is only sent if one was typed.
-// RECEIVES: values = everything typed into the form.
-// GIVES BACK: the data to send to the backend.
-// =============================================================================
+// -----------------------------------------------------------------------------
+// validateAccountInput
+// The input check of the Create (#6) and Update (#8) forms. It uses the same
+// rules as the server (server/src/controller/userAccountValidation.js).
+// Returns { fieldName: 'message' } with only the wrong boxes.
+//   isUpdate = on the Update page the password may stay empty, and then it is
+//              not changed. A typed password still has to follow the rules.
+// -----------------------------------------------------------------------------
+export function validateAccountInput(values, { isUpdate = false } = {}) {
+  const username = text(values.username).toLowerCase();
+  const email = text(values.email).toLowerCase();
+  const typedPassword = typeof values.password === 'string' && values.password !== '';
+
+  return onlyProblems({
+    username: USERNAME_PATTERN.test(username) ? '' : 'Use 3 to 64 letters, numbers, dots, underscores or hyphens.',
+    password: isUpdate && !typedPassword ? '' : checkPassword(values.password),
+    name: checkRequiredText(values.name, { label: 'name', max: 100 }),
+    email: EMAIL_PATTERN.test(email) && email.length <= 254 ? '' : 'Enter a valid email address.',
+    profileId: values.profileId ? '' : 'Choose a user profile.',
+    dob: !values.dob || isRealDate(values.dob) ? '' : 'Enter a valid date of birth.',
+  });
+}
+
+// Turns the typed values into the body the server expects.
 export function toRequestBody(values) {
-  // Start with the fields that are always sent.
   const body = {
-    username: values.username, // the user ID
-    name: values.name, // the person's name
-    email: values.email, // the email
-    profileId: Number(values.profileId), // the dropdown gives text; the API wants a number
+    username: values.username,
+    name: values.name,
+    email: values.email,
+    profileId: Number(values.profileId), // the dropdown gives text, the server wants a number
   };
-  // Add the password only if one was typed.
   if (values.password) body.password = values.password;
-  // Add the date of birth only if one was chosen.
   if (values.dob) body.dob = values.dob;
-  // Hand back the finished data.
   return body;
-} // End of toRequestBody.
+}

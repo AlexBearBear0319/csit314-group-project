@@ -1,3 +1,9 @@
+// =============================================================================
+// TESTS: startup
+// The app starts for a Vercel Preview without a database URL, and Production still
+// requires one.
+// =============================================================================
+
 jest.mock('dotenv', () => ({ config: jest.fn() }));
 
 const request = require('supertest');

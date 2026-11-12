@@ -1,3 +1,8 @@
+// =============================================================================
+// COMPONENT: ProjectImageCarousel
+// The photo slider inside a project pop-up (arrows, swipe, retry for a failed photo).
+// =============================================================================
+
 import { useRef, useState } from 'react';
 import useProjectImages from '../useProjectImages';
 import ProjectPhoto from './ProjectPhoto';

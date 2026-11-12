@@ -1,3 +1,8 @@
+// =============================================================================
+// TESTS: app startup
+// The app refuses to start if the routes file does not export a router.
+// =============================================================================
+
 const request = require('supertest');
 
 afterEach(() => {

@@ -1,3 +1,10 @@
+// =============================================================================
+// HOOK: useRecord
+// Loads one record by the :id in the address, for example GET /api/idp-categories/5.
+// Used by the View, Update and Delete / Suspend pages. Returns { id, record, error,
+// loading, retry }.
+// =============================================================================
+
 import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { api } from '../api';

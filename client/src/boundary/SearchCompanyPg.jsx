@@ -1,3 +1,16 @@
+// =============================================================================
+// BOUNDARY: SearchCompanyPg                         (BCE: Boundary layer)
+// User story #17: As an Interior Designer, I want to search my company
+// information so that I can find it quickly.
+//
+// What this page does (the steps of our sequence diagram):
+//   1. the designer types a keyword in the search bar (max 255 characters)
+//   2. search(keyword)          sends it to SearchCompanyC
+//                               (GET /api/companies?keyword=...)
+//   3. displaySuccess()         shows the matching company in a table
+//      displayError()           shows the message when the search fails
+// =============================================================================
+
 import { useLocation, useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
 import Message from '../components/Message';

@@ -1,3 +1,8 @@
+// =============================================================================
+// COMPONENT: RecentProjectCard
+// A project card on the designer dashboard, with the first photo.
+// =============================================================================
+
 import useProjectImages from '../useProjectImages';
 import Button from './Button';
 

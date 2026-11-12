@@ -1,72 +1,59 @@
 // =============================================================================
-// CONTROLLER: CreateUserAccountC
-// User story #6: "As a User Admin, I want to create user accounts so that
-// users can join the platform."
+// CONTROLLER: CreateUserAccountC          (BCE: Controller layer)
+// User story #6: As a User Admin, I want to create a user account so that I
+// can manage platform access.
 //
-// HOW THE REQUEST TRAVELS (BCE = Boundary, Controller, Entity):
-//   Boundary (the web page) -> route POST /api/user-accounts
-//   -> CreateUserAccountC.createAccount()      <- THIS FILE
-//   -> UserAccount.createAccount()  (entity, saves to the database)
+// Sequence for story #6:
+//   1. CreateUserAccountPg checks the form, then sends the values here
+//   2. CreateUserAccountC.createAccount(body)             <- THIS FILE
+//        a. check the fields again (a second line of defence)
+//        b. UserProfile.viewProfile(profileId)     is the profile real?
+//        c. UserAccount.findDuplicates(...)        is the user ID / email free?
+//        d. hash the password with bcrypt
+//        e. UserAccount.createAccount(values)      save the account
+//   3. the new account (no password) goes back to the page -> displaySuccess()
 //
-// A controller's job: check the input, call the entity, and turn the entity's
-// answer into either a result or an error. It never touches the database itself.
-//
-// WORDS USED IN THIS FILE:
-//   const   = give a value a name. The name keeps that value.
-//   require = load code from another file so this file can use it.
-//   class   = a group of related functions. A function in a class is a "method".
-//   async   = this function takes time (it waits for the database).
-//   await   = wait here for the slow work to finish, then carry on.
-//   return  = stop the function and hand back this value.
-//   throw   = stop the function and report an error.
+// CreateUserAccountC.listProfiles() fills the "User profile" dropdown on the
+// Create and Update pages.
 // =============================================================================
 
-// Load the entity class that owns the user_account table in the database.
+const bcrypt = require('bcryptjs');
 const UserAccount = require('../entity/UserAccount');
+const UserProfile = require('../entity/UserProfile');
+const RequestError = require('./RequestError');
+const { checkAccountFields } = require('./userAccountValidation');
 
-// Load 2 shared helpers from userAccountValidation.js:
-//   RequestError  = an error that also carries a web status code
-//   accountValues = checks every field that the user typed
-const { RequestError, accountValues } = require('./userAccountValidation');
+const SALT_ROUNDS = 10; // how much work bcrypt does. Higher is slower to crack.
 
-// Start of the class. All the code for story #6 sits inside these { } brackets.
 class CreateUserAccountC {
-  // ---------------------------------------------------------------------------
-  // FUNCTION: createAccount
-  // WHAT IT DOES: checks the typed details and creates a new user account.
-  // RECEIVES: body = what the page sent: { username, password, name, email,
-  //           profileId, dob (optional) }
-  // GIVES BACK: the new account, without its password.
-  // ---------------------------------------------------------------------------
+  // Receives: body = { username, password, name, email, profileId, dob (optional) }
+  // Returns:  the new account, without its password.
   async createAccount(body) {
-    // Step 1: check and clean every field. If anything is wrong, accountValues
-    // throws a 400 error and this method stops here.
-    const values = await accountValues(body);
+    // Step 2a: check every field. We collect all the problems first.
+    const { values, errors } = checkAccountFields(body);
 
-    // Step 2: ask the entity to save it. The entity answers with either
-    //   { account: {...} }                    -> saved
-    //   { conflict: { username: '...' } }     -> user ID or email already used
-    const result = await UserAccount.createAccount(values);
+    // Step 2b: the chosen profile must exist. This needs the database, so it is
+    // checked here and not in the field rules.
+    if (!errors.profileId && !(await UserProfile.viewProfile(values.profileId))) {
+      errors.profileId = 'Choose a user profile.';
+    }
+    if (Object.keys(errors).length) throw new RequestError(400, 'Check the fields and try again.', errors);
 
-    // Step 3: a conflict becomes 409 ("Conflict"), with the field messages so
-    // the page can show "This user ID is already in use." under the right box.
-    if (result.conflict) throw new RequestError(409, 'Some details are already in use.', result.conflict);
+    // Step 2c: the user ID and email must not belong to someone else.
+    const duplicates = await UserAccount.findDuplicates(values);
+    if (Object.keys(duplicates).length) throw new RequestError(409, 'Some details are already in use.', duplicates);
 
-    // Step 4: success. The route sends this back with status 201 (Created).
-    return result.account;
-  } // End of createAccount.
+    // Step 2d: never store a plain-text password.
+    values.password = await bcrypt.hash(values.password, SALT_ROUNDS);
 
-  // ---------------------------------------------------------------------------
-  // FUNCTION: listProfiles
-  // WHAT IT DOES: gets the choices for the form's "User profile" dropdown.
-  // USED BY: both the Create and the Update pages.
-  // GIVES BACK: a list like [{ id: 3, name: 'Customer' }, ...]
-  // ---------------------------------------------------------------------------
+    // Step 2e: save. The entity answers with the safe fields of the new account.
+    return UserAccount.createAccount(values);
+  }
+
+  // Returns the profiles for the dropdown, for example [{ id: 3, name: 'Customer' }].
   async listProfiles() {
-    // Ask the entity for the list and hand its answer straight back.
-    return UserAccount.profileOptions();
-  } // End of listProfiles.
-} // End of the class.
+    return UserProfile.listActiveOptions();
+  }
+}
 
-// Let other files load this class. routes/userAccounts.js uses it.
 module.exports = CreateUserAccountC;

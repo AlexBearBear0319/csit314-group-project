@@ -1,4 +1,21 @@
-﻿import { useState } from 'react';
+// =============================================================================
+// BOUNDARY: SearchUserProfilePg                     (BCE: Boundary layer)
+// User story #5: As a User Admin, I want to search for user profiles so that
+// I can quickly find a specific profile.
+//
+// This page is also the profile list: with no keyword it shows every profile,
+// and it links to View (#2), Update (#3) and Suspend (#4). "Activate" is the
+// alternative flow of #4.
+//
+// What this page does (the steps of our sequence diagram):
+//   1. the admin types a keyword in the search bar (max 255 characters)
+//   2. search(keyword)          sends it to SearchUserProfileC
+//                               (GET /api/user-profiles?keyword=...)
+//   3. shows the matching profiles in a table, or the load error
+//   4. activateProfile(row)     POST /api/user-profiles/:id/activate, then reloads
+// =============================================================================
+
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import Button from '../components/Button';

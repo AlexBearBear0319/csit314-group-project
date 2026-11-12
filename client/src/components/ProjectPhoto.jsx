@@ -1,3 +1,8 @@
+// =============================================================================
+// COMPONENT: ProjectPhoto
+// One project photo, with a loading message and a Retry button when the photo fails.
+// =============================================================================
+
 import { useState } from 'react';
 import Button from './Button';
 

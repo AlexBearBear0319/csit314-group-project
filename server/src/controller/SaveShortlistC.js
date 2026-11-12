@@ -1,49 +1,43 @@
 // =============================================================================
-// CONTROLLER: SaveShortlistC
-// User story #34: "As a Customer, I want to save an IDP to my shortlist."
+// CONTROLLER: SaveShortlistC              (BCE: Controller layer)
+// User story #34: As a Customer, I want to save an IDP to my shortlist so that
+// I can find it again later.
 //
-// HOW THE REQUEST TRAVELS:
-//   Boundary (the web page) -> route POST /api/customer/shortlist
-//   -> SaveShortlistC.saveProject()      <- THIS FILE
-//   -> ShortlistItem.saveProject()  (entity, saves to the database)
+// Sequence for story #34:
+//   1. SaveShortlistPg sends { projectId } when the Customer taps "Save"
+//   2. SaveShortlistC.saveProject(customerAccountId, body)   <- THIS FILE
+//        a. check the project ID
+//        b. InteriorDesignProject.findProject(id)  does the project exist?
+//        c. ShortlistItem.findItem(...)            already saved? -> 409
+//        d. ShortlistItem.createItem(...)          save it
+//   3. the saved project goes back -> displaySuccess()
 //
-// (The words const, require, class, async, await, return are explained at the
-// top of entity/ShortlistItem.js.)
+// customerAccountId comes from the login session on the server, never from the
+// page, so a Customer can only change their own shortlist.
 // =============================================================================
 
-// Load the entity class that saves to the shortlist_item table.
 const ShortlistItem = require('../entity/ShortlistItem');
-// Load the error type that also carries a web status code.
-const { RequestError } = require('./userAccountValidation');
-// Load the check for the project ID.
+const InteriorDesignProject = require('../entity/InteriorDesignProject');
+const RequestError = require('./RequestError');
 const { projectIdFromBody } = require('./shortlistValidation');
 
-// Start of the class for story #34.
 class SaveShortlistC {
-  // ---------------------------------------------------------------------------
-  // FUNCTION: saveProject
-  // WHAT IT DOES: saves one project to the logged-in Customer's shortlist.
-  // RECEIVES: customerAccountId = from the login session, never from the browser
-  //           body              = what the page sent: { projectId }
-  // GIVES BACK: the saved project, or null if no project has this ID.
-  // ---------------------------------------------------------------------------
+  // Receives: customerAccountId = the logged-in Customer, body = { projectId }
+  // Returns:  the saved project's safe fields.
   async saveProject(customerAccountId, body) {
-    // Step 1: check the project ID. If it is wrong, this stops with a 400 error.
     const projectId = projectIdFromBody(body);
 
-    // Step 2: ask the entity to save it.
-    const result = await ShortlistItem.saveProject(customerAccountId, projectId);
+    if (!(await InteriorDesignProject.findProject(projectId))) {
+      throw new RequestError(404, 'This project is not available.');
+    }
 
-    // Step 3: pass "not found" on as null (the route sends 404) ...
-    if (!result) return null;
+    // Business rule: a project can be in a Customer's shortlist only once.
+    if (await ShortlistItem.findItem(customerAccountId, projectId)) {
+      throw new RequestError(409, 'This project is already in your shortlist.');
+    }
 
-    // ... turn "already saved" into 409 Conflict ...
-    if (result.conflict) throw new RequestError(409, 'This project is already in your shortlist.');
+    return ShortlistItem.createItem(customerAccountId, projectId);
+  }
+}
 
-    // ... or return the saved project (the route sends 201 Created).
-    return result.project;
-  } // End of saveProject.
-} // End of the class.
-
-// Let other files load this class. routes/shortlist.js uses it.
 module.exports = SaveShortlistC;

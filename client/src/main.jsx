@@ -1,3 +1,9 @@
+// =============================================================================
+// ENTRY: main.jsx
+// Starts the React website. It draws <App /> inside the browser router, so the
+// address bar (for example /admin/accounts) decides which Boundary page shows.
+// =============================================================================
+
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BrowserRouter } from 'react-router-dom';

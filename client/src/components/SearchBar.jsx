@@ -47,6 +47,7 @@ export default function SearchBar({
         className="min-h-[46px] min-w-0 flex-1 rounded-control border border-border bg-white px-3 py-2.5 text-base text-ink shadow-sm placeholder:text-muted focus-visible:border-action focus-visible:ring-2 focus-visible:ring-action/20"
         placeholder={placeholder}
         value={keyword}
+        maxLength={255} // the server accepts search text of up to 255 characters
         onChange={(event) => setKeyword(event.target.value)}
       />
       <Button type="submit" variant="primary" className="sm:min-w-28">Search</Button>

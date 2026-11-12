@@ -1,3 +1,10 @@
+// =============================================================================
+// HOOK: useProjectImages
+// Keeps the photo links of one project fresh. The links expire after a few minutes
+// (they are private), so when a photo fails to load this hook asks the server for new
+// links. Used by the project cards, the photo carousel and the pop-up.
+// =============================================================================
+
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { api } from './api';
 

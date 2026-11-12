@@ -1,3 +1,10 @@
+// =============================================================================
+// HOOK: useRecordSearch
+// Loads a list with a search keyword, for example GET /api/user-profiles?keyword=admin.
+// The keyword stays in the web address, so Back and Refresh keep the same results.
+// Used by the Search pages. Returns { keyword, rows, error, loading, search, retry }.
+// =============================================================================
+
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api';

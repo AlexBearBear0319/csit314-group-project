@@ -1,3 +1,9 @@
+// =============================================================================
+// TEST HELPER: featureSession
+// Logs in a test user with the given role and returns a client that already has the
+// cookie and CSRF token, so a test can call the API like that user would.
+// =============================================================================
+
 const request = require('supertest');
 const bcrypt = require('bcryptjs');
 const app = require('../../src/app');

@@ -1,3 +1,9 @@
+// =============================================================================
+// COMPONENT: StudioMotion
+// The short room animation on the designer dashboard (Remotion player). It stops
+// when the user prefers reduced motion. Not part of a user story.
+// =============================================================================
+
 import { useEffect, useRef, useState, useSyncExternalStore } from 'react';
 import { Player } from '@remotion/player';
 import { interpolate, useCurrentFrame, useVideoConfig } from 'remotion';

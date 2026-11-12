@@ -1,3 +1,10 @@
+// =============================================================================
+// COMPONENT: FormField
+// One labelled input box (text, textarea, dropdown, date or file) with its hint and
+// its error message. Boundary pages put the message from validateInput() or from the
+// server in the `error` prop, and it shows under the box.
+// =============================================================================
+
 const CONTROL_CLASS =
   'min-h-[46px] w-full rounded-control border border-border bg-white px-3 py-2.5 text-base text-ink shadow-sm placeholder:text-muted focus-visible:border-action focus-visible:ring-2 focus-visible:ring-action/20 aria-invalid:border-danger disabled:cursor-not-allowed disabled:bg-surface-hover disabled:text-muted';
 

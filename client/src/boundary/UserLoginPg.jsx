@@ -1,4 +1,19 @@
-// BOUNDARY: UserLoginPg (login for all four roles)
+// =============================================================================
+// BOUNDARY: UserLoginPg                   (BCE: Boundary layer)
+// User stories #11, #18, #37, #47: a User Admin, Interior Designer, Customer and
+// Platform Manager can log in. All four roles use this one page. After the
+// login, homeForRole() opens the home screen of the role.
+//
+// What this page does (the steps of our sequence diagram for login):
+//   1. shows the form: user ID and password
+//   2. validateInput()           both boxes must be filled BEFORE we send
+//   3. login()                   sends { username, password } to UserLoginC
+//                                (POST /api/login)
+//   4. displaySuccess(account)   the login worked: open the home screen
+//      displayError(failure)     the login failed: show the message
+//                                (for example "Wrong user ID or password.")
+// =============================================================================
+
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { ApiError, api } from '../api';
@@ -19,16 +34,37 @@ export default function UserLoginPg() {
     if (user) navigate(homeForRole(user.role), { replace: true });
   }, [navigate, user]);
 
-  async function handleSubmit(e) {
+  // Step 4: the login worked. Keep the user in the session and open their home.
+  function displaySuccess({ account, csrfToken, expiresAt }) {
+    setUser(account, csrfToken, expiresAt);
+    navigate(homeForRole(account.role), { replace: true });
+  }
+
+  // Step 4: show what went wrong.
+  function displayError(failure) {
+    setError(failure instanceof ApiError ? failure.message : 'Login failed. Check your details and try again.');
+  }
+
+  // Step 2: both boxes must be filled. Returns true if everything is fine.
+  function validateInput() {
+    if (!username.trim() || !password) {
+      displayError(new ApiError('Enter your user ID and password.'));
+      return false;
+    }
+    return true;
+  }
+
+  // Step 3: send the user ID and password to the controller.
+  async function login(e) {
     e.preventDefault();
     setError('');
+    if (!validateInput()) return;
+
     setIsSubmitting(true);
     try {
-      const { account, csrfToken, expiresAt } = await api.post('/login', { username, password });
-      setUser(account, csrfToken, expiresAt);
-      navigate(homeForRole(account.role), { replace: true });
-    } catch (requestError) {
-      setError(requestError instanceof ApiError ? requestError.message : 'Login failed. Check your details and try again.');
+      displaySuccess(await api.post('/login', { username, password }));
+    } catch (failure) {
+      displayError(failure);
     } finally {
       setIsSubmitting(false);
     }
@@ -46,7 +82,7 @@ export default function UserLoginPg() {
             </Button>
           )}
         </div>
-        <form className="grid gap-5" onSubmit={handleSubmit}>
+        <form className="grid gap-5" onSubmit={login}>
           <FormField
             id="username"
             name="username"

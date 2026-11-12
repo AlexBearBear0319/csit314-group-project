@@ -1,3 +1,11 @@
+// =============================================================================
+// STORAGE: IdpImageStorage
+// The only file that talks to Supabase Storage (where the project photos live).
+// ManageIDPImageC and the photo viewers call it. It can make a one-time upload link,
+// check an uploaded file (real type and size), make a short-lived read link and remove
+// files. The bucket is private, so a photo is only reachable through these links.
+// =============================================================================
+
 const MAX_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
 const ALLOWED_CONTENT_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 let testAdapter = null;

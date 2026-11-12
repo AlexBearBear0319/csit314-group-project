@@ -1,3 +1,8 @@
+// =============================================================================
+// TESTS: project photos
+// The photo carousel and the project card keep working when a photo link expires.
+// =============================================================================
+
 import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { beforeEach, expect, test, vi } from 'vitest';

@@ -1,3 +1,8 @@
+// =============================================================================
+// COMPONENT: ProjectPreviewDialog
+// The pop-up that shows one project (stories #21, #26, #33, #36).
+// =============================================================================
+
 import { useEffect, useRef } from 'react';
 import Button from './Button';
 import DetailsView from './DetailsView';

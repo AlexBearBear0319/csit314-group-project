@@ -1,3 +1,18 @@
+// =============================================================================
+// BOUNDARY: ViewUserProfilePg                       (BCE: Boundary layer)
+// User story #2: As a User Admin, I want to view a user profile so that I can
+// check its details.
+//
+// It also has the buttons for Update (#3) and Suspend (#4). For a suspended
+// profile it shows "Activate profile" instead, the alternative flow of #4.
+//
+// What this page does (the steps of our sequence diagram):
+//   1. useUserProfile() loads the profile (GET /api/user-profiles/:id) from
+//      ViewUserProfileC
+//   2. shows the details and the buttons, or the load error
+//   3. activateProfile()        POST /api/user-profiles/:id/activate, then reloads
+// =============================================================================
+
 import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { api } from '../api';

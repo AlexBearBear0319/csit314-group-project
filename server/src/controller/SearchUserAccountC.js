@@ -1,35 +1,28 @@
 // =============================================================================
-// CONTROLLER: SearchUserAccountC
-// User story #10: "As a User Admin, I want to search for user accounts so
-// that I can quickly find a specific user."
+// CONTROLLER: SearchUserAccountC          (BCE: Controller layer)
+// User story #10: As a User Admin, I want to search for user accounts so that
+// I can manage platform access.
 //
-// HOW THE REQUEST TRAVELS:
-//   Boundary (the web page) -> route GET /api/user-accounts?keyword=kaz
-//   -> SearchUserAccountC.searchAccounts()     <- THIS FILE
-//   -> UserAccount.searchAccounts()  (entity, reads the database)
-//
-// (The words const, require, class, async and return are explained at the top
-// of CreateUserAccountC.js.)
+// Sequence for story #10:
+//   1. SearchUserAccountPg sends the keyword the admin typed
+//   2. SearchUserAccountC.searchAccounts(keyword)          <- THIS FILE
+//        a. make sure the keyword is plain text (and not too long)
+//        b. UserAccount.searchAccounts(keyword)     find the matches
+//   3. the list goes back, and the page shows it (or "no results")
 // =============================================================================
 
-// Load the entity class that reads the user_account table.
 const UserAccount = require('../entity/UserAccount');
+const RequestError = require('./RequestError');
 
-// Start of the class for story #10.
 class SearchUserAccountC {
-  // ---------------------------------------------------------------------------
-  // FUNCTION: searchAccounts
-  // WHAT IT DOES: finds the accounts that match the search text.
-  // RECEIVES: keyword = the text after ?keyword= in the web address. It may be
-  //           missing.
-  // GIVES BACK: a list of matching accounts. An empty keyword lists all of them.
-  // ---------------------------------------------------------------------------
+  // Receives: keyword = the text after ?keyword= in the address. It may be missing.
+  // Returns:  a list of matching accounts. An empty keyword lists all of them.
   async searchAccounts(keyword) {
-    // Someone could send ?keyword=a&keyword=b, which Express turns into a
-    // list instead of text. Only accept text; treat anything else as empty.
-    return UserAccount.searchAccounts(typeof keyword === 'string' ? keyword : '');
-  } // End of searchAccounts.
-} // End of the class.
+    // ?keyword=a&keyword=b arrives as a list, not text. We only accept text.
+    const text = typeof keyword === 'string' ? keyword : '';
+    if (text.length > 255) throw new RequestError(400, 'Enter a search term of up to 255 characters.');
+    return UserAccount.searchAccounts(text);
+  }
+}
 
-// Let other files load this class. routes/userAccounts.js uses it.
 module.exports = SearchUserAccountC;

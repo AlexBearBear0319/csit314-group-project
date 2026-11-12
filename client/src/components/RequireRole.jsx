@@ -1,3 +1,10 @@
+// =============================================================================
+// COMPONENT: RequireRole
+// Guards a group of pages. If nobody is logged in it sends the user to the login
+// page. If the user has a different role it sends them to their own home. Otherwise
+// it shows the pages. The server checks the role again on every request.
+// =============================================================================
+
 import { Link, Navigate, Outlet, useLocation } from 'react-router-dom';
 import { hydrateSession, useSession } from '../session';
 import Button from './Button';

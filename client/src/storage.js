@@ -1,3 +1,10 @@
+// =============================================================================
+// HELPER: storage.js
+// Uploads one project photo straight to Supabase Storage with the one-time link
+// that ManageIDPImageC gave us, so big files never go through our server.
+// Only the publishable key is used here. The secret key stays on the server.
+// =============================================================================
+
 const SUPABASE_URL = (import.meta.env.VITE_SUPABASE_URL || '').replace(/\/$/, '');
 const PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY || '';
 

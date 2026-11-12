@@ -1,3 +1,22 @@
+// =============================================================================
+// BOUNDARY: IDPManagementPage  (BCE: Boundary layer)
+// User story #32: As a Customer, I want to search for IDPs so that I can find
+// projects that match my renovation preferences.
+//
+// This page is the search part. The Customer types a keyword and picks filters
+// here. The results are drawn by OngoingIDPPage (story #33), which also holds the
+// Save buttons (story #34).
+//
+// What this page does (the steps of our sequence diagram for #32):
+//   1. loads the filter choices (GET /api/customer/idps/filters)
+//   2. enterSearchKeyword(value)  checks that there is a keyword or a filter
+//                                 BEFORE we search (our validateInput step)
+//   3. the search goes in the web address, and the page calls SearchIDPC
+//      (GET /api/customer/idps?keyword=...&propertyType=...&designStyle=...)
+//   4. displaySearchResults()     shows the projects (or "No results found.")
+//      displayErrorMessage()      shows the message when something is wrong
+// =============================================================================
+
 import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../api';
@@ -7,9 +26,6 @@ import SearchBar from '../components/SearchBar';
 import { RecordLoadState } from '../components/RecordPanel';
 import OngoingIDPPage from './OngoingIDPPage';
 
-// BCE boundary for the Customer's Search IDPs page (#32).
-// The Customer types a keyword and picks filters here. The results themselves
-// are drawn by OngoingIDPPage, which also holds the shortlist buttons.
 export default function IDPManagementPage() {
   // The search lives in the web address, so Back and Refresh keep the same results.
   const [params, setParams] = useSearchParams();

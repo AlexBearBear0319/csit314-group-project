@@ -32,9 +32,9 @@ const bcrypt = require('bcryptjs'); // to hash the test passwords
 const request = require('supertest'); // to send fake requests
 const app = require('../src/app'); // the backend itself
 const { sequelize, UserProfile, UserAccount } = require('../src/entity'); // database classes
-const { resetRateLimitsForTests } = require('../src/middleware/rateLimit'); // Alex's login limiter
+const { resetRateLimitsForTests } = require('../src/middleware/rateLimit'); // our login limiter
 
-// Alex's security check only accepts changes (POST/PUT) that say they came
+// Our security check only accepts changes (POST/PUT) that say they came
 // from the app's own address, so every test request sets this Origin header.
 const ORIGIN = 'http://localhost:5173';
 
@@ -106,7 +106,7 @@ function newAccount(values = {}) {
 // data and one test can never break another.
 // =============================================================================
 beforeEach(async () => {
-  resetRateLimitsForTests(); // Alex's code blocks too many logins; reset the counter
+  resetRateLimitsForTests(); // our code blocks too many logins; reset the counter
   await sequelize.sync({ force: true }); // wipe and recreate all tables (memory database only)
 
   // Create 3 profiles (roles). Promise.all runs the 3 creates together and
